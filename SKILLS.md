@@ -3319,3 +3319,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Google Classroom API, OAuth client
 - **Security considerations:** Respect course membership and service eligibility
 - **Verification method:** Compare imported assignments to controlled test course
+
+### S299 — Drive file picker integration
+
+- **Skill ID:** S299
+- **Name:** Drive file picker integration
+- **Purpose:** Let users select source files explicitly
+- **When to use:** Only after S291, when a user selects a Drive file for an enabled workflow
+- **Implementation approach:** Use official Picker and exchange selected IDs server-side
+- **Recommended tools:** Google Picker, Drive API
+- **Security considerations:** Only fetch selected file IDs under current user grant
+- **Verification method:** Select one file and verify no sibling files are fetched
