@@ -4581,3 +4581,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Queue test harness, DB fixture
 - **Security considerations:** Synthetic ownership IDs only
 - **Verification method:** One output and terminal status
+
+### S413 — Document parser corpus tests
+
+- **Skill ID:** S413
+- **Name:** Document parser corpus tests
+- **Purpose:** Catch regressions across supported formats
+- **When to use:** When parser library changes
+- **Implementation approach:** Maintain benign files with expected extracted text
+- **Recommended tools:** PDF.js, Mammoth, fixture corpus
+- **Security considerations:** No copyrighted or uploaded originals
+- **Verification method:** Compare pages and metadata
