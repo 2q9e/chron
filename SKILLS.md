@@ -4104,3 +4104,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Action proposal, approval record
 - **Security considerations:** No calendar edit reaches committed local or external state before approval; recheck ownership, scope, versions, and provider permission on execution
 - **Verification method:** Verify create/edit/drag/resize/sync all remain drafts; mutate an approved draft and assert execution is denied
+
+### S370 — Calendar density and themes
+
+- **Skill ID:** S370
+- **Name:** Calendar density and themes
+- **Purpose:** Keep views readable across customization choices
+- **When to use:** When user changes density or visual theme
+- **Implementation approach:** Apply semantic theme tokens to grids, events, focus, conflicts
+- **Recommended tools:** CSS variables, theme presets
+- **Security considerations:** Do not encode conflict solely by color
+- **Verification method:** Render all views, themes, and keyboard focus states
