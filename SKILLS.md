@@ -3585,3 +3585,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Flow, D3; official Meta inference only after S236 if generation is model-based
 - **Security considerations:** Reject unsupported edges and active links; no alternate provider or inference before S236
 - **Verification method:** Check every edge has evidence and keyboard access; verify model calls are blocked before authorization
+
+### S323 — Quiz blueprint
+
+- **Skill ID:** S323
+- **Name:** Quiz blueprint
+- **Purpose:** Define objectives, coverage, and formats first
+- **When to use:** Before a quiz; deterministic or user-authored blueprints may run without inference, while model-generated blueprints require S236
+- **Implementation approach:** Map objectives to question types and difficulty from permitted sources; use Meta generation only after S236 written permission and capability verification
+- **Recommended tools:** Quiz schema, objective tags
+- **Security considerations:** Do not claim coverage absent from sources or use another inference provider
+- **Verification method:** Compare blueprint to source topics and assert the model path stays disabled until S236 passes
