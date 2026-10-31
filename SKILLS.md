@@ -1375,3 +1375,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ResizeObserver, R3F useThree
 - **Security considerations:** Avoid probing cross-origin embeds for dimensions
 - **Verification method:** Resize viewport and check overflow and repeated updates
+
+### S123 — Perspective camera calibration
+
+- **Skill ID:** S123
+- **Name:** Perspective camera calibration
+- **Purpose:** Frame scene geometry without accidental lens distortion
+- **When to use:** Objects feel too small, flat, or warped
+- **Implementation approach:** Choose field of view from composition before scaling meshes
+- **Recommended tools:** PerspectiveCamera, camera helpers
+- **Security considerations:** Keep near/far planes tight to scene bounds
+- **Verification method:** Capture desktop and mobile aspect ratios and inspect clipping
