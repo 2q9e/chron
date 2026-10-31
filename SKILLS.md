@@ -4381,3 +4381,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** R3F dpr, PerformanceMonitor
 - **Security considerations:** Avoid persistent device fingerprinting
 - **Verification method:** Profile several quality tiers
+
+### S395 — 3D draw-call reduction
+
+- **Skill ID:** S395
+- **Name:** 3D draw-call reduction
+- **Purpose:** Lower GPU submission overhead
+- **When to use:** When scene has many repeated meshes
+- **Implementation approach:** Instance geometry; remove hidden nodes
+- **Recommended tools:** renderer.info, glTF Transform
+- **Security considerations:** No user-specific scene telemetry
+- **Verification method:** Compare draw calls and frame rate
