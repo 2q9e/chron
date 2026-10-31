@@ -4315,3 +4315,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TanStack Query, revalidation tags
 - **Security considerations:** Clear session cache on logout
 - **Verification method:** Confirm a committed mutation refreshes dependent views; test user-switch clearing separately under S392
+
+### S389 — CDN asset delivery
+
+- **Skill ID:** S389
+- **Name:** CDN asset delivery
+- **Purpose:** Serve static files close to users
+- **When to use:** When assets dominate latency
+- **Implementation approach:** Use immutable hashes and long cache life
+- **Recommended tools:** CDN, Cache-Control
+- **Security considerations:** Do not publish private uploads
+- **Verification method:** Check headers and version rollover
