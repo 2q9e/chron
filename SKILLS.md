@@ -2336,3 +2336,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL partial index
 - **Security considerations:** Ensure excluded rows cannot bypass authorization logic
 - **Verification method:** Compare plan and latency for active and archived fixtures
+
+### S210 — Query-plan diagnosis
+
+- **Skill ID:** S210
+- **Name:** Query-plan diagnosis
+- **Purpose:** Find the actual cause of slow database queries
+- **When to use:** When endpoint timing points to database work
+- **Implementation approach:** Inspect row estimates, scans, joins, and buffer usage
+- **Recommended tools:** EXPLAIN ANALYZE, auto_explain
+- **Security considerations:** Use synthetic or scrubbed data in shared query plans
+- **Verification method:** Re-run with representative cardinality and verify planner choice
