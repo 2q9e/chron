@@ -4493,3 +4493,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright, auth helpers
 - **Security considerations:** Fake mail sink and synthetic credentials
 - **Verification method:** Assert flags and revoked-session denial
+
+### S405 — Cross-tenant access tests
+
+- **Skill ID:** S405
+- **Name:** Cross-tenant access tests
+- **Purpose:** Catch ownership regressions
+- **When to use:** For every user-scoped route
+- **Implementation approach:** Request valid IDs using a second account
+- **Recommended tools:** Integration tests, policy matrix
+- **Security considerations:** Never use production data
+- **Verification method:** Read, update, delete, export all deny
