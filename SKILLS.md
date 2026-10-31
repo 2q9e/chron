@@ -4834,3 +4834,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Backup CLI, recovery runbook
 - **Security considerations:** Use test-only synthetic runs and scrub/destroy temporary restore environments
 - **Verification method:** Record resumed checkpoint and owner access; exercise database snapshot restoration separately under S227
+
+## DevOps and GitHub
+
+### S436 — Fresh public repository history
+
+- **Skill ID:** S436
+- **Name:** Fresh public repository history
+- **Purpose:** Avoid publishing unrelated private history
+- **When to use:** When establishing the Chron repository
+- **Implementation approach:** Initialize clean repo and inspect every tracked path
+- **Recommended tools:** Git, git-filter-repo only if needed
+- **Security considerations:** Never import reference material or private history
+- **Verification method:** Review full tree and initial commit contents
