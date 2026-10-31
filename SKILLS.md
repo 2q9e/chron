@@ -3939,3 +3939,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** rrule limits, worker timeout
 - **Security considerations:** Reject unbounded malicious recurrence input
 - **Verification method:** Fuzz extreme rules and assert bounded runtime
+
+### S355 — Locale week-start rules
+
+- **Skill ID:** S355
+- **Name:** Locale week-start rules
+- **Purpose:** Match week grids to user locale preference
+- **When to use:** When rendering week or month views
+- **Implementation approach:** Use locale data or saved preference with stable fallback
+- **Recommended tools:** Intl.Locale, date-fns locale
+- **Security considerations:** Do not change persisted dates when display locale changes
+- **Verification method:** Test Monday/Sunday starts across locale fixtures
