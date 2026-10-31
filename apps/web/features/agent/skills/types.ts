@@ -78,6 +78,7 @@ export type ProvenanceStatus = "verified" | "partial" | "unknown";
 
 export interface ResearchSourceAssessment {
   readonly sourceId: string;
+  readonly sourceVersion: string;
   readonly sourceRole: SourceRole;
   readonly provenance: ProvenanceStatus;
   readonly publicationStatus: PublicationStatus;
@@ -94,6 +95,7 @@ export interface EvidenceCitation {
   readonly citationId: string;
   readonly sourceId: string;
   readonly ownerId: string;
+  readonly sourceRole: SourceRole;
   readonly sourceVersion: string;
   readonly excerptStart: number;
   readonly excerptEnd: number;
