@@ -2635,3 +2635,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Official Meta documentation, server HTTP client
 - **Security considerations:** No Meta key intake/storage before written permission; no targeting minors; no alternate provider or fallback; deterministic and user-authored features remain distinct from inference
 - **Verification method:** Assert every generation route is blocked until all gates pass; after authorization, verify the official endpoint/capability, server-side credential handling, and redacted errors
+
+### S237 — Structured plan generation
+
+- **Skill ID:** S237
+- **Name:** Structured plan generation
+- **Purpose:** Produce plans that match runtime contracts
+- **When to use:** Only after written permission and the S236 capability, eligibility, and operator/legal checks, when official Meta inference creates tool steps
+- **Implementation approach:** Keep the feature disabled until S236 passes; request only an officially supported structure, then validate the returned plan locally
+- **Recommended tools:** Officially documented Meta structured-output capability only after S236; JSON Schema
+- **Security considerations:** No key intake or model call before written permission; no alternate provider; output remains untrusted
+- **Verification method:** Assert requests are blocked before S236; afterward run valid, malformed, and adversarial test-only response fixtures
