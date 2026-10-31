@@ -4537,3 +4537,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Vitest, HTTP mock server
 - **Security considerations:** No real keys or private payloads
 - **Verification method:** Assert endpoint, schema, redaction
+
+### S409 — Network failure injection
+
+- **Skill ID:** S409
+- **Name:** Network failure injection
+- **Purpose:** Exercise dependency outage behavior
+- **When to use:** When routes call external APIs
+- **Implementation approach:** Inject timeout, reset, DNS, and server errors
+- **Recommended tools:** MSW, Toxiproxy
+- **Security considerations:** No internal production host probes
+- **Verification method:** Confirm bounded error and recovery path
