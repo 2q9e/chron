@@ -3088,3 +3088,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Official Meta tool schema only when documented and authorized by S236, policy filter
 - **Security considerations:** Do not reveal admin-only capabilities
 - **Verification method:** Snapshot allowed schemas for different user grants
+
+### S278 — Read/write capability split
+
+- **Skill ID:** S278
+- **Name:** Read/write capability split
+- **Purpose:** Separate inspection tools from mutation tools
+- **When to use:** When one integration supports both listing and editing
+- **Implementation approach:** Use distinct methods and scopes for query and write
+- **Recommended tools:** Typed adapters, permission map
+- **Security considerations:** Read permission cannot imply write permission
+- **Verification method:** Verify read-only token cannot trigger a write path
