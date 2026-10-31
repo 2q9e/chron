@@ -23,8 +23,11 @@ export type AgentCapability =
 
 export type FreshnessNeed = "none" | "current";
 
+export type EvidenceDomain = "general" | "academic" | "policy" | "technical" | "public-discussion";
+
 export interface SkillRequestSignals {
   readonly task: AgentTaskKind;
+  readonly evidenceDomain: EvidenceDomain;
   readonly asksForSources: boolean;
   readonly requiresCurrentInformation: boolean;
   readonly usesUserMaterials: boolean;
