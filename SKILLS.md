@@ -502,3 +502,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenAPI, API gateway, schema diff tools
 - **Security considerations:** Do not leave obsolete versions with weaker authorization
 - **Verification method:** Run compatibility checks against stored client contract fixtures
+
+### S044 — Error taxonomy
+
+- **Skill ID:** S044
+- **Name:** Error taxonomy
+- **Purpose:** Translate failures into stable, actionable API responses
+- **When to use:** When domain, validation, and dependency failures cross a service boundary
+- **Implementation approach:** Map known error classes to codes; keep unexpected details server-side
+- **Recommended tools:** RFC 9457 problem details, typed errors, Sentry
+- **Security considerations:** Strip stack traces, SQL text, tokens, and upstream bodies from responses
+- **Verification method:** Assert error shape and redaction for representative failure classes
