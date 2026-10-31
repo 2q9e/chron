@@ -4071,3 +4071,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL full-text, query builder
 - **Security considerations:** Apply owner and integration scopes before search
 - **Verification method:** Test punctuation, date bounds, and cross-user denial
+
+### S367 — External event identity
+
+- **Skill ID:** S367
+- **Name:** External event identity
+- **Purpose:** Maintain stable mapping for imported events
+- **When to use:** When syncing provider calendars
+- **Implementation approach:** Store provider account and external event ID with version
+- **Recommended tools:** Sync ledger, unique key
+- **Security considerations:** Namespace external IDs by connected account
+- **Verification method:** Reconnect and update without duplicate event
