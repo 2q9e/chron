@@ -3407,3 +3407,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Current official API documentation after S291, typed provider adapter, database
 - **Security considerations:** Scope cursor to encrypted account identity
 - **Verification method:** Record exact per-service evidence under S291; test documented pagination and change filters, interruption handling, duplicate reconciliation, and expiry only where specified. For Google Tasks, verify page traversal and `updatedMin` use without assuming a sync token, change feed, or complete deletion detection
+
+### S307 — Bidirectional sync conflict
+
+- **Skill ID:** S307
+- **Name:** Bidirectional sync conflict
+- **Purpose:** Resolve concurrent edits when both local and external systems are writable
+- **When to use:** Only after S291 for a verified bidirectional provider workflow where both sides are authorized to write
+- **Implementation approach:** Compare provider/local versions and ETags, preserve a documented two-way conflict policy, and route any resulting calendar mutation through the S369 draft/approval flow; this requires both sides to be writable. Use S368 when provider data is imported inbound only
+- **Recommended tools:** ETag/version fields, sync ledger
+- **Security considerations:** Never overwrite user edits silently; external consequential writes still require exact approval
+- **Verification method:** Change the same item on both writable sides and verify explicit conflict state; separately verify inbound-only import handling under S368 makes no provider write
