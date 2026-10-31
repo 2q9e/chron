@@ -3717,3 +3717,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Review queue, DB transaction
 - **Security considerations:** Prevent cross-account deck access
 - **Verification method:** Interrupt and resume without losing ratings; confirm session progress does not imply time tracking (see S341)
+
+### S335 — Misconception detection
+
+- **Skill ID:** S335
+- **Name:** Misconception detection
+- **Purpose:** Find recurring error patterns for targeted practice
+- **When to use:** Across quiz explanations
+- **Implementation approach:** Use a reviewed misconception taxonomy and deterministic rubric tags by default; model-assisted classification requires written permission and the S236 gate
+- **Recommended tools:** Rubric tags, rule analysis
+- **Security considerations:** Do not assign diagnostic labels to learners; no model inference before S236
+- **Verification method:** Test synthetic misconception cases and verify the deterministic path; assert model path is blocked before S236
