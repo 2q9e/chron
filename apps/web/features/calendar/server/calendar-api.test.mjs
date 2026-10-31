@@ -157,6 +157,15 @@ test("requires a finite supported rule, exact series scope, and current target r
       (error) => error instanceof CalendarRouteError || error instanceof CalendarTimeError,
     );
   }
+
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest({
+      ...validSeriesCreate,
+      recurrenceRule: { frequency: "weekly", interval: 1, count: 54 },
+    }),
+    (error) => error instanceof CalendarRouteError &&
+      error.message === "Repeating events must end within 366 calendar dates.",
+  );
 });
 
 test("bounds recurring event duration while preserving the supported maximum", () => {
@@ -196,6 +205,35 @@ test("bounds recurring event duration while preserving the supported maximum", (
   assert.throws(
     () => parseCalendarSeriesDraftRequest(tooLongTimed),
     (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest({
+      ...validSeriesCreate,
+      event: {
+        ...validTimedEvent,
+        startLocal: "2026-03-07T02:30",
+        endLocal: "2026-03-07T03:30",
+      },
+      recurrenceRule: { frequency: "daily", interval: 1, count: 366 },
+    }),
+    (error) => error instanceof CalendarRouteError &&
+      error.message.includes("cannot be expanded"),
+  );
+
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest({
+      ...validSeriesCreate,
+      event: {
+        kind: "all-day",
+        title: "Year-end study",
+        startDate: "9999-12-30",
+        endDate: "9999-12-31",
+      },
+      recurrenceRule: { frequency: "daily", interval: 1, count: 2 },
+    }),
+    (error) => error instanceof CalendarRouteError &&
+      error.message.includes("cannot be expanded"),
   );
 });
 

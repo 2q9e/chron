@@ -12,7 +12,9 @@ import {
 } from "../domain/types.ts";
 import {
   maximumRecurringEventDurationDays,
+  expandCalendarRecurrence,
   normalizeRecurrenceRule,
+  RecurrenceError,
   type RecurrenceRule,
 } from "../domain/recurrence.ts";
 import {
@@ -104,16 +106,18 @@ export type CalendarSeriesDraftRequest =
     }>;
 
 function parseRecurrenceRule(input: unknown): RecurrenceRule {
+  let rule: RecurrenceRule;
   try {
-    const rule = normalizeRecurrenceRule(input);
-    const periodDays = rule.frequency === "weekly" ? 7 : 1;
-    if ((rule.count - 1) * rule.interval * periodDays > 365) {
-      return invalidPayload("Repeating events must end within 366 calendar dates.");
-    }
-    return rule;
+    rule = normalizeRecurrenceRule(input);
   } catch {
     return invalidPayload("Choose a finite daily or weekly recurrence from 2 to 366 occurrences.");
   }
+
+  const periodDays = rule.frequency === "weekly" ? 7 : 1;
+  if ((rule.count - 1) * rule.interval * periodDays > 365) {
+    return invalidPayload("Repeating events must end within 366 calendar dates.");
+  }
+  return rule;
 }
 
 function assertRecurringMutationDuration(event: CalendarEventMutation): void {
@@ -134,6 +138,66 @@ function assertRecurringMutationDuration(event: CalendarEventMutation): void {
     - Temporal.Instant.from(start.instant).epochNanoseconds;
   if (durationNanoseconds > maximumNanoseconds) {
     return invalidPayload("Repeating timed events may last up to 7 days.");
+  }
+}
+
+function assertRecurrenceFullyExpandable(
+  event: CalendarEventMutation,
+  rule: RecurrenceRule,
+  calendarTimeZone: string,
+): void {
+  const metadata = {
+    id: "00000000-0000-4000-8000-000000000000",
+    title: event.title,
+    details: event.details ?? null,
+    revision: 1,
+    createdAt: "2000-01-01T00:00:00.000Z",
+    updatedAt: "2000-01-01T00:00:00.000Z",
+  };
+  const series = event.kind === "timed"
+    ? (() => {
+        const start = resolveLocalDateTime(
+          event.startLocal,
+          event.timeZone,
+          event.startDisambiguation,
+        );
+        const end = resolveLocalDateTime(
+          event.endLocal,
+          event.timeZone,
+          event.endDisambiguation,
+        );
+        return {
+          ...metadata,
+          kind: "timed" as const,
+          startLocal: start.local,
+          endLocal: end.local,
+          timeZone: start.timeZone,
+          startsAt: start.instant,
+          endsAt: end.instant,
+        };
+      })()
+    : {
+        ...metadata,
+        kind: "all-day" as const,
+        startDate: event.startDate,
+        endDate: event.endDate,
+      };
+
+  // The recurrence engine validates every candidate and generated end even
+  // when none overlaps this small, deterministic window.
+  try {
+    expandCalendarRecurrence(series, rule, {
+      fromDate: "2000-01-01",
+      toDate: "2000-01-02",
+      ...(event.kind === "timed" ? { timeZone: calendarTimeZone } : {}),
+    });
+  } catch (error) {
+    if (error instanceof RecurrenceError) {
+      return invalidPayload(
+        "This recurrence cannot be expanded within the supported calendar dates and limits.",
+      );
+    }
+    throw error;
   }
 }
 
@@ -173,12 +237,14 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
     const event = parseCalendarEventMutation(value.event);
     assertRecurringMutationDuration(event);
     const recurrenceRule = parseRecurrenceRule(value.recurrenceRule);
+    const calendarTimeZone = validateTimeZone(value.calendarTimeZone);
+    assertRecurrenceFullyExpandable(event, recurrenceRule, calendarTimeZone);
     return {
       action: "create",
       scope: "series",
       event,
       recurrenceRule,
-      calendarTimeZone: validateTimeZone(value.calendarTimeZone),
+      calendarTimeZone,
     };
   }
 
@@ -195,13 +261,16 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
     const target = parseSeriesTarget(value);
     const event = parseCalendarEventMutation(value.event);
     assertRecurringMutationDuration(event);
+    const recurrenceRule = parseRecurrenceRule(value.recurrenceRule);
+    const calendarTimeZone = validateTimeZone(value.calendarTimeZone);
+    assertRecurrenceFullyExpandable(event, recurrenceRule, calendarTimeZone);
     return {
       action: "update",
       scope: "series",
       ...target,
       event,
-      recurrenceRule: parseRecurrenceRule(value.recurrenceRule),
-      calendarTimeZone: validateTimeZone(value.calendarTimeZone),
+      recurrenceRule,
+      calendarTimeZone,
     };
   }
 
