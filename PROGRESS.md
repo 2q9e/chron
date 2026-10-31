@@ -5,8 +5,9 @@
 F0 — foundation documentation, the scrubbed fresh history, and repository
 security are on public GitHub `main`; hosted checks and branch protection remain
 unverified. C1 — calendar — is active at the user's direction. Landing-page
-work is paused. Calendar reliability fixes are pushed to the single public
-`main` branch through `ec93688`. No code or visual material was copied from
+work is paused. Calendar reliability fixes and the bounded-search type
+contract are pushed to the single public `main` branch through `dfe1f07`.
+Bounded title search is underway. No code or visual material was copied from
 another folder.
 
 ## Completed
@@ -97,7 +98,8 @@ another folder.
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
 - Continue C1 with bounded title search, recurrence, reminders, drag scheduling,
-  and external calendar synchronization. Bounded title search is next.
+  and external calendar synchronization. Search API and UI work are underway in
+  separate detached worktrees against the committed shared contract.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -128,9 +130,9 @@ another folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- Public GitHub `main` has more than 500 non-empty, purposeful commits; the
-  initial history had 533 and reviewed calendar fixes were pushed from local
-  `main`. The calendar API, auth route, sign-in screen, calendar views,
+- Public GitHub `main` has 566 non-empty, purposeful commits as of this update;
+  the initial history had 533 and reviewed calendar fixes were pushed from
+  local `main`. The calendar API, auth route, sign-in screen, calendar views,
   overlap review, and idempotent event creation are included. Never count
   empty or duplicate commits toward the requested total.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
@@ -149,6 +151,8 @@ another folder.
 - For the current calendar increment, calendar API passed all 30 tests, time
   all 7, layout all 10, recovery all 5, auth-config all 9, and agent-skills all
   10. Lint, typecheck, and the production build passed.
+- Added and typechecked the shared calendar search request/response contract at
+  `dfe1f07`; backend and UI implementation are running in separate worktrees.
 - Reviewed the outgoing diff from `origin/main`, checked `git diff --check`,
   scanned staged and outgoing content for common secret patterns, and pushed to
   `origin/main`. The remote exposes only `main`; the latest calendar changes

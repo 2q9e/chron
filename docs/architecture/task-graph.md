@@ -689,38 +689,119 @@ C1-r3 short-event fallback ────────┴────────�
 
 ### C1-a — bounded event title search
 
-- **Task ID:** C1-a
-- **Objective:** Add owner-scoped literal title substring search inside a
-  selected date window, opening returned events in the existing editor.
-- **Assigned agent:** Calendar search implementation specialist; main agent
-  integrates. If model is explicitly set, request GPT-6 Luna MAX; runtime model
-  identity is not independently attested.
-- **Dependencies:** C1-r4 source review complete; current event repository,
-  date range validation, and editor flow
-- **Owned files:** domain request/response types, server validation and
-  repository methods, new `POST /api/calendar/events/search` route, calendar
-  API client, a focused search component/CSS, and relevant tests. Keep the
-  search component isolated from unrelated calendar files where possible.
-- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`, `PLAN.md`,
-  this graph, calendar migrations, auth/runtime boundary, and existing event
-  view/editor contracts
-- **Required skills:** S013, S015, S045, S193, S357, S369, S411, S421, S423,
-  S494
-- **Security permissions:** No production credentials, personal data,
-  reference material, deployment, or external writes. Use a separate worktree
-  as a coordination boundary only; the runtime does not technically enforce
-  filesystem isolation. Owner must come only from the authenticated session.
-- **Acceptance criteria:** Trimmed literal title query of 1–120 characters;
-  validated IANA zone and exclusive `to` date; reuse 93-day window and 1,000
-  result bounds with explicit overflow errors; parameterized SQL; exact owner
-  filtering; optional `timed`/`all-day` filter; search terms sent in JSON body,
-  never URL, telemetry, or logs; keyboard-usable loading/error/empty/result
-  states; result opens the existing event editor; no search-result mock data.
-- **Tests:** Exact field validation, punctuation as literal text, case behavior
-  documented, half-open timed/all-day date boundaries, optional kind filter,
-  both result limits, owner isolation, no-store response, and search body not
-  present in URL. Run API tests, lint, typecheck, build, and `git diff --check`.
-- **Expected deliverables:** search API, real search interface, regression
-  tests, audit evidence, and a small direct-main commit after review.
-- **Status:** Ready to implement on the existing `main` checkout after the
-  recovery patch landed at `ec93688`.
+The shared wire contract is `CalendarEventSearchRequest` and
+`CalendarEventSearchResponse` in `domain/types.ts`, committed as `dfe1f07`.
+Backend and UI tasks have separate detached worktrees and disjoint owned files;
+main integrates reviewed diffs directly on the existing `main` branch.
+
+```text
+C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
+                                             ├─ C1-a1 owner-scoped search API ─┐
+                                             └─ C1-a2 search UI/API client ────┤
+                                                                              └─ C1-a3 integration, independent review, tests
+                                                                                 └─ C1-a4 authenticated browser verification (DB gated)
+```
+
+#### C1-a1 — owner-scoped search API
+
+- **Task ID:** C1-a1
+- **Objective:** Search event titles as case-insensitive literal substrings
+  within a validated date window and optional event-kind filter.
+- **Assigned agent:** `/root/calendar_search_api`; GPT-6 Luna MAX requested,
+  runtime identity not independently attested.
+- **Dependencies:** C1-a0 contract; existing event repository and date
+  validation
+- **Owned files:** `apps/web/features/calendar/server/validation.ts`,
+  `repository.ts`, `calendar-api.test.mjs`, `repository.test.mjs`, and
+  `apps/web/app/api/calendar/events/search/route.ts`
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
+  `PLAN.md`, this graph, domain types, auth/runtime boundary, SQL migrations,
+  existing route/error helpers
+- **Required skills:** S018, S215, S366, S402, S405, S426
+- **Security permissions:** No credentials, private data, reference materials,
+  external network, commit, or push. Detached worktree is a coordination
+  boundary only; no runtime filesystem/network sandbox is enforced.
+- **Acceptance criteria:** Exact allowlisted JSON fields; trimmed 1–120
+  character query without controls; valid IANA zone and half-open date range
+  no larger than 93 days; parameterized owner-scoped query; escape `%`, `_`,
+  and backslash for literal matching; optional kind; 1,001-row probe and
+  explicit overflow error; no-store response; no query in URL or logs.
+- **Tests:** Validation edge cases, literal wildcard punctuation, case-insensitive
+  contract, all-day and timed half-open bounds, kind filtering, overflow, owner
+  isolation, and response cache headers. Also run API suite, lint, typecheck,
+  and diff check; live Postgres behavior remains unverified.
+- **Expected deliverables:** route, repository search, validation, API tests,
+  and a concise verification report; no commit/push.
+- **Status:** Running in its isolated coordination worktree.
+
+#### C1-a2 — accessible calendar search interface
+
+- **Task ID:** C1-a2
+- **Objective:** Add a real title/date/type search form and result list that
+  opens the selected event in the existing editor.
+- **Assigned agent:** `/root/calendar_search_ui`; GPT-6 Luna MAX requested,
+  runtime identity not independently attested.
+- **Dependencies:** C1-a0 shared type and HTTP contract; API implementation
+  can proceed independently against the frozen route contract
+- **Owned files:** `calendar-api.ts`, new `calendar-search.tsx`,
+  `calendar.module.css`, and `calendar-workspace.tsx`
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
+  `PLAN.md`, this graph, domain type contract, server route contract, current
+  workspace, editor, and theme tokens
+- **Required skills:** S018, S366, S426, S428 and installed skills 04, 11, 12,
+  13, 15
+- **Security permissions:** No credentials, private data, reference material,
+  network, commit, or push. Detached worktree is a coordination boundary only.
+- **Acceptance criteria:** Keyboard-usable From/Through inclusive date inputs,
+  1–120 character title query, optional type; inclusive UI end converts to
+  exclusive API `to` with Temporal; loading, error, empty and results are
+  announced; obsolete requests are aborted or ignored; no query in URL; result
+  opens existing editor; align all five themes with no emoji or fake data.
+- **Tests:** Lint, typecheck, build, focused helper/component tests if supported,
+  and diff check. Browser checking must use a real authenticated database; do
+  not simulate account state.
+- **Expected deliverables:** accessible search component, real API client,
+  workspace integration, and verification report; no commit/push.
+- **Status:** Running in its isolated coordination worktree.
+
+#### C1-a3 — integration, independent review, and tests
+
+- **Task ID:** C1-a3
+- **Objective:** Review and integrate the backend and frontend diffs, resolve
+  type/interface mismatches, run focused suites, lint, typecheck, build, and
+  record evidence.
+- **Assigned agent:** Main integration owner; independent security/API review
+  and frontend review run after both patches arrive.
+- **Dependencies:** C1-a1 and C1-a2
+- **Owned files:** Integrated source, tests, `docs/audits/calendar-page.md`,
+  `PROGRESS.md`, `HANDOFF.md`, and this graph
+- **Read-only files:** all other application and policy files
+- **Required skills:** S018, S215, S366, S402, S405, S426, S428
+- **Security permissions:** Root workspace only; no secrets, private user data,
+  reference materials, deployment, or non-main remote branch.
+- **Acceptance criteria:** Full contract passes, no caller trusts user ID,
+  result queries remain bounded and owner-filtered, and UI states remain usable
+  under errors and request races.
+- **Tests:** API, calendar-time, calendar-layout, recovery, lint, typecheck,
+  build, diff review, staged-file review, and outgoing-history/secret scans.
+- **Expected deliverables:** integrated source, independent findings/remedies,
+  updated evidence, and separate tiny commits pushed to public `main`.
+- **Status:** Waiting on C1-a1 and C1-a2.
+
+#### C1-a4 — authenticated search browser verification
+
+- **Task ID:** C1-a4
+- **Objective:** Verify search against a disposable PostgreSQL account in a
+  real browser at desktop and mobile sizes, including keyboard and error states.
+- **Assigned agent:** Main integration owner.
+- **Dependencies:** C1-a3 and a disposable PostgreSQL database/account
+- **Owned files:** Audit evidence only
+- **Read-only files:** Integrated search feature and migrations
+- **Required skills:** S421, S423, S426, S428
+- **Security permissions:** Synthetic account/data only; no production data.
+- **Acceptance criteria:** Authenticated search returns only that account’s
+  matching events; keyboard focus and status are clear across all states.
+- **Tests:** Actual browser walkthrough and database assertions; no product
+  samples or fabricated search results.
+- **Expected deliverables:** Dated results and screenshots when supported.
+- **Status:** Blocked by missing disposable PostgreSQL service/account.

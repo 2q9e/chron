@@ -3,11 +3,12 @@
 ## Current state
 
 Chron is a standalone repository on one published branch, public GitHub
-`main`. Remote and local `main` match and contain more than 500 purposeful
-commits.
+`main`. Remote and local `main` match and contain 566 purposeful commits as of
+this handoff.
 The calendar API, protected route, sign-in, views, preferences, and conflict
 review are pushed. Idempotent event creation, safe recovery, reload-safe focus,
-and accessible short-event targets were pushed as `f304c19` and `ec93688`.
+and accessible short-event targets were pushed as `f304c19` and `ec93688`;
+the calendar search contract was pushed as `dfe1f07`.
 Secret scanning, push protection, Dependabot alerts and
 security updates, and private vulnerability reporting are enabled. Continue
 reviewing staged paths and scans before every push. Do not commit root
@@ -25,7 +26,9 @@ storage, preserves uncertain requests for reconciliation, and restores focus
 after reload. Search, recurrence, reminders, drag scheduling, external sync,
 database-backed runtime verification, and real authenticated browser
 walkthrough remain open. C-01 through C-09 have source-level fixes recorded in
-the audit; rendered and database-backed verification is still pending.
+the audit; rendered and database-backed verification is still pending. C1-a1
+search API and C1-a2 search UI tasks are active in detached worktrees; C1-a3
+integration and independent review follow their delivery.
 
 ## Product and security gates
 
@@ -119,6 +122,8 @@ awaits narrow and zoom browser checks.
 - `npm run test:agent-skills --workspace @chron/web` — all 10 tests passed.
 - `npm run build --workspace @chron/web` — passed with the calendar API,
   conflict route, protected route, and sign-in route included.
+- `npm run typecheck --workspace @chron/web` — passed after adding the shared
+  bounded-search request/response types in `dfe1f07`.
 - Production route inspected in Chrome at 1230×480. Opening, Week, Study,
   Research, and closing chapters were viewed; in-page navigation, `#week`
   reload, and reverse navigation were tried. The scene was visible through
@@ -142,13 +147,15 @@ awaits narrow and zoom browser checks.
 
 ## Next actions
 
-1. Configure a disposable PostgreSQL test database/account, apply the auth and
+1. Integrate and independently review C1-a1 search API and C1-a2 search UI,
+   then run the complete focused verification before pushing to `main`.
+2. Configure a disposable PostgreSQL test database/account, apply the auth and
    calendar migrations, and run authenticated persistence, isolation, and
    browser walkthroughs.
-2. Continue C1 with bounded title search, recurrence, reminders, and drag
-   scheduling while keeping landing work paused.
-3. Retain persisted, payload-bound draft approval before agent or bulk
+3. Continue C1 with recurrence, reminders, and drag scheduling while keeping
+   landing work paused.
+4. Retain persisted, payload-bound draft approval before agent or bulk
    integration can write calendar records.
-4. Resume remaining landing browser checks only when the user reprioritizes it.
-5. Before every push, inspect staged paths and rescan staged content and commit
+5. Resume remaining landing browser checks only when the user reprioritizes it.
+6. Before every push, inspect staged paths and rescan staged content and commit
    history for secrets and excluded material.
