@@ -5533,3 +5533,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Deprecation headers, code search
 - **Security considerations:** Do not keep revoked credentials or permissions alive
 - **Verification method:** Search consumers and test removal release
+
+### S499 — Agent file ownership
+
+- **Skill ID:** S499
+- **Name:** Agent file ownership
+- **Purpose:** Prevent parallel contributors from colliding
+- **When to use:** When coordinating multiple development agents
+- **Implementation approach:** Assign exact file scope and integrate reviewed patches serially
+- **Recommended tools:** Git worktree, CODEOWNERS, task ledger
+- **Security considerations:** Worktrees are not OS security sandboxes
+- **Verification method:** Check ownership and diff before integration
