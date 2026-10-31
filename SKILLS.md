@@ -1021,3 +1021,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS tokens, Figma effects
 - **Security considerations:** Avoid shadows that obscure focus rings or imply false clickability
 - **Verification method:** Compare layered surfaces on both light and dark backgrounds
+
+### S091 — Surface material language
+
+- **Skill ID:** S091
+- **Name:** Surface material language
+- **Purpose:** Make each surface treatment express function and depth
+- **When to use:** When the interface mixes canvas, document, and overlay regions
+- **Implementation approach:** Separate base, raised, and interactive surfaces through restrained material cues
+- **Recommended tools:** CSS variables, Figma styles, browser rendering
+- **Security considerations:** Never blur sensitive data as a substitute for access control
+- **Verification method:** Inspect at low-end graphics settings and verify text contrast on overlays
