@@ -1617,3 +1617,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS stacking contexts, R3F Canvas
 - **Security considerations:** Overlays must not mask navigation or focus rings
 - **Verification method:** Test text selection, link clicks, and stacking at every chapter
+
+### S145 — Frame loop discipline
+
+- **Skill ID:** S145
+- **Name:** Frame loop discipline
+- **Purpose:** Avoid React updates on every rendered frame
+- **When to use:** A scene has ongoing motion or scroll input
+- **Implementation approach:** Mutate Three.js refs in useFrame and invalidate on demand
+- **Recommended tools:** R3F useFrame, frameloop demand
+- **Security considerations:** Stop animation loops when route is hidden or unmounted
+- **Verification method:** Check idle CPU and render counts after motion ends
