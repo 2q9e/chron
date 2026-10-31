@@ -4768,3 +4768,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright route interception
 - **Security considerations:** Do not queue sensitive writes unsafely
 - **Verification method:** Reconnect and verify retry/conflict handling
+
+### S430 — XSS regression tests
+
+- **Skill ID:** S430
+- **Name:** XSS regression tests
+- **Purpose:** Keep untrusted values inert
+- **When to use:** For Markdown, titles, citations
+- **Implementation approach:** Render hostile payload corpus and inspect DOM
+- **Recommended tools:** Playwright, DOM assertions
+- **Security considerations:** Use inert synthetic payloads
+- **Verification method:** No active script, handler, or URL remains
