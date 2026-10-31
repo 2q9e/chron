@@ -2391,3 +2391,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL RLS, session variables
 - **Security considerations:** Never reuse a pooled connection with stale tenant context
 - **Verification method:** Test queries under missing, valid, and switched tenant contexts
+
+### S215 — Tenant-scoped repository API
+
+- **Skill ID:** S215
+- **Name:** Tenant-scoped repository API
+- **Purpose:** Make ownership predicates automatic for application queries
+- **When to use:** When many handlers access per-user rows
+- **Implementation approach:** Expose repository methods that require a verified tenant argument
+- **Recommended tools:** Typed repository, query builder
+- **Security considerations:** Do not permit unscoped list/read methods in feature code
+- **Verification method:** Static scan or tests reject queries lacking tenant scope
