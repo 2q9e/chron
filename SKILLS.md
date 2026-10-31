@@ -3154,3 +3154,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** p-limit, Redis semaphore
 - **Security considerations:** One tenant cannot consume all worker slots
 - **Verification method:** Burst parallel tool calls across synthetic tenants and inspect global cap plus per-user fairness; test route caps separately under S072
+
+### S284 — Tool idempotency keys
+
+- **Skill ID:** S284
+- **Name:** Tool idempotency keys
+- **Purpose:** Make retries of writes safe
+- **When to use:** For queue-delivered mutations
+- **Implementation approach:** Derive stable key from user, run, step, and normalized input
+- **Recommended tools:** Database unique constraint, HTTP idempotency header
+- **Security considerations:** Do not allow cross-user key collisions
+- **Verification method:** Replay same action and verify one persisted effect
