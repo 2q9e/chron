@@ -1694,3 +1694,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Three.js dispose, browser memory tools
 - **Security considerations:** Remove user-derived textures when identity changes
 - **Verification method:** Navigate repeatedly and check memory/object counts stabilize
+
+### S152 — Texture compression
+
+- **Skill ID:** S152
+- **Name:** Texture compression
+- **Purpose:** Reduce texture transfer and GPU memory costs
+- **When to use:** Textures dominate GLB size or decoded memory
+- **Implementation approach:** Choose resolution, mipmaps, and KTX2 by viewed scale
+- **Recommended tools:** KTX2Loader, glTF Transform
+- **Security considerations:** Strip metadata and verify asset provenance
+- **Verification method:** Compare visual quality and decoded memory at camera distance
