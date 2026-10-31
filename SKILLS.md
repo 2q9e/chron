@@ -5124,3 +5124,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML landmarks, axe
 - **Security considerations:** Do not hide sensitive headings as a visual-only workaround
 - **Verification method:** Inspect heading tree and skip by heading
+
+### S462 — Landmark regions
+
+- **Skill ID:** S462
+- **Name:** Landmark regions
+- **Purpose:** Provide predictable page navigation regions
+- **When to use:** When page has nav, main, and complementary content
+- **Implementation approach:** Use native header, nav, main, footer and unique labels
+- **Recommended tools:** HTML5, accessibility tree
+- **Security considerations:** Do not expose restricted routes through hidden landmarks
+- **Verification method:** Check landmark list has clear names and no duplicates
