@@ -2004,3 +2004,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed query builder, Zod
 - **Security considerations:** Reject unknown fields
 - **Verification method:** Fuzz options and inspect generated SQL
+
+### S180 — IDOR prevention
+
+- **Skill ID:** S180
+- **Name:** IDOR prevention
+- **Purpose:** Block access by changing a record ID
+- **When to use:** Every route accepting identifiers
+- **Implementation approach:** Fetch via authenticated-user scoped repository
+- **Recommended tools:** Repository layer, policy tests
+- **Security considerations:** Never accept owner ID from request body
+- **Verification method:** Try cross-account read/write/delete/export
