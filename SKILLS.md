@@ -2921,3 +2921,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Tenant repository, queue metadata
 - **Security considerations:** Derive owner from trusted session record
 - **Verification method:** Interleave two synthetic users and assert separation
+
+### S263 — Resource concurrency control
+
+- **Skill ID:** S263
+- **Name:** Resource concurrency control
+- **Purpose:** Prevent conflicting agent edits
+- **When to use:** When runs can update the same calendar item
+- **Implementation approach:** Use version checks or scoped locks
+- **Recommended tools:** PostgreSQL versioning, advisory locks
+- **Security considerations:** Locks cannot coordinate across tenants
+- **Verification method:** Race two updates and verify safe conflict
