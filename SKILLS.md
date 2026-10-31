@@ -5078,3 +5078,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenFeature, config service
 - **Security considerations:** A flag may hide capability but can never bypass authorization, user eligibility, Meta permission, or Google activation gates
 - **Verification method:** Test on/off authorization parity and owner/expiry metadata; verify expired flags are removed under S493
+
+### S458 — Release observability
+
+- **Skill ID:** S458
+- **Name:** Release observability
+- **Purpose:** Connect incidents to deployed version
+- **When to use:** When releasing a build
+- **Implementation approach:** Record version, change ID, and health signals
+- **Recommended tools:** OpenTelemetry, release metadata
+- **Security considerations:** Avoid user identifiers in deployment labels
+- **Verification method:** Trace health before/after rollout
