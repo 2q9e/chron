@@ -645,3 +645,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ClamAV service or managed scanning API, queue
 - **Security considerations:** Do not execute macros or unpack archives without expansion limits
 - **Verification method:** Use benign and test-signature samples; verify blocked files cannot be downloaded
+
+### S057 — Background job queues
+
+- **Skill ID:** S057
+- **Name:** Background job queues
+- **Purpose:** Move slow or retryable work outside request latency
+- **When to use:** When parsing documents, syncing accounts, or building study artifacts
+- **Implementation approach:** Persist job state, use bounded workers, and make user-visible status explicit
+- **Recommended tools:** BullMQ, PostgreSQL queue, Cloud task service
+- **Security considerations:** Scope job payloads to user IDs and avoid embedding credentials
+- **Verification method:** Restart workers mid-job and verify retry, status, and ownership behavior
