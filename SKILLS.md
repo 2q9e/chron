@@ -1806,3 +1806,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Cloud KMS, libsodium
 - **Security considerations:** Separate unwrap permission from database read; do not create or store Meta credential ciphertext before written permission
 - **Verification method:** Use synthetic test-only credentials to decrypt and rewrap after rotation; verify Meta key intake remains disabled before authorization
+
+### S162 — Key rotation
+
+- **Skill ID:** S162
+- **Name:** Key rotation
+- **Purpose:** Replace signing and encryption keys safely
+- **When to use:** At expiry or incident response
+- **Implementation approach:** Version key IDs; use bounded dual-read window
+- **Recommended tools:** KMS, JOSE key sets
+- **Security considerations:** Never log key material
+- **Verification method:** Test old/new reads and retired-key rejection
