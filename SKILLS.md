@@ -280,3 +280,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React, WAI-ARIA Authoring Practices, Testing Library
 - **Security considerations:** Prevent keyboard shortcuts from firing inside sensitive text inputs
 - **Verification method:** Run key-by-key tests including Escape, Tab, Home/End, and arrows; cover reusable widgets before S465 page-level checks
+
+### S024 — Reusable component API design
+
+- **Skill ID:** S024
+- **Name:** Reusable component API design
+- **Purpose:** Keep shared controls composable without hidden global assumptions
+- **When to use:** When a pattern appears across multiple features
+- **Implementation approach:** Use explicit props, semantic defaults, and composition slots over boolean overloads
+- **Recommended tools:** React, TypeScript, Storybook
+- **Security considerations:** Avoid APIs that expose internal authorization flags as user-controlled props
+- **Verification method:** Type-check representative consumer compositions and render state stories
