@@ -456,3 +456,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Aria Dialog, focus-trap library
 - **Security considerations:** Do not trap focus for nonmodal notifications or block emergency escape
 - **Verification method:** Test first/last Tab wrapping, Escape, and restoration after unmount; see S464 for initial focus and accessible dialog lifecycle
+
+### S040 — Safe rich text rendering
+
+- **Skill ID:** S040
+- **Name:** Safe rich text rendering
+- **Purpose:** Display formatted user or imported text without enabling script execution
+- **When to use:** When rendering user text or authorized Meta model output under S236 as limited Markdown
+- **Implementation approach:** Parse to an allowlisted AST and render known nodes as React elements
+- **Recommended tools:** remark, rehype-sanitize, DOMPurify where needed
+- **Security considerations:** Disallow raw HTML, dangerous URL schemes, and untrusted embeds
+- **Verification method:** Fuzz links and markup payloads; assert scripts and event attributes never execute
