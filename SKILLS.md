@@ -346,3 +346,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS Modules, PostCSS, stylelint
 - **Security considerations:** Do not rely on CSS hiding as the authorization boundary for data
 - **Verification method:** Render two feature instances together and inspect computed style collisions
+
+### S030 — Design token consumption
+
+- **Skill ID:** S030
+- **Name:** Design token consumption
+- **Purpose:** Make product-wide visual changes without inconsistent local values
+- **When to use:** When authoring colors, spacing, radii, or typography
+- **Implementation approach:** Reference named CSS variables and document semantic token intent
+- **Recommended tools:** CSS custom properties, Stylelint
+- **Security considerations:** Avoid encoding trust or warning state with color alone
+- **Verification method:** Search for raw values and verify light/dark token contrast at component states
