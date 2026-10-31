@@ -821,3 +821,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** p-limit, queue concurrency settings, gateway limits
 - **Security considerations:** Prevent one tenant from exhausting shared capacity
 - **Verification method:** Burst synthetic requests at one route and confirm its cap; test cross-tool worker fairness separately under S283
+
+### S073 — Request body size limits
+
+- **Skill ID:** S073
+- **Name:** Request body size limits
+- **Purpose:** Reject oversized bodies before parsers allocate excessive memory
+- **When to use:** When routes accept JSON, text, or multipart uploads
+- **Implementation approach:** Set route-specific byte ceilings and stop reading once exceeded
+- **Recommended tools:** Framework body limits, streaming parser
+- **Security considerations:** Use lower limits for control endpoints and isolate file limits by type
+- **Verification method:** Send boundary and oversized bodies; confirm early rejection and stable memory
