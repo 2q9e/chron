@@ -2745,3 +2745,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Diff renderer, action schema
 - **Security considerations:** Exclude secrets and unrelated private values
 - **Verification method:** Compare preview hash with execution payload
+
+### S247 — Cancellation propagation
+
+- **Skill ID:** S247
+- **Name:** Cancellation propagation
+- **Purpose:** Honor user cancellation across a multi-step run while reporting side effects truthfully
+- **When to use:** For long running tasks
+- **Implementation approach:** Persist user cancellation intent, stop unstarted steps, and pass cooperative abort downstream; use S281 for enforced local tool deadlines, which are distinct from cancellation. Retain dispatched operations as pending/unknown until reconciled using idempotency and status checks (S252/S284/S257)
+- **Recommended tools:** AbortController, queue API
+- **Security considerations:** An abort cannot guarantee a remote write stopped or rolled back after dispatch; never report rollback without durable evidence
+- **Verification method:** Cancel before and after dispatch; simulate remote commit with lost response, then verify unknown status, deduplicated retry, and reconciliation; test local timeout enforcement separately under S281
