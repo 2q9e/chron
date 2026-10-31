@@ -2556,3 +2556,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL declarative partitioning
 - **Security considerations:** Partition keys must not become a cross-tenant access shortcut
 - **Verification method:** Test pruning, retention deletion, and query plans across partitions
+
+### S230 — Migration fixture hygiene
+
+- **Skill ID:** S230
+- **Name:** Migration fixture hygiene
+- **Purpose:** Build realistic database tests without copying private records
+- **When to use:** When validating migrations and repository behavior
+- **Implementation approach:** Generate deterministic synthetic users and edge-case rows
+- **Recommended tools:** Faker, SQL fixtures, migration tests
+- **Security considerations:** Never export production snapshots into developer worktrees
+- **Verification method:** Scan fixtures for emails, tokens, and real document text
