@@ -3132,3 +3132,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** AbortController, queue worker
 - **Security considerations:** Remote services may commit after local timeout; never infer rollback from a rejected promise, and require idempotency/status reconciliation for writes
 - **Verification method:** Simulate timeout before dispatch and after remote commit; verify no unsupported rollback claim and reconcile the unknown result
+
+### S282 — Output size caps
+
+- **Skill ID:** S282
+- **Name:** Output size caps
+- **Purpose:** Prevent tools returning unbounded content
+- **When to use:** When search or document tools emit results
+- **Implementation approach:** Limit bytes, rows, and excerpt length before model context
+- **Recommended tools:** Stream limiter, schema maxLength
+- **Security considerations:** Do not truncate in a way that removes citation provenance
+- **Verification method:** Send oversized result and verify bounded valid output
