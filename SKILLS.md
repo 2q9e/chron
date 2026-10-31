@@ -3066,3 +3066,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Policy table, action taxonomy
 - **Security considerations:** Every consequential action requires explicit user approval at every tier; the server independently checks identity, ownership, permissions, bounds, and the S193 approval; calendar edits remain drafts under S369
 - **Verification method:** Test a read, reversible consequential write, calendar draft, changed payload, and missing approval; only the reviewed approved proposal may execute
+
+### S276 — Tool registry allowlist
+
+- **Skill ID:** S276
+- **Name:** Tool registry allowlist
+- **Purpose:** Expose only compiled and reviewed capabilities
+- **When to use:** When planner selects available tools
+- **Implementation approach:** Register stable IDs and schemas in server code
+- **Recommended tools:** TypeScript registry, build-time check
+- **Security considerations:** Never dynamically load executable plugins from user content
+- **Verification method:** Unknown tool IDs fail closed
