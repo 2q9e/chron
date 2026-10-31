@@ -3983,3 +3983,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS Grid, date utilities
 - **Security considerations:** Ensure hidden event text remains permission-protected
 - **Verification method:** Inspect 4/5/6-week months and mobile width
+
+### S359 — Agenda pagination
+
+- **Skill ID:** S359
+- **Name:** Agenda pagination
+- **Purpose:** Load chronological items beyond the visible week
+- **When to use:** When users browse a long event history
+- **Implementation approach:** Use date cursor and stable ordering with timezone-aware bounds
+- **Recommended tools:** Keyset pagination, Temporal
+- **Security considerations:** Check owner access on every cursor request
+- **Verification method:** Insert concurrent events and verify no duplicate rows
