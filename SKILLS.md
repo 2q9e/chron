@@ -3033,3 +3033,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, Valibot
 - **Security considerations:** Never trust model-produced values
 - **Verification method:** Fuzz bounds, types, and missing fields
+
+### S273 — Tool output validation
+
+- **Skill ID:** S273
+- **Name:** Tool output validation
+- **Purpose:** Keep malformed dependency results from corrupting later steps
+- **When to use:** After integrations or file parsers run
+- **Implementation approach:** Parse external result into internal typed object
+- **Recommended tools:** Zod, OpenAPI schemas
+- **Security considerations:** Treat third-party responses as hostile input
+- **Verification method:** Test malformed, oversized, and changed responses
