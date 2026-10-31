@@ -2468,3 +2468,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Scheduled worker, database cursor
 - **Security considerations:** Protect deletion jobs from broad unauthenticated triggers
 - **Verification method:** Seed expired and retained rows; verify only due data is removed
+
+### S222 — Encrypted-column storage
+
+- **Skill ID:** S222
+- **Name:** Encrypted-column storage
+- **Purpose:** Store API secrets as authenticated ciphertext rather than plaintext
+- **When to use:** For authorized OAuth tokens; Meta credentials only after written permission under S160/S236
+- **Implementation approach:** Keep ciphertext, nonce, key version, and rotation metadata separate
+- **Recommended tools:** KMS, AEAD library
+- **Security considerations:** Do not enable Meta-key intake or storage before written permission; restrict query exports/admin views from decryption by default
+- **Verification method:** Inspect raw DB rows and test tamper detection
