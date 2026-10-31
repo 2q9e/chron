@@ -524,3 +524,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL unique constraints, Redis where appropriate, HTTP headers
 - **Security considerations:** Bind keys to user and operation; reject reuse with different payloads
 - **Verification method:** Send concurrent duplicate requests and verify one durable effect
+
+### S046 — Cursor pagination contracts
+
+- **Skill ID:** S046
+- **Name:** Cursor pagination contracts
+- **Purpose:** Traverse large mutable collections without offset drift
+- **When to use:** When event or notebook lists can change during navigation
+- **Implementation approach:** Use opaque ordered cursors with stable tie-breakers and bounded page size
+- **Recommended tools:** PostgreSQL keyset queries, Zod, OpenAPI
+- **Security considerations:** Authorize each page and avoid embedding sensitive row values in cursors
+- **Verification method:** Insert and delete records between page calls; verify no duplicates or skips
