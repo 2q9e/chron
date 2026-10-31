@@ -810,3 +810,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** opossum, gateway circuit breaker, OpenTelemetry metrics
 - **Security considerations:** Do not leak breaker diagnostics to untrusted callers
 - **Verification method:** Fault-inject outage and recovery; verify open, half-open, and closed transitions
+
+### S072 — Per-route concurrency bounds
+
+- **Skill ID:** S072
+- **Name:** Per-route concurrency bounds
+- **Purpose:** Cap concurrent work entering an expensive API route
+- **When to use:** When model calls or parsing jobs can saturate CPU or quotas
+- **Implementation approach:** Use route-scoped admission semaphores or queue limits with predictable overload responses; use S283 for per-user/global agent-tool worker fairness
+- **Recommended tools:** p-limit, queue concurrency settings, gateway limits
+- **Security considerations:** Prevent one tenant from exhausting shared capacity
+- **Verification method:** Burst synthetic requests at one route and confirm its cap; test cross-tool worker fairness separately under S283
