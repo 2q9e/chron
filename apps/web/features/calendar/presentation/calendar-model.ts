@@ -291,8 +291,8 @@ export function validateEventDraft(
   const errors: Partial<Record<EventDraftField, string>> = {};
   const title = draft.title.trim();
   if (!title) errors.title = "Enter an event title.";
-  if (title.length > 200) errors.title = "Event titles can be up to 200 characters.";
-  if (draft.details.length > 5000) errors.details = "Details can be up to 5,000 characters.";
+  if (title.length > 160) errors.title = "Event titles can be up to 160 characters.";
+  if (draft.details.length > 4000) errors.details = "Details can be up to 4,000 characters.";
   if (Object.keys(errors).length > 0) return { ok: false, errors };
 
   try {
