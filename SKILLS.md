@@ -4260,3 +4260,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Profiler
 - **Security considerations:** Use synthetic data in shared captures
 - **Verification method:** Compare render counts across change
+
+### S384 — Evidence-based memoization
+
+- **Skill ID:** S384
+- **Name:** Evidence-based memoization
+- **Purpose:** Optimize measured repeated work only
+- **When to use:** When profiler shows costly rerender
+- **Implementation approach:** Memoize stable expensive calculations
+- **Recommended tools:** React Profiler, React hooks
+- **Security considerations:** Never cache authorization decisions
+- **Verification method:** Benchmark task before/after
