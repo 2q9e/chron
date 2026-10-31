@@ -2213,3 +2213,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Cloud KMS, backup IAM
 - **Security considerations:** Treat snapshots as production data
 - **Verification method:** Restore in isolation; verify permission and expiry
+
+### S199 — Dependency vulnerability response
+
+- **Skill ID:** S199
+- **Name:** Dependency vulnerability response
+- **Purpose:** Reduce exposure to vulnerable packages
+- **When to use:** When advisories affect deployed code
+- **Implementation approach:** Assess reachability and patch supported version
+- **Recommended tools:** Dependabot, OSV Scanner
+- **Security considerations:** Do not run scripts from unreviewed packages
+- **Verification method:** Rebuild lockfile and verify vulnerable path gone
