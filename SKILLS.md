@@ -1419,3 +1419,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ScrollTrigger, IntersectionObserver
 - **Security considerations:** Do not hijack wheel or keyboard scrolling
 - **Verification method:** Test anchors, resize, back navigation, and mobile fallback
+
+### S127 — Pinned chapter choreography
+
+- **Skill ID:** S127
+- **Name:** Pinned chapter choreography
+- **Purpose:** Hold a scene while explanatory text changes
+- **When to use:** One world supports multiple narrative beats
+- **Implementation approach:** Pin only the narrative region and bind named states to actual progress
+- **Recommended tools:** GSAP ScrollTrigger, CSS sticky
+- **Security considerations:** Do not block controls or the page footer
+- **Verification method:** Keyboard-scroll through pin bounds and verify mobile behavior
