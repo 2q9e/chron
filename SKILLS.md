@@ -999,3 +999,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS variables, contrast checker, Storybook
 - **Security considerations:** Avoid red/green-only distinctions and misleading success signals
 - **Verification method:** Audit all state pairs and test grayscale comprehension
+
+### S089 — Contrast planning
+
+- **Skill ID:** S089
+- **Name:** Contrast planning
+- **Purpose:** Choose readable color pairs during palette and theme design
+- **When to use:** When choosing colors for any interactive surface
+- **Implementation approach:** Measure foreground/background pairs for text, controls, focus, disabled, and hover states; use S470 to verify rendered screens and theme variants
+- **Recommended tools:** axe, WCAG contrast calculator, browser devtools
+- **Security considerations:** Do not use low-contrast opacity as a proxy for disabled security
+- **Verification method:** Automate design-token contrast checks and inspect screenshots; use S470 for runtime state coverage
