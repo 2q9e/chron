@@ -1318,3 +1318,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Citation component, safe URL parser, disclosure panel
 - **Security considerations:** Treat fetched titles and snippets as hostile text; neutralize active links
 - **Verification method:** Verify each citation resolves to stored source evidence and opens safely
+
+### S118 — Action preview composition
+
+- **Skill ID:** S118
+- **Name:** Action preview composition
+- **Purpose:** Show exactly what a proposed multi-step agent action will change
+- **When to use:** When an agent plans calendar edits, imports, or sharing
+- **Implementation approach:** Show affected records, before/after values, count, external scope, and recovery path; keep calendar edits as drafts under S369 and bind explicit approval to the exact proposal under S193
+- **Recommended tools:** Diff view, typed action proposal, dialog component
+- **Security considerations:** Every consequential action requires explicit user approval regardless of reversibility or risk tier; the server rechecks identity, ownership, permission, and the exact reviewed payload
+- **Verification method:** Change a reviewed field and verify approval is invalidated; cover a reversible consequential write, a calendar draft, and a denied approval
