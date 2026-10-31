@@ -5056,3 +5056,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Platform release tooling, runbook
 - **Security considerations:** Rollback must not re-enable revoked credentials
 - **Verification method:** Practice rollback in staging and record recovery
+
+### S456 — Database migration pipeline
+
+- **Skill ID:** S456
+- **Name:** Database migration pipeline
+- **Purpose:** Apply schema changes in controlled deployment order
+- **When to use:** When release includes migrations
+- **Implementation approach:** Run backward-compatible migration before app rollout
+- **Recommended tools:** Migration CLI, release workflow
+- **Security considerations:** Use least-privilege migration identity
+- **Verification method:** Deploy old/new app versions through migration sequence
