@@ -2424,3 +2424,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PgBouncer, managed pooler
 - **Security considerations:** Do not depend on connection-local tenant state across transactions
 - **Verification method:** Burst cold starts and verify pool use remains bounded
+
+### S218 — Statement timeout policy
+
+- **Skill ID:** S218
+- **Name:** Statement timeout policy
+- **Purpose:** Bound runaway queries and release scarce connections
+- **When to use:** For endpoints with user-controlled filters or search
+- **Implementation approach:** Set role or transaction timeouts with route-specific budgets
+- **Recommended tools:** PostgreSQL statement_timeout
+- **Security considerations:** Do not allow untrusted users to override limits
+- **Verification method:** Run intentionally slow query and verify cancellation plus clean retry
