@@ -3607,3 +3607,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Item validator, test-only synthetic fixtures
 - **Security considerations:** Avoid biased or trick-wording choices; disable model generation until S236 is satisfied and do not present fixture content to users
 - **Verification method:** Review ambiguity and rationale against the answer key and source; test only with synthetic fixtures
+
+### S325 — Short-answer assessment
+
+- **Skill ID:** S325
+- **Name:** Short-answer assessment
+- **Purpose:** Prompt concise responses that reveal understanding
+- **When to use:** When selection questions are insufficient; model-generated prompts or scoring require S236, while authored rubrics may be used without inference
+- **Implementation approach:** State answer scope and attach scoring criteria; keep deterministic rubric evaluation separate from authorized Meta-generated feedback
+- **Recommended tools:** Quiz schema, rubric editor
+- **Security considerations:** Do not request personal disclosures or call another inference provider; model-based assessment remains disabled until S236
+- **Verification method:** Test boundary answers against the rubric and verify model-based feedback makes no request before S236
