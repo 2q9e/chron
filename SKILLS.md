@@ -5168,3 +5168,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** WAI-ARIA APG, Testing Library
 - **Security considerations:** Do not capture global shortcuts inside text entry
 - **Verification method:** Test arrows, Enter, Escape, Home, and End across representative controls; check widget-specific transitions under S023
+
+### S466 — Skip navigation link
+
+- **Skill ID:** S466
+- **Name:** Skip navigation link
+- **Purpose:** Let keyboard users bypass repeated page chrome
+- **When to use:** On pages with persistent navigation
+- **Implementation approach:** Provide visible-on-focus skip link to main region
+- **Recommended tools:** HTML anchor, CSS focus state
+- **Security considerations:** Do not route around required consent or safety notices
+- **Verification method:** Activate first Tab and verify destination focus
