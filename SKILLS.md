@@ -1982,3 +1982,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** WHATWG URL, allowlist
 - **Security considerations:** No substring host authorization
 - **Verification method:** Property-test Unicode and encoded variants
+
+### S178 — SQL injection prevention
+
+- **Skill ID:** S178
+- **Name:** SQL injection prevention
+- **Purpose:** Keep values from altering query structure
+- **When to use:** When request values filter records
+- **Implementation approach:** Bind parameters; allowlist identifiers
+- **Recommended tools:** Parameterized SQL, DB driver
+- **Security considerations:** Never concatenate raw sort/search fragments
+- **Verification method:** Test quotes, comments, encoded payloads
