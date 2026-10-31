@@ -2413,3 +2413,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** pg pool metrics, PgBouncer
 - **Security considerations:** Do not share admin credentials with app pool
 - **Verification method:** Load test connections and monitor wait time and saturation
+
+### S217 — Serverless connection pooling
+
+- **Skill ID:** S217
+- **Name:** Serverless connection pooling
+- **Purpose:** Prevent short-lived instances exhausting database connection limits
+- **When to use:** When deploying autoscaled functions
+- **Implementation approach:** Use a transaction pooler and avoid session state assumptions
+- **Recommended tools:** PgBouncer, managed pooler
+- **Security considerations:** Do not depend on connection-local tenant state across transactions
+- **Verification method:** Burst cold starts and verify pool use remains bounded
