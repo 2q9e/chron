@@ -3187,3 +3187,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Audit table, trace IDs
 - **Security considerations:** Exclude raw arguments with secrets/content; do not mark a remote outcome successful without provider evidence or reconciliation
 - **Verification method:** Compare records to executed operations and provider reconciliation status; confirm no outcome is marked successful without evidence
+
+### S287 — Actionable tool errors
+
+- **Skill ID:** S287
+- **Name:** Actionable tool errors
+- **Purpose:** Translate provider failures into safe recovery guidance
+- **When to use:** When tools fail due to scope, quota, or connectivity
+- **Implementation approach:** Map error classes to retry, reconnect, or edit-input guidance
+- **Recommended tools:** Typed error map, UI error state
+- **Security considerations:** Never return raw upstream response body
+- **Verification method:** Test auth, quota, timeout, and malformed response mappings
