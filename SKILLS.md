@@ -843,3 +843,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Framework negotiation middleware, MIME database
 - **Security considerations:** Set safe content types and attachment disposition for downloads
 - **Verification method:** Test supported, unsupported, and wildcard Accept headers
+
+### S075 — Conditional request handling
+
+- **Skill ID:** S075
+- **Name:** Conditional request handling
+- **Purpose:** Reduce repeat transfer while preserving correct update semantics
+- **When to use:** When clients poll stable resources or download generated exports
+- **Implementation approach:** Use ETag or Last-Modified with correct cache scope and weak validator rules
+- **Recommended tools:** HTTP ETag, framework conditional helpers
+- **Security considerations:** Do not allow validators to reveal cross-user equality for private content
+- **Verification method:** Verify 304 responses and ensure changed records produce fresh validators
