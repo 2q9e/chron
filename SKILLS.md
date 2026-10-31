@@ -2358,3 +2358,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL transactions, ORM transaction API
 - **Security considerations:** Perform authorization reads inside the same consistency boundary where needed
 - **Verification method:** Inject failure between writes and verify full rollback
+
+### S212 — Isolation and retry policy
+
+- **Skill ID:** S212
+- **Name:** Isolation and retry policy
+- **Purpose:** Handle concurrent transactions without corrupting state
+- **When to use:** When scheduling or importing can race
+- **Implementation approach:** Select isolation level intentionally and retry serialization errors safely
+- **Recommended tools:** PostgreSQL isolation levels, retry helper
+- **Security considerations:** Retries must not duplicate external side effects
+- **Verification method:** Run concurrent conflicting transactions and verify deterministic result
