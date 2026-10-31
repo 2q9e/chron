@@ -3440,3 +3440,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Google client, Retry-After handler
 - **Security considerations:** Avoid retry storms that impact other tenants
 - **Verification method:** Simulate quota responses and inspect retry schedule
+
+### S310 — Meta search grounding adapter
+
+- **Skill ID:** S310
+- **Name:** Meta search grounding adapter
+- **Purpose:** Use official Meta search grounding where supported
+- **When to use:** Only after written permission and confirmation that official grounding is supported
+- **Implementation approach:** Keep capability unavailable until authorized; then preserve returned source references
+- **Recommended tools:** Official Meta documentation and authorized API client
+- **Security considerations:** Do not collect keys before permission or substitute an unofficial inference/search host
+- **Verification method:** Before permission, verify the feature is unavailable; afterward test grounding and citation provenance
