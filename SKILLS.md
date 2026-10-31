@@ -1386,3 +1386,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PerspectiveCamera, camera helpers
 - **Security considerations:** Keep near/far planes tight to scene bounds
 - **Verification method:** Capture desktop and mobile aspect ratios and inspect clipping
+
+### S124 — Camera path authoring
+
+- **Skill ID:** S124
+- **Name:** Camera path authoring
+- **Purpose:** Direct attention through scroll chapters
+- **When to use:** A scene follows an editorial page journey
+- **Implementation approach:** Define waypoints and interpolate camera position and target separately
+- **Recommended tools:** GSAP, Three.js Vector3
+- **Security considerations:** Keep core content accessible without camera motion
+- **Verification method:** Scrub slowly through waypoints and check directional continuity
