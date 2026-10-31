@@ -1197,3 +1197,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ARIA live region, toast system, CSS transitions
 - **Security considerations:** Do not announce sensitive values in public or shared-screen notifications
 - **Verification method:** Test fast and slow responses with keyboard and screen reader output
+
+### S107 — Critique using evidence
+
+- **Skill ID:** S107
+- **Name:** Critique using evidence
+- **Purpose:** Turn subjective visual feedback into observable corrections
+- **When to use:** When a screen feels generic, cluttered, or unclear
+- **Implementation approach:** Record one observed issue, affected task, evidence, and a testable change
+- **Recommended tools:** Screenshot annotations, heuristic checklist, usability notes
+- **Security considerations:** Separate verified findings from personal preference
+- **Verification method:** Revisit the same task after changes and compare specific failure evidence
