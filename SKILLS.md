@@ -357,3 +357,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS custom properties, Stylelint
 - **Security considerations:** Avoid encoding trust or warning state with color alone
 - **Verification method:** Search for raw values and verify light/dark token contrast at component states
+
+### S031 — Container-query layouts
+
+- **Skill ID:** S031
+- **Name:** Container-query layouts
+- **Purpose:** Adapt embedded panels to their actual available width
+- **When to use:** When sidebars or resizable panes host responsive components
+- **Implementation approach:** Set an inline-size container and author component-level breakpoints
+- **Recommended tools:** CSS container queries, browser devtools
+- **Security considerations:** Ensure zoomed text and long labels cannot clip inside constrained containers
+- **Verification method:** Resize the host pane independently of viewport and inspect overflow
