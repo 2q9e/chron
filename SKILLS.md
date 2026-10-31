@@ -1485,3 +1485,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ShaderMaterial, WebGL diagnostics
 - **Security considerations:** Never execute shader text supplied by users
 - **Verification method:** Compile across browsers and compare GPU frame time
+
+### S133 — Scene lighting hierarchy
+
+- **Skill ID:** S133
+- **Name:** Scene lighting hierarchy
+- **Purpose:** Give objects readable depth and visual priority
+- **When to use:** Geometry appears flat or washed out
+- **Implementation approach:** Establish key, fill, and rim roles before adding ambient light
+- **Recommended tools:** Three.js lights, drei Environment
+- **Security considerations:** Bound animation and avoid flashing
+- **Verification method:** Inspect material separation at each chapter and quality tier
