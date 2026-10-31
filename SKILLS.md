@@ -3429,3 +3429,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Unique DB key, integration repository
 - **Security considerations:** Namespace IDs by provider and account
 - **Verification method:** Test duplicate names and reconnect to same account
+
+### S309 — Provider quota handling
+
+- **Skill ID:** S309
+- **Name:** Provider quota handling
+- **Purpose:** Respect external API rate limits
+- **When to use:** Only after S291, when an enabled Google API returns quota or 429 responses
+- **Implementation approach:** Use provider headers, bounded backoff, per-user queue
+- **Recommended tools:** Google client, Retry-After handler
+- **Security considerations:** Avoid retry storms that impact other tenants
+- **Verification method:** Simulate quota responses and inspect retry schedule
