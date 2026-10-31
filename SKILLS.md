@@ -4548,3 +4548,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** MSW, Toxiproxy
 - **Security considerations:** No internal production host probes
 - **Verification method:** Confirm bounded error and recovery path
+
+### S410 — Timeout cancellation tests
+
+- **Skill ID:** S410
+- **Name:** Timeout cancellation tests
+- **Purpose:** Verify local work observes timeout and dispatched remote outcomes are reconciled honestly
+- **When to use:** For upload, tool, model operations
+- **Implementation approach:** Test pre-dispatch timeout and cooperative local cancellation; separately simulate a remote commit followed by a lost response and reconcile its pending/unknown result under S061/S247/S248/S281
+- **Recommended tools:** Fake timers, AbortController
+- **Security considerations:** Test-only synthetic dependencies must not imply AbortSignal can undo a dispatched remote write; require idempotency and evidence before claiming rollback
+- **Verification method:** Check signal and local state before dispatch; after simulated commit-before-timeout, verify unknown status, deduplicated retry, and reconciliation rather than asserting that no remote side effect occurred
