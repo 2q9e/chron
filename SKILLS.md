@@ -3275,3 +3275,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Provider revoke endpoint, deletion worker
 - **Security considerations:** Remove queued jobs that still reference tokens and verify local credentials are unusable after revoke
 - **Verification method:** Before activation, assert the integration is unavailable; after S291, disconnect and verify no future API call succeeds
+
+### S295 — External account linking
+
+- **Skill ID:** S295
+- **Name:** External account linking
+- **Purpose:** Associate provider identity with the correct local user
+- **When to use:** Only after S291, when linking a reviewed Google service account
+- **Implementation approach:** Bind stable provider subject to authenticated account after callback
+- **Recommended tools:** OAuth userinfo, unique DB constraint
+- **Security considerations:** Do not link solely by unverified email match
+- **Verification method:** Attempt duplicate and mismatched-account link flows
