@@ -1430,3 +1430,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GSAP ScrollTrigger, CSS sticky
 - **Security considerations:** Do not block controls or the page footer
 - **Verification method:** Keyboard-scroll through pin bounds and verify mobile behavior
+
+### S128 — Persistent world transitions
+
+- **Skill ID:** S128
+- **Name:** Persistent world transitions
+- **Purpose:** Keep one world while scene chapters evolve
+- **When to use:** Several chapters share the same environment
+- **Implementation approach:** Animate authored transforms and uniforms instead of rebuilding the scene
+- **Recommended tools:** R3F, GSAP timeline
+- **Security considerations:** Dispose chapter-specific user data when leaving a state
+- **Verification method:** Compare chapter endpoints for stray or duplicated objects
