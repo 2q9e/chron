@@ -700,3 +700,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** AbortController, framework request context
 - **Security considerations:** An abort/deadline does not prove a dispatched remote write stopped or rolled back; preserve cleanup, operation state, and evidence-based outcomes
 - **Verification method:** Test pre-dispatch expiry and a remote commit followed by a lost response; verify unknown status is reconciled without duplicate effects and no rollback is claimed without evidence
+
+### S062 — HTTP response caching
+
+- **Skill ID:** S062
+- **Name:** HTTP response caching
+- **Purpose:** Reuse only responses whose visibility and freshness are understood
+- **When to use:** When public or user-scoped reads repeat frequently
+- **Implementation approach:** Set explicit cache policy and include identity-sensitive variation safely
+- **Recommended tools:** HTTP Cache-Control, CDN rules, ETag
+- **Security considerations:** Use private/no-store for credential or personal-data responses
+- **Verification method:** Inspect browser, proxy, and CDN behavior across two authenticated users
