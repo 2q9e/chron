@@ -4746,3 +4746,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright, DB fixture
 - **Security considerations:** Fixtures are test-only
 - **Verification method:** Creation persists in test database
+
+### S428 — Loading race tests
+
+- **Skill ID:** S428
+- **Name:** Loading race tests
+- **Purpose:** Prevent stale requests replacing new intent
+- **When to use:** For search and filter screens
+- **Implementation approach:** Resolve overlapping requests out of order
+- **Recommended tools:** MSW, fake timers
+- **Security considerations:** Account changes cancel prior responses
+- **Verification method:** Newest query remains visible
