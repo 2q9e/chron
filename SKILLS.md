@@ -3706,3 +3706,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Button group, rating enum
 - **Security considerations:** Avoid shame-based rewards
 - **Verification method:** Verify each rating produces correct interval
+
+### S334 — Review session flow
+
+- **Skill ID:** S334
+- **Name:** Review session flow
+- **Purpose:** Make due-card review sessions resumable and independent of study-time tracking
+- **When to use:** When learner starts a scheduled session
+- **Implementation approach:** Load due queue, record ratings, and show completion state; use S341 only for an explicitly started focused-time timer
+- **Recommended tools:** Review queue, DB transaction
+- **Security considerations:** Prevent cross-account deck access
+- **Verification method:** Interrupt and resume without losing ratings; confirm session progress does not imply time tracking (see S341)
