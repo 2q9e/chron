@@ -2380,3 +2380,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL version field, HTTP If-Match
 - **Security considerations:** Do not let clients choose arbitrary version numbers to bypass checks
 - **Verification method:** Submit two updates from same version and confirm one conflicts
+
+### S214 — Row-level security
+
+- **Skill ID:** S214
+- **Name:** Row-level security
+- **Purpose:** Enforce tenant scoping inside the database session
+- **When to use:** When multiple services query shared tenant tables
+- **Implementation approach:** Set authenticated tenant context transaction-locally and define policies
+- **Recommended tools:** PostgreSQL RLS, session variables
+- **Security considerations:** Never reuse a pooled connection with stale tenant context
+- **Verification method:** Test queries under missing, valid, and switched tenant contexts
