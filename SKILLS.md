@@ -3330,3 +3330,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Google Picker, Drive API
 - **Security considerations:** Only fetch selected file IDs under current user grant
 - **Verification method:** Select one file and verify no sibling files are fetched
+
+### S300 — Drive download safety
+
+- **Skill ID:** S300
+- **Name:** Drive download safety
+- **Purpose:** Retrieve selected content without public link exposure
+- **When to use:** Only after S291, when downloading a user-selected file from enabled Drive access
+- **Implementation approach:** Use authenticated API download and quarantine parser input
+- **Recommended tools:** Drive files.get, download worker
+- **Security considerations:** Do not generate public share links by default
+- **Verification method:** Inspect requests and ensure access ends after disconnect
