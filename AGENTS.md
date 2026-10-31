@@ -71,6 +71,10 @@ Chron's planned key flow.
 
 ## Interface standards
 
+- Never use emoji in the product UI or product copy. Use Chron's authored
+  vector identity mark or a consistent, high-quality icon set. Show an external
+  brand logo only for a real, enabled integration, using its official mark and
+  applicable brand guidance; never substitute emoji or improvised logo art.
 - Use a distinctive editorial visual system with restrained pink accents,
   legible typography, deliberate spacing, and real product UI. Avoid generic
   AI orbs, random particles, noisy gradients, repetitive feature cards, fake
