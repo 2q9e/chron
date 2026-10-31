@@ -2402,3 +2402,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed repository, query builder
 - **Security considerations:** Do not permit unscoped list/read methods in feature code
 - **Verification method:** Static scan or tests reject queries lacking tenant scope
+
+### S216 — Connection pool sizing
+
+- **Skill ID:** S216
+- **Name:** Connection pool sizing
+- **Purpose:** Avoid saturating database connections under web concurrency
+- **When to use:** When deploying multiple API and worker processes
+- **Implementation approach:** Set pool limits from database capacity and process count
+- **Recommended tools:** pg pool metrics, PgBouncer
+- **Security considerations:** Do not share admin credentials with app pool
+- **Verification method:** Load test connections and monitor wait time and saturation
