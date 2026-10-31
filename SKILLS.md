@@ -1307,3 +1307,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Design system labels, source chip, preview panel
 - **Security considerations:** Never make model content appear verified or executed without evidence; do not imply Meta endorsement
 - **Verification method:** Review proposal provenance after reload and verify the model route is blocked before S236
+
+### S117 — Citation presentation
+
+- **Skill ID:** S117
+- **Name:** Citation presentation
+- **Purpose:** Let readers inspect evidence without interrupting the answer flow
+- **When to use:** When research answers contain source-linked claims
+- **Implementation approach:** Attach compact numbered references and show title, domain, excerpt, and fetch time
+- **Recommended tools:** Citation component, safe URL parser, disclosure panel
+- **Security considerations:** Treat fetched titles and snippets as hostile text; neutralize active links
+- **Verification method:** Verify each citation resolves to stored source evidence and opens safely
