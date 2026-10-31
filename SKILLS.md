@@ -887,3 +887,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Database append-only table, structured logger
 - **Security considerations:** Avoid raw secrets and document contents in audit records; use only identifiers and scopes needed for the specific event
 - **Verification method:** Assert key lifecycle actions create records with no sensitive values
+
+### S079 — Meta API adapter boundary
+
+- **Skill ID:** S079
+- **Name:** Meta API adapter boundary
+- **Purpose:** Isolate endpoint-specific Meta transport and provider DTO mapping behind a server adapter
+- **When to use:** Only after written permission and verified official capability under the product-wide gate S236
+- **Implementation approach:** Implement a documented endpoint/model/schema/timeout adapter after S236; keep the global permission gate in S236 and share no transport concerns with feature modules
+- **Recommended tools:** Official Meta API documentation, server HTTP client, Zod
+- **Security considerations:** Do not collect/store Meta keys or invoke any provider before written permission; never use another provider
+- **Verification method:** Before S236 permission, verify all inference/key paths are disabled; after authorization, contract-test official host, schema, timeout, and redaction
