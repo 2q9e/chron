@@ -23,6 +23,161 @@ layer order. L1-d addresses bridge and scene lifecycle behavior in their
 separate owned files. L1-e depends on those fixes and on the main agent's route
 and layer integration; it includes browser checks at desktop and mobile sizes.
 
+## Calendar recurrence task graph
+
+Landing-page work remains paused. Recurrence follows the calendar's existing
+owner-scoped repository and date/time model. The detailed wire and time rules
+are recorded in [calendar-recurrence.md](calendar-recurrence.md).
+
+```text
+C1-rec0 recurrence contract + pure bounded expansion
+  └─ C1-rec1 owner-scoped persistence + range/search expansion
+       └─ C1-rec2 persisted proposal and approval + occurrence-aware conflicts
+            └─ C1-rec3 responsive recurrence editor + series scopes
+                 └─ C1-rec4 independent audit + remediation
+                      └─ C1-rec5 PostgreSQL and authenticated browser verification
+```
+
+No recurring write control is exposed until the corresponding persistence,
+conflict review, and exact approval steps are integrated. First delivery is
+limited to editing or deleting the full series; individual occurrence and
+following-occurrence changes require the exception and split work in C1-rec3.
+The current environment has no disposable PostgreSQL service or authenticated
+test account, so source-level verification can proceed while runtime database
+and browser checks remain gated.
+
+### C1-rec0 — freeze recurrence semantics and build the domain engine
+
+- **Assigned agent:** main integration agent; requested model configuration is
+  runtime-fixed and not independently attested
+- **Dependencies:** current event time-zone and date-only helpers
+- **Owned files:** `apps/web/features/calendar/domain/recurrence.ts`, its test
+  file, `docs/architecture/calendar-recurrence.md`, this task graph
+- **Read-only files:** `apps/web/features/calendar/domain/time.ts`, calendar
+  event types, `SKILLS.md`, RFC 5545
+- **Required skills applied:** S346–S354; S347–S349; S350–S351; S354; plus
+  TypeScript and test guidance for pure domain code
+- **Security permissions:** project-tree only; no credentials, account data,
+  network writes, reference materials, or GitHub settings; agent workspace
+  isolation is not enforced by this runtime
+- **Acceptance criteria:** a strict finite daily/weekly rule; stable local
+  occurrence identities; bounded 366-date horizon and 366-instance count;
+  all-day date arithmetic; explicit timed-zone fold/gap policy; no partial
+  result on a bound violation
+- **Tests:** normal intervals, count and horizon boundaries, invalid rules,
+  all-day month/leap-day arithmetic, timed DST folds/gaps, range overlap, and
+  expansion caps
+- **Expected deliverables:** recurrence contract, pure engine, deterministic
+  tests, and a record of unsupported recurrence features
+
+### C1-rec1 — persist owner-scoped series and expand reads
+
+- **Assigned agent:** calendar API engineer, GPT-6 Luna/MAX requested; actual
+  runtime identity is not independently exposed
+- **Dependencies:** C1-rec0 contract is reviewed and stable
+- **Owned files:** new recurrence migration; calendar validation, repository,
+  domain event DTOs, list/search routes, repository and API tests
+- **Read-only files:** recurrence contract and engine, current auth/RLS, event
+  creation recovery, search behavior
+- **Required skills applied:** S041, S042, S044, S048, S049, S051, S063,
+  S178, S201–S216, S346–S354, S363
+- **Security permissions:** owner-derived reads only, parameterized SQL,
+  transaction-local RLS; no production credentials or reference materials;
+  worktree boundaries are coordination only
+- **Acceptance criteria:** persisted normalized rules; finite occurrences in
+  bounded list and search windows; stable occurrence identifiers; account
+  isolation and explicit over-limit errors
+- **Tests:** validation, repository SQL contract, search/list boundaries,
+  occurrence de-duplication, and cross-owner mocks; live PostgreSQL remains a
+  separate gate
+- **Expected deliverables:** schema, bounded owner-scoped occurrence reads,
+  tests, migration notes
+
+### C1-rec2 — exact drafts and recurrence-aware conflict approval
+
+- **Assigned agent:** calendar API/security engineer, GPT-6 Luna/MAX requested;
+  actual runtime identity is not independently exposed
+- **Dependencies:** C1-rec1
+- **Owned files:** calendar mutation-draft migration and routes, recurrence
+  create/update/delete repository operations, conflict types and tests
+- **Read-only files:** recurrence contract, current calendar security and
+  recovery tests
+- **Required skills applied:** S041, S042, S044, S049, S051, S063, S178,
+  S192–S193, S201–S216, S246, S265, S346–S354, S369
+- **Security permissions:** draft bound to authenticated owner, exact
+  normalized action, target revision, explicit full-series scope, conflict
+  snapshot, and expiry; recheck in the serialized owner transaction; no
+  agent-supplied identity or production credentials
+- **Acceptance criteria:** proposal persists before approval; changed, stale,
+  expired, replayed, or cross-owner approvals cannot write; conflicts include
+  recurring occurrences and own-series overlaps; no truncated conflict result
+- **Tests:** stale payload/revision/conflict, replay, expiry, cross-owner,
+  concurrent write, create retry, and rollback paths
+- **Expected deliverables:** exact-action draft lifecycle and recurrence-aware
+  conflict enforcement
+
+### C1-rec3 — recurrence controls and explicit series scope
+
+- **Assigned agent:** calendar UI engineer, GPT-6 Luna/MAX requested; actual
+  runtime identity is not independently exposed
+- **Dependencies:** C1-rec1 HTTP contract and C1-rec2 draft/approval routes
+- **Owned files:** calendar editor/workspace/API adapter/views/search/styles and
+  focused presentation tests
+- **Read-only files:** event time model, recurrence rules, API contracts,
+  theme tokens
+- **Required skills applied:** S005–S015, S346–S354, S356–S358, S360–S361,
+  S363, S369, S370, S421, S423, S426, S428; installed frontend form and
+  accessibility guidance
+- **Security permissions:** same-origin authenticated requests, no owner or
+  credentials in client payload, exact draft identifier at approval, no
+  silent broadening of series scope
+- **Acceptance criteria:** recurring events appear in all calendar views and
+  search; review shows affected count and exact scope; first UI supports full
+  series edits/deletion only and clearly states that scope; keyboard, narrow
+  screen, loading, stale, and error states remain usable
+- **Tests:** recurrence form validation, result identity, stale draft, keyboard
+  path, and responsive layout checks
+- **Expected deliverables:** working finite-series creation, whole-series
+  update/delete, review and approval UI
+
+### C1-rec4 — independent audit and remediation
+
+- **Assigned agents:** read-only GPT-6 Luna/MAX and GPT-6.1 Terra/HIGH review
+  configurations requested; the runtime does not independently attest model
+  identity
+- **Dependencies:** C1-rec0 through C1-rec3 integrated on `main`
+- **Owned files:** findings only until the integration owner assigns a fix
+- **Read-only files:** changed recurrence and calendar files plus relevant
+  project rules and skill entries
+- **Required skills applied:** S346–S354, S363, S369, S421, S423, S424, S426,
+  S428 and API/security review guidance
+- **Security permissions:** source-only review; no credentials, account data,
+  reference materials, network writes, or commits
+- **Acceptance criteria:** report recurrence semantics, owner isolation,
+  approval binding, exact bounds, API and UI accessibility findings with
+  evidence; fix all blockers and rerun affected checks
+- **Expected deliverables:** audit findings, fixes, and re-review results
+
+### C1-rec5 — database and authenticated browser gates
+
+- **Assigned agent:** main integration owner; requested model configuration
+  remains runtime-fixed and unattested
+- **Dependencies:** C1-rec4; disposable PostgreSQL and test account are
+  prerequisites
+- **Owned files:** test evidence and audit/progress notes
+- **Read-only files:** integrated implementation and migration set
+- **Required skills applied:** S041, S042, S049, S063, S178, S354, S363, S369,
+  S421–S428
+- **Security permissions:** disposable synthetic accounts and data only; no
+  production credentials or old reference folder
+- **Acceptance criteria:** apply migrations; exercise two-owner isolation,
+  transaction races, deletion, retry, recurrence creation/edit/delete, all
+  views, search, keyboard, desktop, and mobile in a real browser
+- **Tests:** PostgreSQL/RLS integration and authenticated browser walkthrough
+- **Expected deliverables:** recorded database and browser evidence; if the
+  required services remain absent, record the gate as open without claiming
+  runtime completion
+
 ## Task contracts
 
 ### F0-a — author the skill library
