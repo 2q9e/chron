@@ -390,3 +390,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Fontsource, CSS font-display, Lighthouse
 - **Security considerations:** Use licensed font files and avoid third-party font requests that leak page visits
 - **Verification method:** Throttle network and compare fallback shift and glyph coverage
+
+### S034 — Semantic route landmarks
+
+- **Skill ID:** S034
+- **Name:** Semantic route landmarks
+- **Purpose:** Give assistive technology a predictable page outline
+- **When to use:** When a route introduces primary content, navigation, or complementary regions
+- **Implementation approach:** Use one main landmark, ordered headings, and labelled navigation regions
+- **Recommended tools:** HTML5, axe-core, React Testing Library
+- **Security considerations:** Do not use hidden landmark content to expose private route names
+- **Verification method:** Inspect accessibility tree and verify skip links reach the main region
