@@ -1230,3 +1230,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS variables, responsive tables, user preference settings
 - **Security considerations:** Do not compress privacy or approval copy to fit a preferred density
 - **Verification method:** Test each density with realistic long titles and touch targets
+
+### S110 — Calendar theme cohesion
+
+- **Skill ID:** S110
+- **Name:** Calendar theme cohesion
+- **Purpose:** Make theme changes affect the whole calendar vocabulary consistently
+- **When to use:** When adding or revising a calendar visual theme
+- **Implementation approach:** Map event, grid, selection, focus, conflict, and time labels to theme tokens
+- **Recommended tools:** CSS custom properties, Storybook, test-only theme fixture page
+- **Security considerations:** Keep conflict and busy states recognizable without relying only on hue
+- **Verification method:** Render every view and interaction state under each available theme
