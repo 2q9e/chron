@@ -1452,3 +1452,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GLTFLoader, drei useGLTF
 - **Security considerations:** Pin trusted asset origins and review redistribution licenses
 - **Verification method:** Test cold cache, offline mode, and decoder failure
+
+### S130 — GLTF mesh budget
+
+- **Skill ID:** S130
+- **Name:** GLTF mesh budget
+- **Purpose:** Reduce model draw calls and transfer size
+- **When to use:** An imported model stalls mid-range devices
+- **Implementation approach:** Remove unseen meshes and merge static geometry where useful
+- **Recommended tools:** gltf-transform, Meshopt
+- **Security considerations:** Review third-party asset provenance and license
+- **Verification method:** Measure draw calls and bytes before and after optimization
