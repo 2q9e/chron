@@ -80,11 +80,6 @@ export function LandingStory() {
                 is designed around that shared calendar.
               </p>
             </div>
-            <div className={styles.weekField} aria-hidden="true">
-              <span className={styles.weekArc} />
-              <span className={styles.weekAxis} />
-              <span className={styles.weekPoint} />
-            </div>
           </section>
 
           <section
@@ -102,11 +97,6 @@ export function LandingStory() {
                 Notes, questions, and review are part of one learning process. Chron is being built
                 to keep that work organized around the material a learner brings.
               </p>
-            </div>
-            <div className={styles.paperLayers} aria-hidden="true">
-              <span />
-              <span />
-              <span />
             </div>
           </section>
 
@@ -126,12 +116,6 @@ export function LandingStory() {
                 product direction keeps that context visible.
               </p>
             </div>
-            <div className={styles.sourcePath} aria-hidden="true">
-              <span className={styles.sourceLine} />
-              <span className={styles.sourceNode} />
-              <span className={styles.sourceNode} />
-              <span className={styles.sourceNode} />
-            </div>
           </section>
 
           <section
@@ -149,11 +133,6 @@ export function LandingStory() {
                 Chron is being built to bring the parts of academic work into one considered
                 workspace.
               </p>
-            </div>
-            <div className={styles.closeMark} aria-hidden="true">
-              <span />
-              <span />
-              <span />
             </div>
           </section>
 
