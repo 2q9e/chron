@@ -2756,3 +2756,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** AbortController, queue API
 - **Security considerations:** An abort cannot guarantee a remote write stopped or rolled back after dispatch; never report rollback without durable evidence
 - **Verification method:** Cancel before and after dispatch; simulate remote commit with lost response, then verify unknown status, deduplicated retry, and reconciliation; test local timeout enforcement separately under S281
+
+### S248 — Per-tool deadlines
+
+- **Skill ID:** S248
+- **Name:** Per-tool deadlines
+- **Purpose:** Allocate a finite deadline budget to each tool within the run budget
+- **When to use:** For fetch, parse, or model tools
+- **Implementation approach:** Derive and persist each tool deadline from the run budget, pass AbortSignal, and use S281 for local enforcement; mark dispatched remote writes unknown until reconciled
+- **Recommended tools:** AbortController, queue worker
+- **Security considerations:** A deadline stops local waiting or cooperative work, not an already committed remote effect; do not assume rollback and deduplicate retries under S284
+- **Verification method:** Delay a test-only remote operation past its deadline, simulate commit-before-timeout, and verify unknown status is reconciled without duplicate writes
