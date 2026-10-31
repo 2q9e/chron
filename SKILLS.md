@@ -4370,3 +4370,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Web Workers, Comlink
 - **Security considerations:** Pass no credentials; minimize copies; do not rely on worker separation to protect server files, network, or secrets
 - **Verification method:** Measure responsiveness during parsing and verify hostile server-side documents enter the S285 boundary rather than relying on worker offload
+
+### S394 — 3D pixel-ratio tuning
+
+- **Skill ID:** S394
+- **Name:** 3D pixel-ratio tuning
+- **Purpose:** Balance sharpness and GPU cost
+- **When to use:** When mobile frame time is high
+- **Implementation approach:** Clamp DPR and adapt render scale
+- **Recommended tools:** R3F dpr, PerformanceMonitor
+- **Security considerations:** Avoid persistent device fingerprinting
+- **Verification method:** Profile several quality tiers
