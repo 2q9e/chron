@@ -1960,3 +1960,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** WHATWG URL, egress proxy
 - **Security considerations:** Reject loopback, link-local, private, metadata targets
 - **Verification method:** Test redirect chains to private addresses
+
+### S176 — DNS rebinding defense
+
+- **Skill ID:** S176
+- **Name:** DNS rebinding defense
+- **Purpose:** Keep host checks valid at connect time
+- **When to use:** When fetching attacker-controlled domains
+- **Implementation approach:** Pin approved IP to socket; recheck redirects
+- **Recommended tools:** Undici dispatcher, proxy
+- **Security considerations:** Do not validate DNS only once
+- **Verification method:** Test answer changes and inspect peer IP
