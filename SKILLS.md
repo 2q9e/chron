@@ -4603,3 +4603,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Property tests, isolated parser
 - **Security considerations:** Temporary quarantined storage only
 - **Verification method:** No crash, escape, or unbounded memory
+
+### S415 — Property-based invariant tests
+
+- **Skill ID:** S415
+- **Name:** Property-based invariant tests
+- **Purpose:** Explore more input combinations
+- **When to use:** For intervals, recurrence, and schemas
+- **Implementation approach:** Generate values and assert invariants
+- **Recommended tools:** fast-check, Vitest
+- **Security considerations:** Seeded generated data only
+- **Verification method:** Save failing seed and reproduce
