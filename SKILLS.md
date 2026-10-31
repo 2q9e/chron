@@ -2789,3 +2789,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** p-retry, queue policy
 - **Security considerations:** Never replay a mutation blindly after a lost response; require per-user idempotency and preserve exact approval scope
 - **Verification method:** Inject 429/5xx and commit-before-timeout cases; verify capped attempts, one durable effect, and reconciliation before replay
+
+### S251 — Checkpoint persistence
+
+- **Skill ID:** S251
+- **Name:** Checkpoint persistence
+- **Purpose:** Resume after process restart
+- **When to use:** For long imports or multi-tool runs
+- **Implementation approach:** Persist completed steps and versioned state
+- **Recommended tools:** PostgreSQL, worker queue
+- **Security considerations:** Store validated user-scoped output only
+- **Verification method:** Kill between steps and verify deterministic resume
