@@ -4757,3 +4757,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** MSW, fake timers
 - **Security considerations:** Account changes cancel prior responses
 - **Verification method:** Newest query remains visible
+
+### S429 — Offline recovery tests
+
+- **Skill ID:** S429
+- **Name:** Offline recovery tests
+- **Purpose:** Check behavior during network loss
+- **When to use:** For edits and study sessions
+- **Implementation approach:** Drop connection during read and write
+- **Recommended tools:** Playwright route interception
+- **Security considerations:** Do not queue sensitive writes unsafely
+- **Verification method:** Reconnect and verify retry/conflict handling
