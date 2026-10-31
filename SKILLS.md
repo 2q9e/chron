@@ -1540,3 +1540,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** postprocessing, WebGL timer queries
 - **Security considerations:** Do not process private user images without consent
 - **Verification method:** Benchmark each pass on representative hardware
+
+### S138 — Bloom restraint
+
+- **Skill ID:** S138
+- **Name:** Bloom restraint
+- **Purpose:** Keep emissive accents luminous without washing out text
+- **When to use:** Small scene details need optical glow
+- **Implementation approach:** Use a high threshold, restricted sources, and low-power mode
+- **Recommended tools:** UnrealBloomPass, postprocessing Bloom
+- **Security considerations:** Glow must not obscure focus or state indicators
+- **Verification method:** Compare text legibility and highlight clipping with bloom off
