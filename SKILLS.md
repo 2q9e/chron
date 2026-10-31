@@ -3827,3 +3827,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Database version field, migration
 - **Security considerations:** Do not rewrite historical grades silently
 - **Verification method:** Edit question after attempt and verify old response remains interpretable
+
+### S345 — Remediation recommendations
+
+- **Skill ID:** S345
+- **Name:** Remediation recommendations
+- **Purpose:** Turn weak-topic evidence into a useful next action
+- **When to use:** When repeated errors identify a gap
+- **Implementation approach:** Use explicit rules to map recorded gaps to real source sections and practice items; model-generated recommendations require S236
+- **Recommended tools:** Rule engine, citation links
+- **Security considerations:** Do not make high-stakes academic claims or invoke model inference before written permission and capability checks
+- **Verification method:** Verify each suggestion maps to an existing source/activity and model requests are disabled before S236
