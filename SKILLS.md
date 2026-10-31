@@ -3009,3 +3009,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed refusal reasons, response renderer
 - **Security considerations:** Never imply a tool or integration succeeded
 - **Verification method:** Test unsupported API, unauthorized request, and graceful response
+
+## Tool systems and integrations
+
+### S271 — Tool contract schema
+
+- **Skill ID:** S271
+- **Name:** Tool contract schema
+- **Purpose:** Make capability inputs and outputs machine-checkable
+- **When to use:** When registering any agent action
+- **Implementation approach:** Define JSON Schema with names, bounds, enums, and version
+- **Recommended tools:** JSON Schema, Zod
+- **Security considerations:** Do not expose secret-bearing fields to the model
+- **Verification method:** Validate fixtures and reject unknown properties
