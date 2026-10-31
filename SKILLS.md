@@ -2602,3 +2602,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** JSON Schema, TypeScript
 - **Security considerations:** Reject unknown tools and privilege fields
 - **Verification method:** Fuzz missing and extra plan fields
+
+### S234 — Incremental replanning
+
+- **Skill ID:** S234
+- **Name:** Incremental replanning
+- **Purpose:** Adapt remaining tasks after new evidence
+- **When to use:** When a step changes assumptions
+- **Implementation approach:** Freeze completed work; regenerate unresolved dependencies only
+- **Recommended tools:** Graph model, planner prompt
+- **Security considerations:** Do not silently expand scope or approval
+- **Verification method:** Compare revisions and preserve completed steps
