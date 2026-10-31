@@ -1065,3 +1065,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Figma, paper wireframes, browser screenshot review
 - **Security considerations:** Do not place destructive actions where accidental pointer travel triggers them
 - **Verification method:** Run a five-second comprehension check on a static screen
+
+### S095 — Asymmetric editorial grids
+
+- **Skill ID:** S095
+- **Name:** Asymmetric editorial grids
+- **Purpose:** Create visual energy without losing scan order or responsive behavior
+- **When to use:** When a landing page or research workspace needs a distinctive composition
+- **Implementation approach:** Use a clear column rhythm with one intentional offset and collapse it deliberately on mobile
+- **Recommended tools:** CSS Grid, container queries, Figma
+- **Security considerations:** Avoid ordering content visually differently from its semantic reading order
+- **Verification method:** Compare source order and visual order at narrow and wide widths
