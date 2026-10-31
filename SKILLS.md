@@ -1120,3 +1120,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Form design checklist, React Hook Form, Figma
 - **Security considerations:** Explain why sensitive fields are requested and who will receive them
 - **Verification method:** Complete the form with keyboard only and measure correction steps
+
+### S100 — Progressive disclosure
+
+- **Skill ID:** S100
+- **Name:** Progressive disclosure
+- **Purpose:** Reveal advanced options when they become relevant
+- **When to use:** When settings overwhelm first-time users
+- **Implementation approach:** Keep common choices visible; expose expert controls behind labelled sections
+- **Recommended tools:** HTML details, React disclosure pattern, usability testing
+- **Security considerations:** Do not bury consent, deletion, or credential-removal controls
+- **Verification method:** Test that users can find advanced controls and understand their defaults
