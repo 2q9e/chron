@@ -4625,3 +4625,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, JSON Schema
 - **Security considerations:** Fixtures remain test-only
 - **Verification method:** Invalid output is rejected
+
+### S417 — Prompt injection regression tests
+
+- **Skill ID:** S417
+- **Name:** Prompt injection regression tests
+- **Purpose:** Preserve policy against hostile sources
+- **When to use:** When retrieval or prompts change
+- **Implementation approach:** Run direct and indirect injection corpus
+- **Recommended tools:** Prompt fixture runner
+- **Security considerations:** Synthetic malicious strings only
+- **Verification method:** No unauthorized tool call is made
