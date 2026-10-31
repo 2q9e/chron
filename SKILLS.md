@@ -5034,3 +5034,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Trivy, Grype
 - **Security considerations:** Do not upload private image to public scanners
 - **Verification method:** Fail release on policy-defined critical findings
+
+### S454 — Safe configuration templates
+
+- **Skill ID:** S454
+- **Name:** Safe configuration templates
+- **Purpose:** Document required settings without exposing secrets
+- **When to use:** When adding deployment variables
+- **Implementation approach:** Ship names and validation only, never values
+- **Recommended tools:** Typed config schema, README
+- **Security considerations:** Do not commit real .env files
+- **Verification method:** Run startup with missing and synthetic values
