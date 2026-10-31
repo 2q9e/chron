@@ -4049,3 +4049,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Scheduling solver, calendar service
 - **Security considerations:** Keep every proposed study block as a calendar draft under S369 until explicit approval; model-generated schedules require S236 and no alternate provider
 - **Verification method:** Validate no overlap and respect user constraints; confirm proposal remains a draft and no model request occurs before S236
+
+### S365 — Reminder scheduling
+
+- **Skill ID:** S365
+- **Name:** Reminder scheduling
+- **Purpose:** Deliver reminders at intended local times
+- **When to use:** When event notifications are enabled
+- **Implementation approach:** Store reminder rule and schedule jobs from event zone
+- **Recommended tools:** Queue scheduler, Temporal
+- **Security considerations:** Avoid sensitive content in push preview; changes to calendar events remain drafts under S369 until approved
+- **Verification method:** Test timezone transition, reschedule, duplicate job
