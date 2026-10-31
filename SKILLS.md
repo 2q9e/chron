@@ -3895,3 +3895,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** rrule, iCalendar RFC 5545
 - **Security considerations:** Cap count and expansion horizon; avoid converting all-day dates through midnight instants
 - **Verification method:** Parse, serialize, and compare representative rules
+
+### S351 — Recurrence expansion
+
+- **Skill ID:** S351
+- **Name:** Recurrence expansion
+- **Purpose:** Materialize occurrences for rendering and search
+- **When to use:** When a view needs a bounded date window
+- **Implementation approach:** Expand only visible range plus buffer and cache by rule version
+- **Recommended tools:** rrule, date-fns/Temporal
+- **Security considerations:** Apply owner scope before expanding stored series
+- **Verification method:** Compare generated instances to known RRULE fixture
