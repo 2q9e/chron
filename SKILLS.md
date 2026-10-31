@@ -1043,3 +1043,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS backdrop-filter, @supports, design tokens
 - **Security considerations:** Keep critical controls legible when blur is unavailable or reduced
 - **Verification method:** Compare contrast and scrolling on unsupported and low-power browsers
+
+### S093 — Card pattern alternatives
+
+- **Skill ID:** S093
+- **Name:** Card pattern alternatives
+- **Purpose:** Choose cards only when content forms a meaningful bounded unit
+- **When to use:** When a page repeats bordered panels without clear grouping
+- **Implementation approach:** Replace redundant boxes with lists, rules, spacing, or aligned columns where appropriate
+- **Recommended tools:** Figma, CSS grid, semantic HTML
+- **Security considerations:** Do not hide important content in hover-only card states
+- **Verification method:** Count visual containers and validate that every boundary has a grouping purpose
