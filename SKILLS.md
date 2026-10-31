@@ -755,3 +755,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenTelemetry, W3C Trace Context
 - **Security considerations:** Do not attach user content or identifiers beyond approved pseudonymous tags
 - **Verification method:** Trace a test request end-to-end and confirm spans link without sensitive attributes
+
+### S067 — Log redaction policy
+
+- **Skill ID:** S067
+- **Name:** Log redaction policy
+- **Purpose:** Redact fields before application logs leave the process
+- **When to use:** When logs include exception objects or third-party SDK metadata
+- **Implementation approach:** Centralize application-log serializers and redact nested values before emit; use S164 for telemetry/exporter and third-party SDK boundaries
+- **Recommended tools:** Pino redact paths, custom error mapper
+- **Security considerations:** Redact authorization, cookies, API keys, OAuth tokens, and document text
+- **Verification method:** Inject sentinel secrets into app-log errors and inspect captured output; separately test telemetry sinks under S164
