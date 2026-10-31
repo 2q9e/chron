@@ -3816,3 +3816,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Annotation schema, range mapper
 - **Security considerations:** Keep annotations within notebook ownership
 - **Verification method:** Edit and export annotations; verify source linkage
+
+### S344 — Question versioning
+
+- **Skill ID:** S344
+- **Name:** Question versioning
+- **Purpose:** Preserve attempt meaning when quiz items are edited
+- **When to use:** When teachers or users revise generated questions
+- **Implementation approach:** Version items and bind attempts to the served revision
+- **Recommended tools:** Database version field, migration
+- **Security considerations:** Do not rewrite historical grades silently
+- **Verification method:** Edit question after attempt and verify old response remains interpretable
