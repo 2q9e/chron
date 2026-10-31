@@ -2292,3 +2292,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL constraints, migration tooling
 - **Security considerations:** Never cascade-delete shared or legal-hold records implicitly
 - **Verification method:** Attempt orphan inserts and deletion edge cases in DB tests
+
+### S206 — Check constraints
+
+- **Skill ID:** S206
+- **Name:** Check constraints
+- **Purpose:** Enforce domain invariants below the application layer
+- **When to use:** When a value must remain in an allowed range or state set
+- **Implementation approach:** Encode stable bounds and enums as database checks
+- **Recommended tools:** PostgreSQL CHECK constraints
+- **Security considerations:** Do not store credentials in constraint error text
+- **Verification method:** Insert invalid states directly and confirm database rejects them
