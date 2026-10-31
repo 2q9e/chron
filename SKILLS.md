@@ -1518,3 +1518,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Shadow maps, baked textures
 - **Security considerations:** Avoid retaining user-derived textures in shared shadow caches
 - **Verification method:** Profile GPU time with shadowing enabled and disabled
+
+### S136 — Procedural geometry
+
+- **Skill ID:** S136
+- **Name:** Procedural geometry
+- **Purpose:** Author brand-specific simple shapes in code
+- **When to use:** A shape is easier to parameterize than model externally
+- **Implementation approach:** Build indexed BufferGeometry and compute static normals once
+- **Recommended tools:** BufferGeometry, typed arrays
+- **Security considerations:** Clamp parameters to prevent unbounded buffer allocation
+- **Verification method:** Test extreme dimensions and inspect indices and normals
