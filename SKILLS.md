@@ -60,3 +60,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next.js error.tsx, React Error Boundary
 - **Security considerations:** Keep stack traces and server response bodies out of the UI
 - **Verification method:** Force a segment exception and confirm navigation remains usable
+
+### S004 — Streaming server rendering
+
+- **Skill ID:** S004
+- **Name:** Streaming server rendering
+- **Purpose:** Send stable page regions before slower server data completes
+- **When to use:** When above-the-fold content does not depend on secondary queries
+- **Implementation approach:** Stream independent regions behind Suspense and keep response headers correct
+- **Recommended tools:** React Suspense, Next.js, browser network panel
+- **Security considerations:** Avoid streaming protected data before session authorization finishes
+- **Verification method:** Test slow and rejected data sources; inspect first-byte and content ordering
