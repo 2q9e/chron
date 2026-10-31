@@ -799,3 +799,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Node SIGTERM hooks, server close, queue drain APIs
 - **Security considerations:** Bound drain time and avoid leaving partially committed sensitive operations
 - **Verification method:** Send SIGTERM during requests and verify completion or safe retry semantics
+
+### S071 — Dependency circuit breakers
+
+- **Skill ID:** S071
+- **Name:** Dependency circuit breakers
+- **Purpose:** Stop repeated calls to an unhealthy downstream service
+- **When to use:** When provider failures can consume threads or cascade across routes
+- **Implementation approach:** Track failures per dependency and allow measured half-open probes
+- **Recommended tools:** opossum, gateway circuit breaker, OpenTelemetry metrics
+- **Security considerations:** Do not leak breaker diagnostics to untrusted callers
+- **Verification method:** Fault-inject outage and recovery; verify open, half-open, and closed transitions
