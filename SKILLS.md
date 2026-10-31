@@ -4194,3 +4194,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Bundle analyzer, Rollup visualizer
 - **Security considerations:** Preserve security side effects
 - **Verification method:** Compare production chunks
+
+### S378 — Route code splitting
+
+- **Skill ID:** S378
+- **Name:** Route code splitting
+- **Purpose:** Defer infrequent features
+- **When to use:** When rich editors inflate initial load
+- **Implementation approach:** Split heavy routes with stable fallback
+- **Recommended tools:** Next dynamic import, analyzer
+- **Security considerations:** Keep server code out of browser chunks
+- **Verification method:** Inspect cold bundle graph
