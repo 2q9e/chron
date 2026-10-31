@@ -3165,3 +3165,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Database unique constraint, HTTP idempotency header
 - **Security considerations:** Do not allow cross-user key collisions
 - **Verification method:** Replay same action and verify one persisted effect
+
+### S285 — Parser sandboxing
+
+- **Skill ID:** S285
+- **Name:** Parser sandboxing
+- **Purpose:** Run hostile document parsers outside the request process with enforceable OS isolation
+- **When to use:** When extracting text from office files or PDFs
+- **Implementation approach:** Use a dedicated unprivileged process or container with read-only input-only mounts, private bounded temp storage, no network/credentials, dropped capabilities, and CPU, memory, wall-time, file-count, and output-byte limits; worker threads may add concurrency only inside this boundary
+- **Recommended tools:** Rootless OCI runtime or gVisor, seccomp/AppArmor, cgroups, isolated parser service
+- **Security considerations:** Worker threads share process privileges and are not a security boundary; mount no host paths, secrets, sockets, or cloud credentials
+- **Verification method:** Run malicious and resource-exhaustion fixtures; prove the parser cannot read unrelated files/secrets or reach network/metadata and that each cap terminates work
