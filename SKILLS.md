@@ -3972,3 +3972,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Interval tree, CSS grid
 - **Security considerations:** Do not make overlapping private events disclose titles
 - **Verification method:** Test nested, adjacent, and same-start intervals
+
+### S358 — Month grid composition
+
+- **Skill ID:** S358
+- **Name:** Month grid composition
+- **Purpose:** Show useful month context without overflow
+- **When to use:** When rendering responsive month view
+- **Implementation approach:** Use stable row count and compact event summaries with overflow access
+- **Recommended tools:** CSS Grid, date utilities
+- **Security considerations:** Ensure hidden event text remains permission-protected
+- **Verification method:** Inspect 4/5/6-week months and mobile width
