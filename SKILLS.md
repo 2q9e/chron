@@ -5256,3 +5256,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** prefers-reduced-motion, CSS
 - **Security considerations:** Do not use flashing or repeated motion for status
 - **Verification method:** Emulate preference across routes and verify 3D chapter still behavior separately under S147
+
+### S474 — Touch target sizing
+
+- **Skill ID:** S474
+- **Name:** Touch target sizing
+- **Purpose:** Make mobile controls easy to activate
+- **When to use:** When controls are adjacent or compact
+- **Implementation approach:** Use adequate hit area and spacing, not only visual icon size
+- **Recommended tools:** CSS min-size tokens, mobile browser
+- **Security considerations:** Do not make destructive controls easy to mis-tap
+- **Verification method:** Measure tap area and test one-handed reach
