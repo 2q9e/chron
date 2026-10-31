@@ -1329,3 +1329,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Diff view, typed action proposal, dialog component
 - **Security considerations:** Every consequential action requires explicit user approval regardless of reversibility or risk tier; the server rechecks identity, ownership, permission, and the exact reviewed payload
 - **Verification method:** Change a reviewed field and verify approval is invalidated; cover a reversible consequential write, a calendar draft, and a denied approval
+
+### S119 — Design-system consistency review
+
+- **Skill ID:** S119
+- **Name:** Design-system consistency review
+- **Purpose:** Find drift across components before it becomes a second visual language
+- **When to use:** When a feature adds new controls, colors, or spacing conventions
+- **Implementation approach:** Compare against token and component inventory; document justified exceptions
+- **Recommended tools:** Storybook, visual snapshots, token lint
+- **Security considerations:** Do not create hidden variants that change permission or consent cues
+- **Verification method:** Run visual comparison across shared states and theme variants
