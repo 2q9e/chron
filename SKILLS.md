@@ -3253,3 +3253,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** KMS, AEAD library
 - **Security considerations:** Never return token values to browser
 - **Verification method:** Inspect raw DB and tamper with ciphertext
+
+### S293 — Refresh token rotation
+
+- **Skill ID:** S293
+- **Name:** Refresh token rotation
+- **Purpose:** Refresh access without losing newly rotated credentials
+- **When to use:** Only after S291, when an enabled Google provider rotates or expires tokens
+- **Implementation approach:** Serialize refresh per account and atomically store replacements
+- **Recommended tools:** OAuth client, row lock
+- **Security considerations:** Prevent stale worker overwriting a newer token
+- **Verification method:** Race two refreshes and verify newest token remains usable
