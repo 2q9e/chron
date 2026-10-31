@@ -1032,3 +1032,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS variables, Figma styles, browser rendering
 - **Security considerations:** Never blur sensitive data as a substitute for access control
 - **Verification method:** Inspect at low-end graphics settings and verify text contrast on overlays
+
+### S092 — Liquid glass restraint
+
+- **Skill ID:** S092
+- **Name:** Liquid glass restraint
+- **Purpose:** Use translucency as a material accent while keeping content readable
+- **When to use:** When a requested glass theme includes layered panels
+- **Implementation approach:** Limit backdrop blur to focal surfaces and provide opaque fallback tokens
+- **Recommended tools:** CSS backdrop-filter, @supports, design tokens
+- **Security considerations:** Keep critical controls legible when blur is unavailable or reduced
+- **Verification method:** Compare contrast and scrolling on unsupported and low-power browsers
