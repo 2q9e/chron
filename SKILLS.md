@@ -5434,3 +5434,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, JSON Schema
 - **Security considerations:** Never trust types erased at runtime
 - **Verification method:** Fuzz ingress and persisted payload boundaries
+
+### S490 — Error type architecture
+
+- **Skill ID:** S490
+- **Name:** Error type architecture
+- **Purpose:** Keep user recovery separate from internal diagnostics
+- **When to use:** When failures cross module boundaries
+- **Implementation approach:** Use typed domain errors mapped by transport adapters
+- **Recommended tools:** Result types, error enum
+- **Security considerations:** Sanitize before telemetry and client response
+- **Verification method:** Test mapping for permission, conflict, and dependency faults
