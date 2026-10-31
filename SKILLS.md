@@ -412,3 +412,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React, aria-describedby, server action results
 - **Security considerations:** Do not echo database errors, SQL text, or submitted secrets
 - **Verification method:** Force validation and server failures; confirm focus and error announcement
+
+### S036 — Empty collection guidance
+
+- **Skill ID:** S036
+- **Name:** Empty collection guidance
+- **Purpose:** Help a first-time user take a real next step from a genuinely empty collection
+- **When to use:** When the authenticated user truly has no saved events, notebooks, or sources; pair copy with S102
+- **Implementation approach:** Render the true zero-record state and one working create or authorized import action; never prepopulate or depict example records
+- **Recommended tools:** React, product copy system
+- **Security considerations:** Only user-provided or otherwise authorized content belongs in product views; synthetic fixtures are test-only and never bundled
+- **Verification method:** Use an empty test account, confirm no records are fabricated, and activate the CTA to verify a real create/import flow
