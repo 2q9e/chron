@@ -933,3 +933,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Figma, type specimens, CSS variables
 - **Security considerations:** Do not style consent or privacy choices to steer users unfairly
 - **Verification method:** Ask first-time users to locate the primary task without explanation
+
+### S083 — Typography pairing
+
+- **Skill ID:** S083
+- **Name:** Typography pairing
+- **Purpose:** Give display and reading text complementary roles without sacrificing legibility
+- **When to use:** When product identity depends on a distinct type voice
+- **Implementation approach:** Choose one expressive face and one high-readability text face with tested glyph coverage
+- **Recommended tools:** Fontsource, specimen pages, browser font tools
+- **Security considerations:** Verify font licensing and avoid sending private browsing data to third-party font hosts
+- **Verification method:** Compare long-form screens at real sizes and test fallback rendering
