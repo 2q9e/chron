@@ -491,3 +491,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Fastify, Hono, OpenAPI
 - **Security considerations:** Do not expose internal database IDs without a product need
 - **Verification method:** Contract-test status codes and response shapes for each method
+
+### S043 — API version evolution
+
+- **Skill ID:** S043
+- **Name:** API version evolution
+- **Purpose:** Change public contracts without surprising existing clients
+- **When to use:** When response or request shapes must become incompatible
+- **Implementation approach:** Prefer additive fields first; version only the breaking surface and publish sunset dates
+- **Recommended tools:** OpenAPI, API gateway, schema diff tools
+- **Security considerations:** Do not leave obsolete versions with weaker authorization
+- **Verification method:** Run compatibility checks against stored client contract fixtures
