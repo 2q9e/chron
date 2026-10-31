@@ -3242,3 +3242,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Official Google API documentation and current terms, OAuth scope catalog, disconnect/revocation tests
 - **Security considerations:** No capability is active without a reviewed API/terms decision, minimum-scope consent, and working credential removal; S289–S309 are subordinate recipes, not independent approval
 - **Verification method:** Require dated review evidence and per-service scope/disconnect tests; missing or stale evidence keeps OAuth and API paths disabled
+
+### S292 — OAuth token encryption
+
+- **Skill ID:** S292
+- **Name:** OAuth token encryption
+- **Purpose:** Protect access and refresh tokens at rest
+- **When to use:** Only after S291, when persisting authorized Google tokens; Meta credentials additionally require written permission under S160
+- **Implementation approach:** Use envelope encryption with versioned key metadata
+- **Recommended tools:** KMS, AEAD library
+- **Security considerations:** Never return token values to browser
+- **Verification method:** Inspect raw DB and tamper with ciphertext
