@@ -49,3 +49,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next.js loading.tsx, React Suspense
 - **Security considerations:** Do not reveal whether another user’s resource exists through loading text
 - **Verification method:** Throttle requests in browser and compare fallback geometry with resolved content
+
+### S003 — Route-level error boundaries
+
+- **Skill ID:** S003
+- **Name:** Route-level error boundaries
+- **Purpose:** Contain recoverable rendering failures to the affected page area
+- **When to use:** When a feature can fail independently of global navigation
+- **Implementation approach:** Use an error boundary per route segment with a safe retry action and sanitized message
+- **Recommended tools:** Next.js error.tsx, React Error Boundary
+- **Security considerations:** Keep stack traces and server response bodies out of the UI
+- **Verification method:** Force a segment exception and confirm navigation remains usable
