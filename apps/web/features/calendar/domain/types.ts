@@ -42,6 +42,18 @@ export type AllDayCalendarEvent = CalendarEventBase & Readonly<{
 
 export type CalendarEvent = TimedCalendarEvent | AllDayCalendarEvent;
 
+export type CalendarEventSearchRequest = Readonly<{
+  query: string; // Case-insensitive literal substring of the event title.
+  from: string; // Inclusive YYYY-MM-DD calendar date.
+  to: string; // Exclusive YYYY-MM-DD calendar date.
+  timeZone: string; // IANA zone used to bound timed events.
+  kind?: CalendarEvent["kind"];
+}>;
+
+export type CalendarEventSearchResponse = Readonly<{
+  events: readonly CalendarEvent[];
+}>;
+
 export type CalendarConflict =
   | Readonly<{
       id: string;
