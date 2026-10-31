@@ -3475,3 +3475,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Database, object storage
 - **Security considerations:** Keep originals private under opaque keys
 - **Verification method:** Inspect manifest through owner-scoped API
+
+### S313 — Document parsing pipeline
+
+- **Skill ID:** S313
+- **Name:** Document parsing pipeline
+- **Purpose:** Extract text while preserving page structure
+- **When to use:** When supported files are uploaded
+- **Implementation approach:** Dispatch verified types to bounded parsers inside S285's enforced process/container boundary; worker threads may add concurrency within that boundary, but are not hostile-parser isolation
+- **Recommended tools:** PDF.js, Mammoth, isolated parser service configured under S285
+- **Security considerations:** The parser boundary has no network, credentials, or unrelated filesystem mounts; a worker alone does not provide those controls
+- **Verification method:** Parse test-only valid, malformed, and encrypted files; verify isolation and resource caps under S285
