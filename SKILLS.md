@@ -5278,3 +5278,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML form, keyboard controls
 - **Security considerations:** Require same authorization and approval path
 - **Verification method:** Move event via keyboard-only route
+
+### S476 — Screen-reader table navigation
+
+- **Skill ID:** S476
+- **Name:** Screen-reader table navigation
+- **Purpose:** Test how assistive technology navigates table headers, cells, and sort state
+- **When to use:** When presenting rows and columns
+- **Implementation approach:** Use screen-reader row/column navigation against native tables; use S022 for table structure, sorting behavior, and data layout
+- **Recommended tools:** HTML table, TanStack Table
+- **Security considerations:** Scope row data to authenticated user
+- **Verification method:** Navigate rows and headers with a screen reader and verify announced relationships; test sort interaction separately under S022
