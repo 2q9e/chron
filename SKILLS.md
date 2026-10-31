@@ -1408,3 +1408,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GSAP easing, MathUtils
 - **Security considerations:** Reduced-motion mode should jump to static states
 - **Verification method:** Compare velocity at chapter boundaries and test reduced motion
+
+### S126 — Scroll progress mapping
+
+- **Skill ID:** S126
+- **Name:** Scroll progress mapping
+- **Purpose:** Synchronize a scene with native document scroll
+- **When to use:** Scroll position controls a world state
+- **Implementation approach:** Map measured section offsets to clamped normalized progress
+- **Recommended tools:** ScrollTrigger, IntersectionObserver
+- **Security considerations:** Do not hijack wheel or keyboard scrolling
+- **Verification method:** Test anchors, resize, back navigation, and mobile fallback
