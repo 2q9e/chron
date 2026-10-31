@@ -612,3 +612,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Node crypto randomBytes, database uniqueness, mail adapter
 - **Security considerations:** Avoid account enumeration and invalidate existing sessions after reset
 - **Verification method:** Test expiry, reuse, wrong-account binding, and concurrent token consumption
+
+### S054 — Email verification flow
+
+- **Skill ID:** S054
+- **Name:** Email verification flow
+- **Purpose:** Confirm mailbox control before enabling gated account actions
+- **When to use:** When product policy requires verified email ownership
+- **Implementation approach:** Issue a short-lived one-use token and update verification state transactionally
+- **Recommended tools:** Signed or random token flow, mail delivery service
+- **Security considerations:** Email verification proves mailbox control only; it does not satisfy age, operator/legal, or Meta eligibility gates in S015/S236
+- **Verification method:** Attempt replay, expired verification, and email-change edge cases
