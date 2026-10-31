@@ -5346,3 +5346,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Context map, TypeScript modules
 - **Security considerations:** Do not let one domain bypass another’s authorization
 - **Verification method:** Trace a workflow across boundaries without circular imports
+
+### S482 — Dependency direction
+
+- **Skill ID:** S482
+- **Name:** Dependency direction
+- **Purpose:** Prevent presentation and domain logic coupling to infrastructure
+- **When to use:** When structuring web and server code
+- **Implementation approach:** Make features depend on interfaces, adapters depend inward
+- **Recommended tools:** ESLint boundaries, dependency graph
+- **Security considerations:** Server-only modules cannot enter browser graph
+- **Verification method:** Run import-boundary lint and inspect bundle graph
