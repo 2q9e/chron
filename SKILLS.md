@@ -3541,3 +3541,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Meta API only after written permission, retrieval layer
 - **Security considerations:** No inference before S236; say when no source supports an answer and never fall back to another provider
 - **Verification method:** Before S236, assert zero model requests; afterward test supported and unanswerable questions using synthetic test-only materials
+
+### S319 — Uncertainty communication
+
+- **Skill ID:** S319
+- **Name:** Uncertainty communication
+- **Purpose:** Explain evidence gaps honestly
+- **When to use:** When sources conflict or retrieval is weak
+- **Implementation approach:** Separate known facts, gaps, and next checks
+- **Recommended tools:** Answer rubric, citation UI
+- **Security considerations:** Do not fabricate certainty
+- **Verification method:** Test conflicting and absent-source cases
