@@ -2855,3 +2855,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed transcript, summarizer
 - **Security considerations:** Verify action claims against durable records; no alternate provider or inference before S236
 - **Verification method:** Compare subsequent plans against original decisions; verify model summarization is blocked before authorization
+
+### S257 — Tool output inspection
+
+- **Skill ID:** S257
+- **Name:** Tool output inspection
+- **Purpose:** Check each tool result before advancing
+- **When to use:** After data or research calls
+- **Implementation approach:** Validate schema, count, ownership, and postconditions
+- **Recommended tools:** Zod, domain validators
+- **Security considerations:** Success strings alone do not prove persistence
+- **Verification method:** Re-read durable state and compare expected result
