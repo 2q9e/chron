@@ -2479,3 +2479,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** KMS, AEAD library
 - **Security considerations:** Do not enable Meta-key intake or storage before written permission; restrict query exports/admin views from decryption by default
 - **Verification method:** Inspect raw DB rows and test tamper detection
+
+### S223 — Append-only audit tables
+
+- **Skill ID:** S223
+- **Name:** Append-only audit tables
+- **Purpose:** Preserve consequential change history against ordinary mutation
+- **When to use:** When storing security or account lifecycle events
+- **Implementation approach:** Restrict app role to INSERT and read selected audit columns
+- **Recommended tools:** PostgreSQL grants, immutable event table
+- **Security considerations:** Avoid sensitive payloads and direct identifiers where unnecessary
+- **Verification method:** Attempt update/delete as app role and confirm denial
