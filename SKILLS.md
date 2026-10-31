@@ -4935,3 +4935,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GitHub Actions, package scripts
 - **Security considerations:** Use least-privilege workflow token
 - **Verification method:** Break each check intentionally and confirm block
+
+### S445 — Production build verification
+
+- **Skill ID:** S445
+- **Name:** Production build verification
+- **Purpose:** Catch bundling and environment errors before release
+- **When to use:** After app or config changes
+- **Implementation approach:** Build from clean checkout with production mode
+- **Recommended tools:** Framework build CLI, CI cache
+- **Security considerations:** Do not inject production secrets into build logs
+- **Verification method:** Build with synthetic settings and scan artifacts
