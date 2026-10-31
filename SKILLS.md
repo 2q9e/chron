@@ -601,3 +601,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Argon2id library, bcrypt as supported fallback
 - **Security considerations:** Never log or reversibly encrypt passwords; apply S168 hashing guidance and avoid exposing account existence through verification errors
 - **Verification method:** Inspect storage schema for hash-only fields and verify parameter upgrades preserve login; use S168 for algorithm benchmarks
+
+### S053 — Password reset tokens
+
+- **Skill ID:** S053
+- **Name:** Password reset tokens
+- **Purpose:** Allow recovery without creating reusable account takeover links
+- **When to use:** When a user requests credential recovery
+- **Implementation approach:** Generate random one-time tokens, store only a hash, expire quickly, and consume atomically
+- **Recommended tools:** Node crypto randomBytes, database uniqueness, mail adapter
+- **Security considerations:** Avoid account enumeration and invalidate existing sessions after reset
+- **Verification method:** Test expiry, reuse, wrong-account binding, and concurrent token consumption
