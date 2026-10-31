@@ -1872,3 +1872,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Session middleware, Redis
 - **Security considerations:** Invalidate old identifier server-side
 - **Verification method:** Replay old cookie after login; expect denial
+
+### S168 — Password hashing
+
+- **Skill ID:** S168
+- **Name:** Password hashing
+- **Purpose:** Choose, calibrate, and verify the password hashing algorithm and work factor
+- **When to use:** When storing local passwords
+- **Implementation approach:** Use maintained Argon2id with calibrated memory/time/parallelism, per-password salt, and versioned rehash-on-login; use S052 for broader password-record lifecycle policy
+- **Recommended tools:** argon2 library
+- **Security considerations:** Never log or reversibly encrypt passwords; benchmark to resist offline guessing without exhausting online capacity
+- **Verification method:** Inspect encoded hash parameters and benchmark verification under production-like limits; test upgrade and old-hash rehash paths
