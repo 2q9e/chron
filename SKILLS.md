@@ -4161,3 +4161,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Lighthouse, shift regions
 - **Security considerations:** Do not move consent or approval controls
 - **Verification method:** Capture under slow assets
+
+### S375 — Time to First Byte
+
+- **Skill ID:** S375
+- **Name:** Time to First Byte
+- **Purpose:** Separate server delay from rendering
+- **When to use:** When navigation starts slowly
+- **Implementation approach:** Measure server, database, upstream spans
+- **Recommended tools:** Server Timing, OpenTelemetry
+- **Security considerations:** Avoid sensitive query parameters
+- **Verification method:** Compare regional and cache traces
