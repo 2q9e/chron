@@ -3618,3 +3618,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Quiz schema, rubric editor
 - **Security considerations:** Do not request personal disclosures or call another inference provider; model-based assessment remains disabled until S236
 - **Verification method:** Test boundary answers against the rubric and verify model-based feedback makes no request before S236
+
+### S326 — Rubric-based feedback
+
+- **Skill ID:** S326
+- **Name:** Rubric-based feedback
+- **Purpose:** Explain score with criterion-level reasons
+- **When to use:** When evaluating practice responses; deterministic rubric feedback may run without inference, model-written explanations require S236
+- **Implementation approach:** Score each criterion against learner evidence; use model-generated explanation only through official Meta inference after S236
+- **Recommended tools:** Rubric engine, typed feedback
+- **Security considerations:** Mark AI-assisted scoring as guidance; no model call before permission/capability approval and no alternate provider
+- **Verification method:** Test anchor answers for rubric consistency and confirm model feedback is disabled before S236
