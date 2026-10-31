@@ -1817,3 +1817,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** KMS, JOSE key sets
 - **Security considerations:** Never log key material
 - **Verification method:** Test old/new reads and retired-key rejection
+
+### S163 — Credential replacement
+
+- **Skill ID:** S163
+- **Name:** Credential replacement
+- **Purpose:** Replace or remove a credential only after its collection and storage are authorized
+- **When to use:** Only after written permission allows the relevant credential flow
+- **Implementation approach:** Validate server-side; atomically swap or erase ciphertext
+- **Recommended tools:** Credential endpoint, provider adapter, key manager
+- **Security considerations:** Do not build Meta key intake before written permission under S160/S236; clear decrypted caches and revoke where supported
+- **Verification method:** Verify intake stays disabled before permission; then test replacement and removal with synthetic test keys
