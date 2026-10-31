@@ -5089,3 +5089,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenTelemetry, release metadata
 - **Security considerations:** Avoid user identifiers in deployment labels
 - **Verification method:** Trace health before/after rollout
+
+### S459 — Backup schedule operations
+
+- **Skill ID:** S459
+- **Name:** Backup schedule operations
+- **Purpose:** Make backup cadence and retention explicit
+- **When to use:** When operating persisted product data
+- **Implementation approach:** Automate encrypted backups and expiry policy
+- **Recommended tools:** Managed DB backup, KMS
+- **Security considerations:** Restrict restore and export roles
+- **Verification method:** Check last successful backup and restore drill
