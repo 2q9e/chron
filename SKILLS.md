@@ -1650,3 +1650,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** prefers-reduced-motion, React media query
 - **Security considerations:** Never override the operating-system preference
 - **Verification method:** Emulate reduced motion and confirm the scene is static; verify broader route interactions under S473
+
+### S148 — WebGL fallback
+
+- **Skill ID:** S148
+- **Name:** WebGL fallback
+- **Purpose:** Keep story usable without graphics support
+- **When to use:** Browser blocks or cannot create a context
+- **Implementation approach:** Render a designed still/CSS scene with all copy and links
+- **Recommended tools:** WebGL capability check, picture/source
+- **Security considerations:** Serve fallback assets from a trusted origin
+- **Verification method:** Force context failure and verify full narrative readability
