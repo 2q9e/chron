@@ -1175,3 +1175,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Progress component, queue status endpoint, reduced-motion CSS
 - **Security considerations:** Never fabricate percentages or label a request complete before confirmation
 - **Verification method:** Throttle the network and compare the indicator with real backend state
+
+### S105 — Confirmation copy
+
+- **Skill ID:** S105
+- **Name:** Confirmation copy
+- **Purpose:** Make the consequence of an important action clear before commitment
+- **When to use:** When deleting, sharing, sending, or bulk-editing records
+- **Implementation approach:** Name scope, reversibility, and next step in plain language
+- **Recommended tools:** Content design, confirmation dialog, action preview
+- **Security considerations:** Do not use vague confirm labels for irreversible operations
+- **Verification method:** Ask users to restate the consequence before approval in usability testing
