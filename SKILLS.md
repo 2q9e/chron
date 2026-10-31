@@ -2657,3 +2657,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Tool registry, policy engine
 - **Security considerations:** Hide unauthorized schemas, but never treat schema visibility as permission or approval
 - **Verification method:** Probe forbidden names and scopes
+
+### S239 — Ephemeral run context
+
+- **Skill ID:** S239
+- **Name:** Ephemeral run context
+- **Purpose:** Keep task context temporary and bounded
+- **When to use:** When assembling one execution request
+- **Implementation approach:** Build immutable run-scoped context with expiry
+- **Recommended tools:** Typed context object, scoped cache
+- **Security considerations:** Clear on completion and account switch
+- **Verification method:** Inspect context after cancellation
