@@ -2932,3 +2932,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL versioning, advisory locks
 - **Security considerations:** Locks cannot coordinate across tenants
 - **Verification method:** Race two updates and verify safe conflict
+
+### S264 — Inference quota budgeting
+
+- **Skill ID:** S264
+- **Name:** Inference quota budgeting
+- **Purpose:** Bound model use per user and run
+- **When to use:** Only after S236 authorizes end-user inference and a per-user usage budget is required
+- **Implementation approach:** Track budget and stop with actionable limit state
+- **Recommended tools:** Usage ledger, rate limiter
+- **Security considerations:** Keep inference disabled before S236; do not expose other users’ usage or treat quota as permission
+- **Verification method:** Simulate quota exhaustion and verify isolation
