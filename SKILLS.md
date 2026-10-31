@@ -944,3 +944,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Fontsource, specimen pages, browser font tools
 - **Security considerations:** Verify font licensing and avoid sending private browsing data to third-party font hosts
 - **Verification method:** Compare long-form screens at real sizes and test fallback rendering
+
+### S084 — Typographic scale
+
+- **Skill ID:** S084
+- **Name:** Typographic scale
+- **Purpose:** Keep headings, labels, and body copy in a deliberate size rhythm
+- **When to use:** When screens mix marketing copy, controls, and dense academic content
+- **Implementation approach:** Define a small responsive scale with semantic names rather than one-off sizes
+- **Recommended tools:** CSS clamp, design tokens, type-scale calculator
+- **Security considerations:** Preserve zoom and user font-size settings; do not lock text to pixels
+- **Verification method:** Inspect heading hierarchy at mobile, tablet, desktop, and 200% zoom
