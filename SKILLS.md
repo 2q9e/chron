@@ -5544,3 +5544,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Git worktree, CODEOWNERS, task ledger
 - **Security considerations:** Worktrees are not OS security sandboxes
 - **Verification method:** Check ownership and diff before integration
+
+### S500 — Architecture fitness functions
+
+- **Skill ID:** S500
+- **Name:** Architecture fitness functions
+- **Purpose:** Detect structural drift automatically
+- **When to use:** When module boundaries matter across releases
+- **Implementation approach:** Encode allowed imports, size limits, and dependency rules
+- **Recommended tools:** dependency-cruiser, ESLint, CI
+- **Security considerations:** Rules must not bypass security review
+- **Verification method:** Introduce intentional violation and confirm CI blocks it
