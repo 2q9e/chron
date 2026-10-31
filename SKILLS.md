@@ -1661,3 +1661,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** WebGL capability check, picture/source
 - **Security considerations:** Serve fallback assets from a trusted origin
 - **Verification method:** Force context failure and verify full narrative readability
+
+### S149 — Context restoration
+
+- **Skill ID:** S149
+- **Name:** Context restoration
+- **Purpose:** Recover after browser GPU context loss
+- **When to use:** Mobile backgrounding or long pages evict context
+- **Implementation approach:** Handle loss/restoration and rebuild disposable render resources
+- **Recommended tools:** webglcontextlost events, Three.js
+- **Security considerations:** Release stale render targets before rebuilding
+- **Verification method:** Trigger context loss and confirm restore or static fallback
