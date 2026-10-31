@@ -38,3 +38,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next.js App Router, React, TypeScript
 - **Security considerations:** Never serialize credentials or authorization decisions into client props
 - **Verification method:** Build route fixtures and assert private fields are absent from rendered payloads
+
+### S002 — Route segment loading states
+
+- **Skill ID:** S002
+- **Name:** Route segment loading states
+- **Purpose:** Make slow route transitions communicate progress without layout jumps
+- **When to use:** When a page streams data or waits on a nested segment
+- **Implementation approach:** Place loading boundaries at the segment that owns the pending work; reserve final geometry
+- **Recommended tools:** Next.js loading.tsx, React Suspense
+- **Security considerations:** Do not reveal whether another user’s resource exists through loading text
+- **Verification method:** Throttle requests in browser and compare fallback geometry with resolved content
