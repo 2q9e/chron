@@ -2114,3 +2114,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Prompt tests, source wrappers
 - **Security considerations:** Labels only help preserve context trust; they neither constrain tools nor grant authority. Server-side identity, ownership, permission, bounds, and approval enforcement belong to S265 with S192/S193
 - **Verification method:** Use test-only hostile-source cases to verify policy and passages stay distinct in assembled context; separately verify S265 rejects unauthorized proposed actions even when source labels are present
+
+### S190 — Retrieval trust segmentation
+
+- **Skill ID:** S190
+- **Name:** Retrieval trust segmentation
+- **Purpose:** Retain provenance on every passage
+- **When to use:** When combining notes and web sources
+- **Implementation approach:** Tag each chunk with owner, source, and trust; labels aid provenance, while server authorization must still run under S189/S265 for each action
+- **Recommended tools:** Typed retrieval records, citation metadata
+- **Security considerations:** Never merge content into privileged policy text
+- **Verification method:** Inspect context built from malicious sources
