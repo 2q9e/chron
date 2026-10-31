@@ -291,3 +291,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React, TypeScript, Storybook
 - **Security considerations:** Avoid APIs that expose internal authorization flags as user-controlled props
 - **Verification method:** Type-check representative consumer compositions and render state stories
+
+### S025 — Compound component coordination
+
+- **Skill ID:** S025
+- **Name:** Compound component coordination
+- **Purpose:** Coordinate related controls while keeping markup ownership flexible
+- **When to use:** When components such as tabs or menus share selection state
+- **Implementation approach:** Use a scoped provider with stable IDs and controlled/uncontrolled modes
+- **Recommended tools:** React Context, React Aria, TypeScript
+- **Security considerations:** Validate referenced IDs and keep hidden panels from exposing private content
+- **Verification method:** Test controlled and uncontrolled use plus nested instance isolation
