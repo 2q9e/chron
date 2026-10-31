@@ -5522,3 +5522,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenAPI diff, migration tests
 - **Security considerations:** Do not preserve insecure legacy access
 - **Verification method:** Run old/new contract and migration compatibility tests
+
+### S498 — Deprecation process
+
+- **Skill ID:** S498
+- **Name:** Deprecation process
+- **Purpose:** Remove obsolete behavior predictably
+- **When to use:** When retiring APIs, settings, or modules
+- **Implementation approach:** Announce phase, instrument usage, remove after a defined window
+- **Recommended tools:** Deprecation headers, code search
+- **Security considerations:** Do not keep revoked credentials or permissions alive
+- **Verification method:** Search consumers and test removal release
