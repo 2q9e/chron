@@ -4702,3 +4702,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright, Testing Library
 - **Security considerations:** Preserve focus security behavior
 - **Verification method:** Assert focus sequence and visibility
+
+### S424 — Responsive screenshot tests
+
+- **Skill ID:** S424
+- **Name:** Responsive screenshot tests
+- **Purpose:** Catch layout regressions across devices
+- **When to use:** After a major UI milestone
+- **Implementation approach:** Capture deterministic desktop, tablet, mobile, and reduced-motion states; use S155 for manual browser inspection of actual 3D scroll and motion
+- **Recommended tools:** Playwright screenshots
+- **Security considerations:** Synthetic content only
+- **Verification method:** Review automated diffs for overflow/clipping, then manually inspect scene transitions and frame behavior under S155
