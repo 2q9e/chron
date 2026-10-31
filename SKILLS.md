@@ -1087,3 +1087,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Sitemap, card sorting, React Router or Next navigation
 - **Security considerations:** Do not expose admin-only destinations through client-only hiding
 - **Verification method:** Run a tree test for common academic tasks and inspect link destinations
+
+### S097 — Interaction affordance design
+
+- **Skill ID:** S097
+- **Name:** Interaction affordance design
+- **Purpose:** Signal what can be clicked, dragged, selected, or edited
+- **When to use:** When controls look decorative or users miss available actions
+- **Implementation approach:** Use consistent shape, labels, pointer cues, and keyboard affordances for each action class
+- **Recommended tools:** Figma prototypes, CSS states, usability notes
+- **Security considerations:** Do not imply a control is safe when it triggers a consequential change
+- **Verification method:** Observe task completion without teaching; record misclicks and hesitation
