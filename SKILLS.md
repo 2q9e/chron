@@ -1672,3 +1672,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** webglcontextlost events, Three.js
 - **Security considerations:** Release stale render targets before rebuilding
 - **Verification method:** Trigger context loss and confirm restore or static fallback
+
+### S150 — Asset preload scheduling
+
+- **Skill ID:** S150
+- **Name:** Asset preload scheduling
+- **Purpose:** Load scene assets shortly before they enter view
+- **When to use:** Long pages have chapter-specific models
+- **Implementation approach:** Preload by visibility threshold and cancel on route exit
+- **Recommended tools:** useGLTF preload, IntersectionObserver
+- **Security considerations:** Do not fetch private uploads before authorization
+- **Verification method:** Record network waterfall and verify below-fold deferral
