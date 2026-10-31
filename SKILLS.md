@@ -480,3 +480,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, TypeScript, Fastify or framework validators
 - **Security considerations:** Never rely on client-side constraints or coerce ambiguous identifiers
 - **Verification method:** Fuzz missing, oversized, and wrong-type fields at the route boundary
+
+### S042 — REST resource semantics
+
+- **Skill ID:** S042
+- **Name:** REST resource semantics
+- **Purpose:** Make resource operations predictable across clients
+- **When to use:** When designing create, read, update, or delete endpoints
+- **Implementation approach:** Use consistent verbs, status codes, and ownership-scoped resource paths
+- **Recommended tools:** Fastify, Hono, OpenAPI
+- **Security considerations:** Do not expose internal database IDs without a product need
+- **Verification method:** Contract-test status codes and response shapes for each method
