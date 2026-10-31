@@ -2,96 +2,97 @@
 
 ## Current state
 
-Fresh project folder: `Chron project root`.
-It is an independent Git repository on `main` with 526 non-empty local commits.
-No credentials, private data, or reference materials are in Git. The public
-repository `2q9e/chron` is still empty; no code or history has been pushed.
-Secret scanning, push protection, Dependabot alerts/security updates, and
-private vulnerability reporting are enabled.
+Chron is a standalone repository on local `main` with 531 non-empty, distinct
+commits. The public GitHub repository exists but is still empty; no code or
+history has been pushed. Secret scanning, push protection, Dependabot alerts
+and security updates, and private vulnerability reporting are enabled. Review
+staged paths, history, privacy, and secrets before the first push.
 
 ## Current milestone
 
-F0 — foundation is complete locally; the first reviewed public push remains
-pending. L1 — premium landing page and design system — is in progress.
+F0 — local project foundation and security setup — is complete. L1 — landing
+page and design system — is in progress. The scroll-linked Three.js/R3F world
+is integrated and visually reviewed at one desktop viewport. Do not mark L1
+complete until its remaining viewport, motion, accessibility, fallback, and
+performance checks are done.
 
-## Important constraints
+## Product and security gates
 
-- Read `AGENTS.md`, `PLAN.md`, `PROGRESS.md`, and `SKILLS.md` before work.
-- Meta Model API is the only allowed inference service.
-- Keep public signup and Meta key submission disabled. The current Meta terms
-  require end users to be 18+, prohibit key sharing outside the issuing team
-  without permission, and grant no trademark license. Written clarification or
-  permission is required before the planned BYOK flow or “Powered by Meta AI”
-  attribution can ship.
-- The current AUP adds education, sensitive-data, provenance, and agent-human
-  oversight constraints. The linked Global Processor Terms and Data Security
-  Terms redirect to a blocked login; their exact duties are unverified and must
-  be reviewed before launch. See `docs/research/meta-api.md`.
-- New Git history must be independent and must exclude private/reference
-  material.
-- Local `main` has 526 non-empty, reviewed commits; no changes have been pushed
-  yet. Continue to count only useful, distinct commits, never empty or
-  duplicate churn.
-- Spawnable agents must use GPT-6 Luna MAX or GPT-6.1 Terra HIGH. This runtime
-  does not provide enforceable per-agent filesystem/network isolation.
-- Do not claim browser verification until the app has been rendered and
-  inspected at desktop and mobile sizes.
+- Read `AGENTS.md`, `apps/web/AGENTS.md`, `PLAN.md`, `PROGRESS.md`, and
+  `SKILLS.md` before continuing web work. The installed Next.js package is
+  hoisted to root `node_modules/next`; this install does not include
+  `dist/docs/`. For version-specific Next APIs, consult official current docs
+  and inspect the installed package rather than relying on assumptions.
+- Use only documented official Meta Model API inference if and when the
+  provider, legal, and operator gates permit it. Do not substitute another
+  inference provider.
+- Keep public signup and Meta key submission disabled. Written clarification
+  or permission is needed for Chron's BYOK flow and requested attribution.
+  Current Meta terms impose age, jurisdiction, data, and agent-oversight rules;
+  see `docs/research/meta-api.md`. The linked processor/security terms remain
+  unverified behind an authenticated source.
+- The repo’s source-available license permits viewing and prohibits copying.
+  No reference material was inspected or copied.
+- Do not add samples, placeholders, stubs, fake demos, or nonfunctional
+  controls to the product.
+- This runtime does not enforce per-agent filesystem or network sandboxes.
+  Worktrees are coordination boundaries only; never provide secrets or private
+  data to agents. Requested agent model settings were assigned, but this
+  runtime does not independently attest model identity.
+
+## Implementation checkpoint
+
+- Landing route: `apps/web/app/page.tsx`.
+- Story and anchors: `apps/web/features/landing/presentation/landing-story.tsx`.
+- Story layout: `apps/web/features/landing/presentation/landing-story.module.css`.
+- Scroll progress: `apps/web/features/landing/presentation/story-progress-bridge.tsx`.
+- Lazy scene loader and scene: `apps/web/features/landing/world/WorldSceneLoader.tsx`,
+  `WorldLayer.tsx`, `CalendarInstrument.tsx`, `WorldFallback.tsx`, and
+  `world.css`.
+- Shared visual tokens: `apps/web/styles/tokens.css` and
+  `apps/web/styles/globals.css`.
+- Audit findings and scores: `docs/audits/landing-page.md`.
+- Meta policy report: `docs/research/meta-api.md`.
+
+The scene provides the recurring calendar instrument, CSS fallback, reduced
+motion behavior, demand rendering, visibility pausing, and WebGL failure
+handling. LP-01 and LP-02 are fixed. A source review also found a broken
+visibility-listener path when IntersectionObserver is missing; LP-06 is fixed
+in source and independently re-reviewed, but that exact browser fallback is
+not runtime tested. LP-03 and LP-04 remain open; LP-05 is partly addressed but
+awaits narrow and zoom browser checks.
+
+## Verification performed
+
+- `npm run lint --workspace @chron/web` — passed.
+- `npm run typecheck --workspace @chron/web` — passed.
+- `npm run build --workspace @chron/web` — passed after the latest landing
+  module split and visibility-fallback fix.
+- Production route inspected in Chrome at 1230×480. Opening, Week, Study,
+  Research, and closing chapters were viewed; in-page navigation, `#week`
+  reload, and reverse navigation were tried. The scene was visible through
+  the chapter gradients beside the copy. After the module split, the production
+  Research view was reloaded and rechecked.
+- No browser verification is claimed at mobile/tablet widths or 320px, 400%
+  zoom, reduced motion, keyboard-only input, WebGL loss, or performance metrics.
+  The independent landing audit was source-only; its configured model identity
+  could not be independently confirmed.
+- `npm audit --omit=dev --audit-level=moderate` previously passed with no
+  production dependency findings. The full dependency audit has 11 moderate
+  development-only `minimatch` denial-of-service advisories and no high or
+  critical findings; avoid forced upgrades.
 
 ## Next actions
 
-1. Review and integrate the persistent 3D scene patch from its task worktree.
-   Mount it behind the semantic story, use one fallback graphic, and preserve
-   the correct current scroll position after initial load or lazy mount.
-2. Lazy-load the 3D bundle and establish the layer order so the scene appears
-   through authored sections while copy and navigation stay legible.
-3. Run lint, typecheck, and production build after integration. Inspect
-   production rendering at 1440×900, 768×1024, 390×844, and 320px; test anchor
-   navigation, deep-link reload, reverse/fast scroll, reduced motion, and WebGL
-   fallback. Record findings before closing L1.
-4. Review staged files and every public-history path before pushing the fresh
-   `main` history; do not push `local-only/prior-main`.
-5. Obtain qualified review of the integrated Meta report and inspect the
-   incorporated processor/security terms through an authorized source before
-   launch.
-6. Do not add fake signup, user-key intake, Meta attribution, demos, or
-   nonfunctional controls while their policy gates and implementations remain
-   unresolved.
-
-## Active agent work
-
-- Skill curator: GPT-6 Luna MAX setting requested; initial authoring and
-  correction work are integrated. The task reached its usage limit before
-  returning a final summary. Root validation and both final reviews confirm
-  500 sequential IDs, exact category totals, all fields, unique names, and no
-  exact duplicate guidance. All SL-01–SL-18 text findings are closed in
-  `docs/audits/skill-library.md`; runtime checks remain future work.
-- Meta policy researcher: GPT-6.1 Terra HIGH, report integrated at
-  `docs/research/meta-api.md`; the public AUP and data commitments were checked.
-  The incorporated processor/security terms remain unverified because the
-  public links require an authenticated source.
-- Independent landing direction critique: GPT-6.1 Terra HIGH setting
-  requested; no blocker in the written direction. Its release requirements are
-  recorded in `docs/design/landing-brief.md`; a separate source audit found
-  issues now tracked in `docs/architecture/task-graph.md`.
-- The runtime provides no hard per-agent filesystem or network isolation.
-
-## Current implementation checkpoint
-
-- Landing route and story: `apps/web/app/page.tsx` and
-  `apps/web/features/landing/presentation/landing-story.tsx`.
-- Story layout and shared tokens: `apps/web/features/landing/presentation/landing-story.module.css`,
-  `apps/web/styles/tokens.css`, and `apps/web/styles/globals.css`.
-- Native scroll bridge: `apps/web/features/landing/presentation/story-progress-bridge.tsx`;
-  it emits `number | null`, handles late subscriber requests, and maps the final
-  story stop to reachable scroll end.
-- The world implementation remains in `/tmp/chron-worktrees/landing-world`
-  pending root review and integration; it is not in the main commit yet. The
-  main route currently has no 3D Canvas.
-- `npm run lint`, `npm run typecheck`, and `npm run build` passed on the shell.
-  The page rendered in a real browser at the default desktop viewport and
-  390×844. These checks do not verify the unintegrated scene or the full L1
-  acceptance matrix.
-- Next.js generated `apps/web/AGENTS.md`; its version-specific guidance is
-  retained and added to the required instruction set.
-- Latest implementation commit: `9d2c06d update`; task-graph review checkpoint:
-  `cbc7e28 update`.
+1. Verify 320px, 390px, tablet, and 400% zoom layout in a real browser; resolve
+   any clipping, overlap, or horizontal overflow.
+2. Inspect forward, reverse, and fast scroll; keyboard navigation and focus;
+   reduced motion; and WebGL fallback/context loss. Record evidence in the
+   landing audit and close findings only after verification.
+3. Measure animation and page performance on representative conditions.
+4. Re-run lint, typecheck, and production build after any implementation fix.
+5. Continue with backend security only after the L1 acceptance work is
+   sufficiently verified; keep signup and credential intake gated.
+6. Before first push, inspect the complete commit history and staged file list,
+   scan for secrets, confirm no user-specific paths or excluded material, and
+   verify repository privacy settings.
