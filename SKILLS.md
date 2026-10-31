@@ -4414,3 +4414,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Chrome Memory, React Profiler
 - **Security considerations:** Use synthetic data in shared snapshots
 - **Verification method:** Repeat cycles; verify memory stabilizes
+
+### S398 — Large-document parsing
+
+- **Skill ID:** S398
+- **Name:** Large-document parsing
+- **Purpose:** Bound CPU and memory for long files
+- **When to use:** When source uploads exceed normal size
+- **Implementation approach:** Chunk work in a bounded job inside the enforced parser boundary from S285; workers and queues manage concurrency, not hostile-input isolation. Use S393 only for client responsiveness
+- **Recommended tools:** Isolated parser service under S285, bounded queue, PDF.js, heap profiler
+- **Security considerations:** Quarantine input and enforce size ceilings; a worker thread/process without the S285 OS restrictions is not a security sandbox
+- **Verification method:** Measure peak memory, cancellation, and configured caps with test-only large and malformed files; verify server parsing uses S285 isolation
