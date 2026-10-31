@@ -3772,3 +3772,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** JSXGraph, KaTeX
 - **Security considerations:** Do not execute arbitrary learner scripts
 - **Verification method:** Test extremes and keyboard operation
+
+### S340 — Graph and timeline teaching
+
+- **Skill ID:** S340
+- **Name:** Graph and timeline teaching
+- **Purpose:** Explain ordered concepts or processes visually
+- **When to use:** When content has sequence or relations
+- **Implementation approach:** Use labelled nodes, direction, plus text equivalent
+- **Recommended tools:** D3, SVG, accessible list
+- **Security considerations:** Sanitize imported labels and URLs
+- **Verification method:** Compare order with source and navigate without pointer
