@@ -2877,3 +2877,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Verification policy, repository read
 - **Security considerations:** Do not claim success when evidence is absent
 - **Verification method:** Inject partial failure; report must stay incomplete
+
+### S259 — User-editable plans
+
+- **Skill ID:** S259
+- **Name:** User-editable plans
+- **Purpose:** Let users correct assumptions before action
+- **When to use:** When proposed plan has multiple steps
+- **Implementation approach:** Render step summaries and version edits
+- **Recommended tools:** Typed plan UI, revision endpoint
+- **Security considerations:** Revalidate tools and scopes server-side
+- **Verification method:** Edit step; stale approvals must fail
