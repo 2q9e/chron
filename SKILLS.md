@@ -3044,3 +3044,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, OpenAPI schemas
 - **Security considerations:** Treat third-party responses as hostile input
 - **Verification method:** Test malformed, oversized, and changed responses
+
+### S274 — Tool permission declarations
+
+- **Skill ID:** S274
+- **Name:** Tool permission declarations
+- **Purpose:** Describe required scopes per capability
+- **When to use:** When adding a tool to the registry
+- **Implementation approach:** Attach read/write scopes and resource types as metadata
+- **Recommended tools:** Typed registry, policy engine
+- **Security considerations:** No implicit broad access from tool name
+- **Verification method:** Assert required scope for each schema
