@@ -4249,3 +4249,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Chrome Rendering, stylelint
 - **Security considerations:** CSS hiding is not authorization
 - **Verification method:** Profile style and paint work
+
+### S383 — React render profiling
+
+- **Skill ID:** S383
+- **Name:** React render profiling
+- **Purpose:** Locate costly component updates
+- **When to use:** When interactions rerender large trees
+- **Implementation approach:** Record commits before optimizing
+- **Recommended tools:** React Profiler
+- **Security considerations:** Use synthetic data in shared captures
+- **Verification method:** Compare render counts across change
