@@ -5023,3 +5023,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Dockerfile, Kubernetes securityContext
 - **Security considerations:** Do not mount host paths or Docker socket
 - **Verification method:** Run container and confirm non-root identity
+
+### S453 — Container vulnerability scanning
+
+- **Skill ID:** S453
+- **Name:** Container vulnerability scanning
+- **Purpose:** Find known issues in runtime layers
+- **When to use:** On image build and release
+- **Implementation approach:** Scan base and installed packages, triage reachability
+- **Recommended tools:** Trivy, Grype
+- **Security considerations:** Do not upload private image to public scanners
+- **Verification method:** Fail release on policy-defined critical findings
