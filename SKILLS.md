@@ -2136,3 +2136,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, JSON Schema
 - **Security considerations:** Treat all model output as untrusted data; schema validation is not authorization or approval
 - **Verification method:** Fuzz missing, extra, oversized, wrong-type fields
+
+### S192 — Tool authorization gate
+
+- **Skill ID:** S192
+- **Name:** Tool authorization gate
+- **Purpose:** Restrict tools to current user permissions
+- **When to use:** Before any agent tool call
+- **Implementation approach:** Check identity, scope, ownership every call
+- **Recommended tools:** Policy module, tool registry
+- **Security considerations:** Model cannot grant itself authority
+- **Verification method:** Attempt denied tools and cross-user IDs
