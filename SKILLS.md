@@ -4869,3 +4869,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Git, diff viewer
 - **Security considerations:** No secrets or scratch artifacts
 - **Verification method:** Review commit diff and run relevant check
+
+### S439 — Staged-path review
+
+- **Skill ID:** S439
+- **Name:** Staged-path review
+- **Purpose:** Prevent accidental unrelated files entering Git
+- **When to use:** Before every commit
+- **Implementation approach:** Inspect cached diff and exact path list
+- **Recommended tools:** git diff --cached, git status
+- **Security considerations:** Reject env, uploads, logs, private data
+- **Verification method:** Automated path denylist plus manual check
