@@ -722,3 +722,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript types, Zod response schemas
 - **Security considerations:** Exclude password hashes, encrypted fields, provider tokens, and internal flags
 - **Verification method:** Snapshot responses and assert forbidden properties are absent
+
+### S064 — OpenAPI contract maintenance
+
+- **Skill ID:** S064
+- **Name:** OpenAPI contract maintenance
+- **Purpose:** Keep endpoint documentation and generated clients aligned
+- **When to use:** When several features consume the same API surface
+- **Implementation approach:** Define request and response schemas once, then lint for breaking drift
+- **Recommended tools:** OpenAPI 3.1, Redocly CLI, openapi-typescript
+- **Security considerations:** Do not publish internal routes or schemas containing sensitive examples
+- **Verification method:** Generate a client in CI and fail on unreviewed contract changes
