@@ -2734,3 +2734,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Database, notification channel
 - **Security considerations:** Only authenticated owner may approve
 - **Verification method:** Test expiry, duplicates, and wrong-user approval
+
+### S246 — Action preview diff
+
+- **Skill ID:** S246
+- **Name:** Action preview diff
+- **Purpose:** Show before/after effects before execution
+- **When to use:** For bulk event edits or imports
+- **Implementation approach:** Diff normalized tool arguments and affected records
+- **Recommended tools:** Diff renderer, action schema
+- **Security considerations:** Exclude secrets and unrelated private values
+- **Verification method:** Compare preview hash with execution payload
