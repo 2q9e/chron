@@ -689,3 +689,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** p-retry, queue retry settings, Retry-After parser
 - **Security considerations:** Do not retry non-idempotent writes without a dedupe mechanism
 - **Verification method:** Fault-inject repeated 429/5xx and verify attempts stop at the transport cap without duplicating a write
+
+### S061 — Deadline propagation
+
+- **Skill ID:** S061
+- **Name:** Deadline propagation
+- **Purpose:** Keep nested service calls inside the originating request budget
+- **When to use:** When a handler calls multiple downstream systems
+- **Implementation approach:** Pass deadlines/AbortSignals as cooperative stops for local or not-yet-dispatched work and reserve response time; distinguish request-budget expiry from user cancellation (S247). Track dispatched remote writes as pending/unknown until reconciled under S248/S281, with idempotency from S045
+- **Recommended tools:** AbortController, framework request context
+- **Security considerations:** An abort/deadline does not prove a dispatched remote write stopped or rolled back; preserve cleanup, operation state, and evidence-based outcomes
+- **Verification method:** Test pre-dispatch expiry and a remote commit followed by a lost response; verify unknown status is reconciled without duplicate effects and no rollback is claimed without evidence
