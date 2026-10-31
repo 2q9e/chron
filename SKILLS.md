@@ -1364,3 +1364,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Three.js, @react-three/fiber
 - **Security considerations:** Never place account data in public scene assets
 - **Verification method:** Production-render a minimal scene and navigate away to check cleanup
+
+### S122 — Canvas sizing
+
+- **Skill ID:** S122
+- **Name:** Canvas sizing
+- **Purpose:** Fit rendering to its container without layout loops
+- **When to use:** A canvas sits in a changing hero or panel
+- **Implementation approach:** Use ResizeObserver and update camera aspect only on change
+- **Recommended tools:** ResizeObserver, R3F useThree
+- **Security considerations:** Avoid probing cross-origin embeds for dimensions
+- **Verification method:** Resize viewport and check overflow and repeated updates
