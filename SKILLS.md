@@ -3286,3 +3286,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OAuth userinfo, unique DB constraint
 - **Security considerations:** Do not link solely by unverified email match
 - **Verification method:** Attempt duplicate and mismatched-account link flows
+
+### S296 — Google Calendar import
+
+- **Skill ID:** S296
+- **Name:** Google Calendar import
+- **Purpose:** Bring permitted external events into the internal schedule
+- **When to use:** Only after S291, when the user enables an approved Google Calendar import
+- **Implementation approach:** Use official events API, timezone-aware mapping, and incremental sync token; imported calendar changes remain drafts under S369 until approved
+- **Recommended tools:** Google Calendar API, sync worker
+- **Security considerations:** Request read scope unless user explicitly enables writes; do not commit imported event changes before S369 approval
+- **Verification method:** Import synthetic event and compare fields and timezone
