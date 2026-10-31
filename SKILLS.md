@@ -5390,3 +5390,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** pnpm workspaces, dependency graph
 - **Security considerations:** Do not share secret-bearing server package with client
 - **Verification method:** Build packages independently and check dependency direction
+
+### S486 — Configuration layering
+
+- **Skill ID:** S486
+- **Name:** Configuration layering
+- **Purpose:** Make environment, defaults, and user preferences distinct
+- **When to use:** When new settings or deployment values appear
+- **Implementation approach:** Parse env once; apply explicit runtime and per-user layers
+- **Recommended tools:** Zod config schema, CSS settings
+- **Security considerations:** Never put secrets in user-visible preference objects
+- **Verification method:** Test missing, invalid, and precedence cases
