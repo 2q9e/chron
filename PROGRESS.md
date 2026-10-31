@@ -15,6 +15,11 @@ in progress. No code or visual material was copied from any other folder.
 - Enabled GitHub secret scanning and push protection, Dependabot alerts and
   security updates, and private vulnerability reporting. Verified these settings
   through the repository API; branch protection waits for the first clean push.
+- Added `.github/workflows/quality.yml` with read-only permissions and
+  SHA-pinned official checkout/setup-node actions. It runs install, lint,
+  typecheck, production dependency audit, and build on pushes and pull requests.
+  The YAML parses locally; the hosted workflow has not run because the public
+  repository is still empty.
 - Added `AGENTS.md`, the view-only source license, project roadmap, and initial
   continuation records.
 - Integrated the 500-entry `SKILLS.md`. Independent root validation and final
@@ -56,7 +61,7 @@ in progress. No code or visual material was copied from any other folder.
   @chron/web`, and `npm run build --workspace @chron/web` after integrating the
   scene and latest layout changes; all passed. Next.js generated
   `apps/web/AGENTS.md` and updates `next-env.d.ts` during build/dev runs.
-- The fresh local `main` history currently has 531 non-empty, distinct commits.
+- The fresh local `main` history currently has 533 non-empty, distinct commits.
   No code or history has been pushed. Continue only with useful, reviewed
   changes; the public repository needs a staged-path/history/privacy review
   before its first push.
@@ -93,7 +98,7 @@ in progress. No code or visual material was copied from any other folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- The public GitHub repository is still empty; local `main` has 531 non-empty,
+- The public GitHub repository is still empty; local `main` has 533 non-empty,
   purposeful commits, exceeding the requested 500. Never count empty or
   duplicate commits toward the target.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
@@ -109,6 +114,10 @@ in progress. No code or visual material was copied from any other folder.
   linked incorporated terms not available without an authenticated source.
 - Landing lint, TypeScript, and production-build checks passed after the scene
   module split and visibility-fallback fix.
+- `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
+  dependency vulnerabilities.
+- The GitHub Actions workflow YAML parses successfully. It has not yet run in
+  GitHub Actions; the first push will trigger the `quality / verify` check.
 - Rendered the production build in Chrome at an available 1230×480 desktop
   viewport. Inspected opening, Week, Study, Research, and closing sections;
   tested chapter navigation, `#week` reload, and reverse navigation. The scene

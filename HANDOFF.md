@@ -2,7 +2,7 @@
 
 ## Current state
 
-Chron is a standalone repository on local `main` with 531 non-empty, distinct
+Chron is a standalone repository on local `main` with 533 non-empty, distinct
 commits. The public GitHub repository exists but is still empty; no code or
 history has been pushed. Secret scanning, push protection, Dependabot alerts
 and security updates, and private vulnerability reporting are enabled. Review
@@ -33,6 +33,10 @@ performance checks are done.
   unverified behind an authenticated source.
 - The repo’s source-available license permits viewing and prohibits copying.
   No reference material was inspected or copied.
+- `.github/workflows/quality.yml` defines read-only CI for lint, typecheck,
+  production dependency audit, and build. It uses full-SHA pins for official
+  checkout/setup-node actions. The YAML parses locally; GitHub has not run it
+  because no history has been pushed. No unit or integration suite exists yet.
 - Do not add samples, placeholders, stubs, fake demos, or nonfunctional
   controls to the product.
 - This runtime does not enforce per-agent filesystem or network sandboxes.
@@ -77,8 +81,8 @@ awaits narrow and zoom browser checks.
   zoom, reduced motion, keyboard-only input, WebGL loss, or performance metrics.
   The independent landing audit was source-only; its configured model identity
   could not be independently confirmed.
-- `npm audit --omit=dev --audit-level=moderate` previously passed with no
-  production dependency findings. The full dependency audit has 11 moderate
+- `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
+  dependency vulnerabilities. The full dependency audit has 11 moderate
   development-only `minimatch` denial-of-service advisories and no high or
   critical findings; avoid forced upgrades.
 
