@@ -203,3 +203,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React useTransition, Suspense
 - **Security considerations:** Require S236 before inference and discard stale results after user or query context changes
 - **Verification method:** Race two slow transitions and confirm the newest intent wins
+
+### S017 — Optimistic mutation rollback
+
+- **Skill ID:** S017
+- **Name:** Optimistic mutation rollback
+- **Purpose:** Show quick feedback while preserving correctness if a write fails
+- **When to use:** When reversible actions have a clear server-confirmed result
+- **Implementation approach:** Apply an optimistic patch, retain a rollback snapshot, reconcile on response
+- **Recommended tools:** TanStack Query, React, server action
+- **Security considerations:** Do not optimistically claim destructive or permission-sensitive actions succeeded
+- **Verification method:** Simulate conflict and network failure; verify rollback and retry affordance
