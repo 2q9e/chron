@@ -1850,3 +1850,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OIDC/session library
 - **Security considerations:** Do not invent password or token schemes
 - **Verification method:** Test missing, expired, revoked, stale sessions
+
+### S166 — Cookie hardening
+
+- **Skill ID:** S166
+- **Name:** Cookie hardening
+- **Purpose:** Protect browser session cookies
+- **When to use:** When issuing web sessions
+- **Implementation approach:** Set Secure, HttpOnly, SameSite, narrow scope
+- **Recommended tools:** Framework cookie API
+- **Security considerations:** Avoid broad domain scope without need
+- **Verification method:** Assert attributes in browser and integration tests
