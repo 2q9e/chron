@@ -2325,3 +2325,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** EXPLAIN ANALYZE, pg_stat_statements
 - **Security considerations:** Restrict query-plan, database-log, and monitoring access; redact bound values where instrumentation captures them. Indexes themselves are not the usual value-disclosure surface
 - **Verification method:** Benchmark representative reads/writes and inspect least-privilege plan/log access plus bind-value redaction in monitoring
+
+### S209 — Partial indexes
+
+- **Skill ID:** S209
+- **Name:** Partial indexes
+- **Purpose:** Index only rows that participate in frequent queries
+- **When to use:** When active, unarchived, or pending subsets dominate access
+- **Implementation approach:** Use WHERE predicates matching the stable query filter
+- **Recommended tools:** PostgreSQL partial index
+- **Security considerations:** Ensure excluded rows cannot bypass authorization logic
+- **Verification method:** Compare plan and latency for active and archived fixtures
