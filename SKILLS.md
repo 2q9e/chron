@@ -258,3 +258,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TanStack Virtual, React Profiler
 - **Security considerations:** Keep offscreen sensitive content out of reused DOM nodes
 - **Verification method:** Profile a large synthetic test fixture and keyboard-navigate recycled rows; keep fixtures out of the product bundle
+
+### S022 — Accessible data tables
+
+- **Skill ID:** S022
+- **Name:** Accessible data tables
+- **Purpose:** Implement sortable tables with native row/header semantics and stable data layout
+- **When to use:** When users compare deadlines, study items, or audit history
+- **Implementation approach:** Use native table structure and label active sort state; use S476 for screen-reader navigation checks
+- **Recommended tools:** HTML table, aria-sort, TanStack Table
+- **Security considerations:** Escape untrusted cell text; never render HTML from imported records
+- **Verification method:** Test sort behavior, column alignment, and semantic headers; use S476 for assistive-technology navigation coverage
