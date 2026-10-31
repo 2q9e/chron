@@ -10,11 +10,18 @@ sandbox those worktrees; agents receive no credentials or personal data.
 F0-a 500-skill authoring ── F0-c independent skill audits ─ F0-c1 corrections ─ F0-c2 re-audit ─ F0-c3 corrections ─ F0-c4 final re-audit ─┐
 F0-b Meta policy research ── F0-b2 AUP/terms review ─────┼─ F0 gate ─┬─ L1-a design system and page shell
 F0-d CI and repository safety ────────────────────────────┘           └─ L1-b persistent 3D scroll world
+L1-a, L1-b ── L1-c independent integration review ── L1-d remediation ── L1-e browser verification
 ```
 
 L1-a and L1-b may start together after the architecture boundary is agreed and
 F0 is complete. Their owned files do not overlap. The main agent owns shared
 package manifests, lockfiles, routing integration, and final merges.
+
+The first independent implementation review found integration issues in the
+progress handshake, fail-closed behavior, reduced-motion initialization, and
+layer order. L1-d addresses bridge and scene lifecycle behavior in their
+separate owned files. L1-e depends on those fixes and on the main agent's route
+and layer integration; it includes browser checks at desktop and mobile sizes.
 
 ## Task contracts
 
@@ -230,7 +237,8 @@ package manifests, lockfiles, routing integration, and final merges.
   build and desktop/mobile browser verification after the world is connected.
 - **Expected deliverable:** semantic landing route, design tokens, and
   lifecycle-safe native-scroll progress bridge
-- **Status:** Ready to begin in an isolated coordination worktree.
+- **Status:** Source implementation is staged in the task worktree; build and
+  browser checks await scene integration.
 
 ### L1-b — persistent 3D scroll world
 
@@ -256,7 +264,93 @@ package manifests, lockfiles, routing integration, and final merges.
   verified by the main agent in a real browser.
 - **Expected deliverable:** `WorldLayer` with the five-state instrument and
   an owned CSS fallback, ready for main-agent integration
-- **Status:** Ready to begin in an isolated coordination worktree.
+- **Status:** Source implementation is staged in the task worktree; build and
+  browser checks await main-agent integration.
+
+### L1-c — independent landing integration review
+
+- **Assigned agent:** independent reviewer, GPT-6.1 Terra, HIGH reasoning
+  (requested setting; runtime identity is not independently exposed)
+- **Dependencies:** L1-a and L1-b source implementations
+- **Owned files:** findings only
+- **Read-only files:** landing route, progress bridge, world component and CSS,
+  design brief, scroll-world contract, `AGENTS.md`, and `SKILLS.md`
+- **Required skills:** S034, S095, S114, S120, S126, S143, S147, S148, S155,
+  S463, S473, and S478
+- **Security permissions:** source-only review in assigned Chron worktree; no
+  network, credentials, personal data, or reference folders; no edits, commit,
+  or push
+- **Acceptance criteria:** report actionable scene integration, lifecycle,
+  accessibility, motion, and layout issues with severity and verification
+- **Tests:** independent source review; explicitly mark browser behavior as
+  unverified
+- **Expected deliverable:** findings for root remediation
+- **Status:** Review found progress-handshake, fail-closed, reduced-motion, and
+  layer-order issues; source findings are being remediated.
+
+### L1-d1 — repair progress bridge lifecycle
+
+- **Assigned agent:** `/root/landing_dom`, GPT-6 Luna MAX setting requested at
+  spawn; actual runtime identity is not independently exposed
+- **Dependencies:** L1-c findings and agreed `number | null` progress contract
+- **Owned files:** `apps/web/features/landing/presentation/story-progress-bridge.tsx`
+  only
+- **Read-only files:** `AGENTS.md`, `SKILLS.md`, `docs/design/scroll-world-contract.md`,
+  and the L1-c review
+- **Required skills:** S120, S126, S145, S147, and S155
+- **Security permissions:** Chron worktree is a coordination boundary only; no
+  credentials, user data, network, other project directories, reference files,
+  or commit/push
+- **Acceptance criteria:** late subscribers can request current progress;
+  malformed marker sets emit `null`; final progress 1 is reachable at max
+  scroll; observer fallbacks and cleanup are safe; no body-wide mutation work
+- **Tests:** source-level protocol and cleanup review; root runs type, lint,
+  build, and browser validation
+- **Expected deliverable:** bridge-only remediation and review summary
+- **Status:** In progress.
+
+### L1-d2 — repair world progress and motion lifecycle
+
+- **Assigned agent:** `/root/landing_world`, GPT-6 Luna MAX setting requested at
+  spawn; actual runtime identity is not independently exposed
+- **Dependencies:** L1-c findings and agreed `number | null` progress contract
+- **Owned files:** `apps/web/features/landing/world/WorldLayer.tsx` and
+  `world.css` only
+- **Read-only files:** `AGENTS.md`, `SKILLS.md`, `docs/design/scroll-world-contract.md`,
+  and the L1-c review
+- **Required skills:** S121, S126, S145, S147–S149, S151, S155, S473, and S478
+- **Security permissions:** Chron worktree is a coordination boundary only; no
+  credentials, user data, network, other project directories, reference files,
+  or commit/push
+- **Acceptance criteria:** request/reply supplies current progress after lazy
+  mount; `null` freezes a defined static composition; reduced-motion is
+  established before Canvas visibility; fallback, context recovery, and
+  cleanup remain functional
+- **Tests:** source-level lifecycle and event-contract review; root runs type,
+  lint, build, and browser validation
+- **Expected deliverable:** world-only remediation and review summary
+- **Status:** In progress.
+
+### L1-e — integrate and verify landing world
+
+- **Assigned agent:** main agent (runtime model identity not confirmed)
+- **Dependencies:** L1-d1 and L1-d2 reviewed patches
+- **Owned files:** `apps/web/app/page.tsx`, landing presentation CSS, and any
+  narrowly scoped integration files explicitly agreed with the other owners
+- **Read-only files:** all landing source, design brief, and world contract
+- **Required skills:** S030, S095, S120, S126, S144, S147, S155, S472, S473,
+  and S478
+- **Security permissions:** local Chron project only; no secrets, reference
+  material, external APIs, deployment, or unreviewed push
+- **Acceptance criteria:** one world layer is mounted behind semantic content;
+  duplicate decorative stills are removed; the world remains visible only in
+  composed areas, text/nav maintain contrast, and mobile framing avoids copy
+- **Tests:** lint, typecheck, production build, direct browser inspection at
+  desktop and mobile, deep-link/reload progress, reverse/fast scrolling,
+  reduced-motion, and no-WebGL fallback
+- **Expected deliverable:** reviewed integrated landing experience and
+  verification findings in progress documentation
+- **Status:** Waiting for L1-d1 and L1-d2.
 
 ## Integration gates
 
