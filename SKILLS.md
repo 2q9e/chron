@@ -3374,3 +3374,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Google Slides API
 - **Security considerations:** Avoid fetching images or notes beyond consented scope
 - **Verification method:** Compare extracted text with a synthetic slide deck
+
+### S304 — Gmail scope restraint
+
+- **Skill ID:** S304
+- **Name:** Gmail scope restraint
+- **Purpose:** Support email-derived tasks with explicit user choice
+- **When to use:** Only after S291, when a specifically approved Gmail feature and scope are available
+- **Implementation approach:** Prefer search/read-only scope and require selected-message review
+- **Recommended tools:** Gmail API, OAuth scopes
+- **Security considerations:** Require explicit user approval for each send or delete action; read consent never authorizes writes
+- **Verification method:** Check consent scopes and prove no write call occurs
