@@ -977,3 +977,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS custom properties, Figma tokens
 - **Security considerations:** Do not remove whitespace needed to distinguish destructive choices
 - **Verification method:** Compare page rhythm at full scroll and inspect repeated component gaps
+
+### S087 — Palette architecture
+
+- **Skill ID:** S087
+- **Name:** Palette architecture
+- **Purpose:** Build a cohesive palette with roles rather than arbitrary swatches
+- **When to use:** When adding a theme or a new feature surface
+- **Implementation approach:** Define neutral, accent, surface, text, and feedback ramps with semantic aliases
+- **Recommended tools:** Design tokens, OKLCH tooling, CSS variables
+- **Security considerations:** Do not use color as the sole carrier of status or permission
+- **Verification method:** Check palette on real components in every supported theme
