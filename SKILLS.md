@@ -3884,3 +3884,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ISO date type, PostgreSQL date
 - **Security considerations:** Do not attach or reveal an unnecessary timezone to a date-only item; use the timed-event model in S346/S347 only for timed records
 - **Verification method:** Round-trip date-only values through storage and render them in multiple timezones; assert dates do not shift and are never converted from midnight UTC
+
+### S350 — Recurrence rule normalization
+
+- **Skill ID:** S350
+- **Name:** Recurrence rule normalization
+- **Purpose:** Represent repeating events with a bounded rule
+- **When to use:** When users set daily, weekly, or custom repetition
+- **Implementation approach:** Validate supported RRULE fields and preserve source rule; timed recurrence retains its IANA zone while all-day recurrence advances calendar dates per S346/S349
+- **Recommended tools:** rrule, iCalendar RFC 5545
+- **Security considerations:** Cap count and expansion horizon; avoid converting all-day dates through midnight instants
+- **Verification method:** Parse, serialize, and compare representative rules
