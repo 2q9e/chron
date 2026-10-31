@@ -3873,3 +3873,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Temporal, timezone fixtures
 - **Security considerations:** Never silently shift approved event without notice
 - **Verification method:** Test spring gap and autumn duplicate-hour cases
+
+### S349 — All-day event semantics
+
+- **Skill ID:** S349
+- **Name:** All-day event semantics
+- **Purpose:** Keep all-day items anchored to calendar dates in every display zone
+- **When to use:** When importing or creating all-day items
+- **Implementation approach:** Persist start and end as date values (normally end-exclusive) with no UTC instant, wall-clock time, or midnight-zone conversion; recurrence advances by calendar-date rules
+- **Recommended tools:** ISO date type, PostgreSQL date
+- **Security considerations:** Do not attach or reveal an unnecessary timezone to a date-only item; use the timed-event model in S346/S347 only for timed records
+- **Verification method:** Round-trip date-only values through storage and render them in multiple timezones; assert dates do not shift and are never converted from midnight UTC
