@@ -2844,3 +2844,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Meta tokenizer if documented, context planner
 - **Security considerations:** Never call inference before S236 and never drop safety policy to fit more sources
 - **Verification method:** Test boundary length and included source IDs
+
+### S256 — Conversation summarization
+
+- **Skill ID:** S256
+- **Name:** Conversation summarization
+- **Purpose:** Compress prior turns without losing commitments
+- **When to use:** When a thread exceeds context capacity; model-generated summaries require S236, while deterministic state extraction may run without inference
+- **Implementation approach:** Preserve decisions and pending actions with durable source references; use only official Meta summarization after S236 permission and capability checks
+- **Recommended tools:** Typed transcript, summarizer
+- **Security considerations:** Verify action claims against durable records; no alternate provider or inference before S236
+- **Verification method:** Compare subsequent plans against original decisions; verify model summarization is blocked before authorization
