@@ -2899,3 +2899,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Feedback schema, memory consent
 - **Security considerations:** No cross-session learning without consent
 - **Verification method:** Verify current answer changes; memory stays unchanged
+
+### S261 — Tool trace correlation
+
+- **Skill ID:** S261
+- **Name:** Tool trace correlation
+- **Purpose:** Connect model, tool, and result events
+- **When to use:** For debugging or run history
+- **Implementation approach:** Assign run, step, call IDs to sanitized events
+- **Recommended tools:** OpenTelemetry, trace IDs
+- **Security considerations:** Do not attach prompts or keys to traces
+- **Verification method:** Follow IDs across a synthetic execution
