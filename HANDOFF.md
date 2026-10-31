@@ -6,7 +6,9 @@ Chron is a standalone repository on one published branch, public GitHub
 `main`. Remote and local `main` match and contain more than 500 purposeful
 commits.
 The calendar API, protected route, sign-in, views, preferences, and conflict
-review are pushed. Secret scanning, push protection, Dependabot alerts and
+review are pushed. Idempotent event creation, safe recovery, reload-safe focus,
+and accessible short-event targets were pushed as `f304c19` and `ec93688`.
+Secret scanning, push protection, Dependabot alerts and
 security updates, and private vulnerability reporting are enabled. Continue
 reviewing staged paths and scans before every push. Do not commit root
 `AGENTS.md` or any old reference material.
@@ -17,11 +19,13 @@ C1 — calendar — is active; landing-page work is paused at the user's directi
 The current increment includes owner-scoped event and preference persistence,
 existing-account sign-in, protected routing, four calendar views, event
 create/edit/delete, theme and display preferences, and a server-side overlap
-check shown before manual approval. Recurrence, reminders, drag scheduling,
-search, external sync, database-backed runtime verification, and real
-authenticated browser walkthrough remain open. The current calendar audit also
-tracks three open issues: idempotent create retry, focus after reload, and a
-full-size target for short events near midnight.
+check shown before manual approval. The latest increment makes create
+retries idempotent, saves only user-scoped opaque recovery keys in browser
+storage, preserves uncertain requests for reconciliation, and restores focus
+after reload. Search, recurrence, reminders, drag scheduling, external sync,
+database-backed runtime verification, and real authenticated browser
+walkthrough remain open. C-01 through C-09 have source-level fixes recorded in
+the audit; rendered and database-backed verification is still pending.
 
 ## Product and security gates
 
@@ -49,11 +53,9 @@ full-size target for short events near midnight.
   exist and pass locally; live PostgreSQL integration remains unverified.
 - Do not add samples, placeholders, stubs, fake demos, or nonfunctional
   controls to the product.
-- `docs/audits/calendar-page.md` records the independent visual and security
-  reviews, scores, evidence, closed findings, and the current three open
-  findings. Source review confirmed timezone-aware Today, localized errors,
-  loading priority, and multi-day labels; it found a possible duplicate after
-  an uncertain create response plus two remaining accessibility issues.
+- `docs/audits/calendar-page.md` records independent visual and security
+  reviews, scores, source-level fixes, and verification limits. No authenticated
+  database session is available for rendered calendar verification.
 - This runtime does not enforce per-agent filesystem or network sandboxes.
   Worktrees are coordination boundaries only; never provide secrets or private
   data to agents. Requested agent model settings were assigned, but this
@@ -64,6 +66,7 @@ full-size target for short events near midnight.
 - Calendar API: `apps/web/app/api/calendar/`, including the conflict check at
   `apps/web/app/api/calendar/events/conflicts/route.ts`.
 - Calendar database schema: `apps/web/db/migrations/0002_calendar.sql`.
+- Create recovery ledger: `apps/web/db/migrations/0004_calendar_create_requests.sql`.
 - Calendar server validation and storage: `apps/web/features/calendar/server/`.
 - Calendar interface: `apps/web/features/calendar/presentation/`.
 - Authenticated calendar route and existing-account sign-in:
@@ -106,10 +109,12 @@ awaits narrow and zoom browser checks.
 
 - `npm run lint --workspace @chron/web` — passed.
 - `npm run typecheck --workspace @chron/web` — passed.
-- `npm run test:calendar-api --workspace @chron/web` — all 17 tests passed.
+- `npm run test:calendar-api --workspace @chron/web` — all 30 tests passed.
 - `npm run test:calendar-time --workspace @chron/web` — all 7 tests passed.
-- `npm run test:calendar-layout --workspace @chron/web` — all 3 tests passed
+- `npm run test:calendar-layout --workspace @chron/web` — all 10 tests passed
   for adjacent short events, midnight clipping, and spring-forward layout.
+- `npm run test:calendar-recovery --workspace @chron/web` — all 5 tests passed,
+  including partial reconciliation failure and retry.
 - `npm run test:auth-config --workspace @chron/web` — all 9 tests passed.
 - `npm run test:agent-skills --workspace @chron/web` — all 10 tests passed.
 - `npm run build --workspace @chron/web` — passed with the calendar API,
@@ -128,6 +133,8 @@ awaits narrow and zoom browser checks.
   opened with a synthetic local auth configuration and unreachable PostgreSQL;
   it displayed the account-service-unavailable state and did not load events.
   No login attempt, real session, or authenticated calendar behavior was tested.
+- The latest production build was opened in Chrome at `/sign-in`; it showed the
+  clear unconfigured PostgreSQL account-store state.
 - `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
   dependency vulnerabilities. The full dependency audit has 11 moderate
   development-only `minimatch` denial-of-service advisories and no high or
@@ -135,15 +142,13 @@ awaits narrow and zoom browser checks.
 
 ## Next actions
 
-1. Configure a disposable PostgreSQL test database/account, apply both
-   migrations, and run authenticated persistence, isolation, and browser
-   walkthroughs.
-2. Fix the three open calendar findings; create retries must replay one exact
-   approved payload without duplicating rows.
-3. Continue C1 with bounded title search, recurrence, reminders, and drag
+1. Configure a disposable PostgreSQL test database/account, apply the auth and
+   calendar migrations, and run authenticated persistence, isolation, and
+   browser walkthroughs.
+2. Continue C1 with bounded title search, recurrence, reminders, and drag
    scheduling while keeping landing work paused.
-4. Retain persisted, payload-bound draft approval before agent or bulk
+3. Retain persisted, payload-bound draft approval before agent or bulk
    integration can write calendar records.
-5. Resume remaining landing browser checks only when the user reprioritizes it.
-6. Before every push, inspect staged paths and rescan staged content and commit
+4. Resume remaining landing browser checks only when the user reprioritizes it.
+5. Before every push, inspect staged paths and rescan staged content and commit
    history for secrets and excluded material.

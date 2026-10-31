@@ -5,9 +5,9 @@
 F0 — foundation documentation, the scrubbed fresh history, and repository
 security are on public GitHub `main`; hosted checks and branch protection remain
 unverified. C1 — calendar — is active at the user's direction. Landing-page
-work is paused. The calendar implementation and first audit fixes are pushed
-to the single public `main` branch through `16a7eb0`. No code or visual material was
-copied from another folder.
+work is paused. Calendar reliability fixes are pushed to the single public
+`main` branch through `ec93688`. No code or visual material was copied from
+another folder.
 
 ## Completed
 
@@ -80,11 +80,13 @@ copied from another folder.
   configured, so persisted authenticated behavior is not yet runtime verified.
 - Fixed timezone-aware Today, localized operation errors, loading notice
   priority, multi-day timed-event labels, and adjacent short-event collisions.
-  The independent re-audit left reload focus, midnight hit targets, and create
-  idempotency open; `docs/audits/calendar-page.md` records evidence and status.
-- Calendar API (17), time (7), layout (3), auth-config (9), and agent-skill
-  (10) tests pass, as do lint, typecheck, and the production build. These are
-  source-level checks; authenticated persistence remains unverified.
+  Calendar create now uses owner-scoped idempotency and payload-free recovery
+  keys. Save retries are locked to the reviewed payload, sign-out and settings
+  cannot race an uncertain operation, focus waits for reload or uses a stable
+  fallback, and one-minute events near midnight get full-size targets.
+- Calendar API (30), time (7), layout (10), and create recovery (5) tests pass,
+  as do lint, typecheck, and the production build. These are source-level
+  checks; authenticated persistence remains unverified.
 
 ## Open work
 
@@ -92,11 +94,10 @@ copied from another folder.
   inspect staged paths and scan outgoing history before each push.
 - Configure a disposable PostgreSQL test database/account, apply the auth and
   calendar migrations, then verify real persistence, ownership isolation, and
-  authenticated calendar interactions in a browser.
-- Close create idempotency, reload focus, and midnight hit-target findings
-  before starting the next calendar feature slice.
+  authenticated calendar interactions in a browser. Migration `0004` is not
+  applied to a database in this environment.
 - Continue C1 with bounded title search, recurrence, reminders, drag scheduling,
-  and external calendar synchronization.
+  and external calendar synchronization. Bounded title search is next.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -128,9 +129,9 @@ copied from another folder.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
 - Public GitHub `main` has more than 500 non-empty, purposeful commits; the
-  initial history had 533 and three reviewed calendar fixes were pushed from
-  local `main`. The calendar API, auth route, sign-in screen, calendar views,
-  and overlap review are included. Never count
+  initial history had 533 and reviewed calendar fixes were pushed from local
+  `main`. The calendar API, auth route, sign-in screen, calendar views,
+  overlap review, and idempotent event creation are included. Never count
   empty or duplicate commits toward the requested total.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
   reduced motion, keyboard, fallback, and performance review remain.
@@ -145,20 +146,23 @@ copied from another folder.
   linked incorporated terms not available without an authenticated source.
 - Landing lint, TypeScript, and production-build checks passed after the scene
   module split and visibility-fallback fix.
-- For the current calendar increment, calendar API passed all 17 tests, time
-  all 7, layout all 3, auth-config all 9, and agent-skills all 10. Lint,
-  typecheck, and the production build passed.
+- For the current calendar increment, calendar API passed all 30 tests, time
+  all 7, layout all 10, recovery all 5, auth-config all 9, and agent-skills all
+  10. Lint, typecheck, and the production build passed.
 - Reviewed the outgoing diff from `origin/main`, checked `git diff --check`,
   scanned staged and outgoing content for common secret patterns, and pushed to
-  `origin/main`. The remote exposes only `main`; the latest three calendar
-  source changes were pushed as ordinary commits by the configured `2q9e`
-  author. This history now exceeds 500 purposeful commits.
+  `origin/main`. The remote exposes only `main`; the latest calendar changes
+  were pushed as ordinary commits by the configured `2q9e` author. The remote
+  now has 563 non-empty commits.
 - Inspected the real sign-in route in the browser at desktop and 390px mobile
   widths. The form remained usable with no horizontal overflow. With only a
   synthetic local auth configuration and an unreachable local PostgreSQL
   endpoint, `/calendar` rendered its account-service-unavailable state without
   loading calendar data. No sign-in submission or authenticated persistence is
   claimed.
+- The latest production build also rendered `/sign-in` in Chrome and showed
+  the account-store-unconfigured state. The calendar route continues to fail
+  closed without loading private events.
 - `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
   dependency vulnerabilities.
 - The GitHub Actions workflow YAML parses successfully. GitHub currently shows

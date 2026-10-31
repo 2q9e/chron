@@ -535,16 +535,16 @@ receives credentials or user data.
 ```text
 C1-r1 durable create idempotency ──┬─ C1-r2 retry-safe editor and reload focus ─┐
 C1-r3 short-event fallback ────────┴────────────────────────────────────────────┤
-                                                                                ├─ C1-r4 independent re-audit
+                                                                                ├─ C1-r4 independent re-audit (complete in source)
                                                                                 ├─ C1-r5 authenticated browser verification (database gated)
-                                                                                └─ C1-a bounded title search
+                                                                                └─ C1-a bounded title search (next)
 ```
 
 ### C1-r1 — durable event-create idempotency
 
 - **Task ID:** C1-r1
-- **Objective:** Make retried event-creation requests return the original
-  result for one authenticated owner and exact normalized approval payload;
+- **Objective:** Make retried event-creation requests return the same current
+  owner-scoped event for one authenticated owner and exact normalized payload;
   reject key reuse with a changed payload or another owner.
 - **Assigned agent:** `/root/calendar_idempotency_api`, GPT-6 Luna MAX,
   MAX reasoning (requested setting; runtime model identity is not independently
@@ -569,12 +569,13 @@ C1-r3 short-event fallback ────────┴────────�
   returns the same event without another insert; changed payload and cross-user
   replay are rejected; event deletion and account deletion have explicit,
   tested retention behavior; no key, event data, or secret is logged.
-- **Tests:** First create, concurrent or sequential replay, changed payload,
+- **Tests:** First create, sequential replay, changed payload,
   cross-owner replay, event deletion, transaction failure, and exact response
   stability. Run the focused calendar API suite and inspect migration SQL.
 - **Expected deliverables:** migration, route/repository validation, focused
   regression tests, and an evidence summary; no commit or push.
-- **Status:** In progress.
+- **Status:** Implemented and independently source-reviewed. PostgreSQL
+  concurrency and RLS runtime verification remain gated on a disposable DB.
 
 ### C1-r2 — retry-safe create editor and reload focus
 
@@ -605,7 +606,8 @@ C1-r3 short-event fallback ────────┴────────�
   account is available; lint, typecheck, and build.
 - **Expected deliverables:** retry-only editor state, stable API request key,
   reliable focus restoration, and updated audit/progress records.
-- **Status:** In progress.
+- **Status:** Implemented and source-verified. Authenticated focus and retry
+  behavior still require the disposable browser account.
 
 ### C1-r3 — accessible target for short timed events
 
@@ -634,7 +636,8 @@ C1-r3 short-event fallback ────────┴────────�
   typecheck, layout tests, and `git diff --check`.
 - **Expected deliverables:** accessible full-size fallback and focused test;
   no commit or push.
-- **Status:** In progress.
+- **Status:** Implemented and source-verified. Authenticated desktop/mobile
+  rendering still requires the disposable browser account.
 
 ### C1-r4 — independent calendar remediation review
 
@@ -656,7 +659,10 @@ C1-r3 short-event fallback ────────┴────────�
 - **Tests:** review reported test outputs; do not claim browser verification
   unless an authenticated calendar is rendered.
 - **Expected deliverables:** independent findings and closure recommendation.
-- **Status:** Waiting on C1-r1 through C1-r3.
+- **Status:** Complete for source review. The focused independent re-review
+  found the partial-recovery-loss fix resolved and no new concrete issue. The
+  audit is not launch approval and does not replace database-backed browser
+  verification.
 
 ### C1-r5 — authenticated calendar browser verification
 
@@ -681,11 +687,40 @@ C1-r3 short-event fallback ────────┴────────�
 - **Status:** Blocked by the missing disposable PostgreSQL service/account;
   source work continues without claiming this verification.
 
-### C1-a follow-on — bounded title search
+### C1-a — bounded event title search
 
-After C1-r4, implement the read-only owner-scoped date-window search proposed
-by the roadmap reviewer. Use `POST /api/calendar/events/search` to keep search
-terms out of URLs; defer course and occurrence-aware search until those data
-models exist. Add exact validation, literal matching, half-open date bounds,
-owner isolation, bounded results, and keyboard-usable empty/loading/error
-states before accepting this slice.
+- **Task ID:** C1-a
+- **Objective:** Add owner-scoped literal title substring search inside a
+  selected date window, opening returned events in the existing editor.
+- **Assigned agent:** Calendar search implementation specialist; main agent
+  integrates. If model is explicitly set, request GPT-6 Luna MAX; runtime model
+  identity is not independently attested.
+- **Dependencies:** C1-r4 source review complete; current event repository,
+  date range validation, and editor flow
+- **Owned files:** domain request/response types, server validation and
+  repository methods, new `POST /api/calendar/events/search` route, calendar
+  API client, a focused search component/CSS, and relevant tests. Keep the
+  search component isolated from unrelated calendar files where possible.
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`, `PLAN.md`,
+  this graph, calendar migrations, auth/runtime boundary, and existing event
+  view/editor contracts
+- **Required skills:** S013, S015, S045, S193, S357, S369, S411, S421, S423,
+  S494
+- **Security permissions:** No production credentials, personal data,
+  reference material, deployment, or external writes. Use a separate worktree
+  as a coordination boundary only; the runtime does not technically enforce
+  filesystem isolation. Owner must come only from the authenticated session.
+- **Acceptance criteria:** Trimmed literal title query of 1–120 characters;
+  validated IANA zone and exclusive `to` date; reuse 93-day window and 1,000
+  result bounds with explicit overflow errors; parameterized SQL; exact owner
+  filtering; optional `timed`/`all-day` filter; search terms sent in JSON body,
+  never URL, telemetry, or logs; keyboard-usable loading/error/empty/result
+  states; result opens the existing event editor; no search-result mock data.
+- **Tests:** Exact field validation, punctuation as literal text, case behavior
+  documented, half-open timed/all-day date boundaries, optional kind filter,
+  both result limits, owner isolation, no-store response, and search body not
+  present in URL. Run API tests, lint, typecheck, build, and `git diff --check`.
+- **Expected deliverables:** search API, real search interface, regression
+  tests, audit evidence, and a small direct-main commit after review.
+- **Status:** Ready to implement on the existing `main` checkout after the
+  recovery patch landed at `ec93688`.
