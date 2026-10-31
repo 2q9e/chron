@@ -5289,3 +5289,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML table, TanStack Table
 - **Security considerations:** Scope row data to authenticated user
 - **Verification method:** Navigate rows and headers with a screen reader and verify announced relationships; test sort interaction separately under S022
+
+### S477 — Chart text equivalents
+
+- **Skill ID:** S477
+- **Name:** Chart text equivalents
+- **Purpose:** Give chart meaning outside visual encoding
+- **When to use:** When showing progress or workload charts
+- **Implementation approach:** Provide summary plus table/list of underlying values
+- **Recommended tools:** SVG title/desc, accessible data table
+- **Security considerations:** Do not expose another user’s aggregate data
+- **Verification method:** Compare text summary values to chart dataset
