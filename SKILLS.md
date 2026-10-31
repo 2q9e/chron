@@ -513,3 +513,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** RFC 9457 problem details, typed errors, Sentry
 - **Security considerations:** Strip stack traces, SQL text, tokens, and upstream bodies from responses
 - **Verification method:** Assert error shape and redaction for representative failure classes
+
+### S045 — Idempotent mutation endpoints
+
+- **Skill ID:** S045
+- **Name:** Idempotent mutation endpoints
+- **Purpose:** Make retries safe when a client cannot know whether a write completed
+- **When to use:** When creating payments, events, or long-running plans can be retried
+- **Implementation approach:** Store a scoped idempotency key and replay the original outcome atomically
+- **Recommended tools:** PostgreSQL unique constraints, Redis where appropriate, HTTP headers
+- **Security considerations:** Bind keys to user and operation; reject reuse with different payloads
+- **Verification method:** Send concurrent duplicate requests and verify one durable effect
