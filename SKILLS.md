@@ -5412,3 +5412,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript interfaces, DI container if needed
 - **Security considerations:** Do not expose provider credentials through domain methods
 - **Verification method:** Replace adapter in tests and run domain suite
+
+### S488 — Domain type modeling
+
+- **Skill ID:** S488
+- **Name:** Domain type modeling
+- **Purpose:** Make invalid product states hard to represent
+- **When to use:** When state has distinct lifecycle variants
+- **Implementation approach:** Use discriminated unions and branded IDs
+- **Recommended tools:** TypeScript strict mode
+- **Security considerations:** Branded identifiers do not replace authorization
+- **Verification method:** Compile valid and invalid state examples
