@@ -1274,3 +1274,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS tokens, forced-colors media queries, axe
 - **Security considerations:** Do not remove user agent forced-color behavior
 - **Verification method:** Test forced colors and high-contrast mode with every core control
+
+### S114 — Responsive art direction
+
+- **Skill ID:** S114
+- **Name:** Responsive art direction
+- **Purpose:** Recompose hierarchy for each viewport instead of shrinking desktop
+- **When to use:** When a screen depends on side-by-side content or a cinematic hero
+- **Implementation approach:** Choose what moves, hides, or stacks at each breakpoint based on task priority
+- **Recommended tools:** CSS Grid, container queries, Figma variants
+- **Security considerations:** Keep all primary actions available without hover on touch devices
+- **Verification method:** Inspect 320px, tablet, and wide viewport screenshots for task parity
