@@ -2811,3 +2811,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Unique constraints, transaction table
 - **Security considerations:** Scope key to owner and run
 - **Verification method:** Redeliver step and assert one effect
+
+### S253 — Progress event protocol
+
+- **Skill ID:** S253
+- **Name:** Progress event protocol
+- **Purpose:** Show real status without hidden reasoning
+- **When to use:** When run status streams to browser
+- **Implementation approach:** Emit typed events with monotonic sequence numbers
+- **Recommended tools:** SSE, WebSocket, event store
+- **Security considerations:** Never stream keys, prompts, or private tool payloads
+- **Verification method:** Check ordering, reconnect, ownership, redaction
