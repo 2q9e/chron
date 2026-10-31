@@ -1751,3 +1751,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** STRIDE, attack trees
 - **Security considerations:** Include hostile documents and tenant crossing
 - **Verification method:** Review mitigations against negative tests
+
+### S157 — Trust-boundary mapping
+
+- **Skill ID:** S157
+- **Name:** Trust-boundary mapping
+- **Purpose:** Track changes in input trust
+- **When to use:** Across browser, model, storage, provider
+- **Implementation approach:** Mark each boundary, retain provenance, and validate after decoding; use synthetic test records rather than product samples
+- **Recommended tools:** Data-flow diagrams, typed contracts
+- **Security considerations:** Never trust internal network or model output
+- **Verification method:** Trace synthetic test data from ingress to display while identifying each trust transition
