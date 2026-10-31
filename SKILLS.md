@@ -3994,3 +3994,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Keyset pagination, Temporal
 - **Security considerations:** Check owner access on every cursor request
 - **Verification method:** Insert concurrent events and verify no duplicate rows
+
+### S360 — Drag hit testing
+
+- **Skill ID:** S360
+- **Name:** Drag hit testing
+- **Purpose:** Map pointer position to accurate target time
+- **When to use:** When desktop users drag events to reschedule
+- **Implementation approach:** Compute slot from grid geometry and snap interval
+- **Recommended tools:** Pointer Events, DOMRect, date utilities
+- **Security considerations:** Do not commit a moved event before server validation and explicit approval; persist the proposed move as a draft under S369
+- **Verification method:** Test edge slots, scrolling, and varied density
