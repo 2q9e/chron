@@ -634,3 +634,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Busboy or framework stream parser, object storage SDK
 - **Security considerations:** Reject path traversal names; keep uploads private until scanned
 - **Verification method:** Upload boundary-size and interrupted-stream fixtures; observe memory stays bounded
+
+### S056 — Malware scanning handoff
+
+- **Skill ID:** S056
+- **Name:** Malware scanning handoff
+- **Purpose:** Prevent untrusted uploads from reaching parsers before inspection
+- **When to use:** When accepting office files, PDFs, or archives
+- **Implementation approach:** Store in quarantine, scan asynchronously, and expose only clean-state records
+- **Recommended tools:** ClamAV service or managed scanning API, queue
+- **Security considerations:** Do not execute macros or unpack archives without expansion limits
+- **Verification method:** Use benign and test-signature samples; verify blocked files cannot be downloaded
