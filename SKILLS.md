@@ -192,3 +192,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML forms, Next.js actions, React
 - **Security considerations:** Apply 18+ eligibility while current Meta terms require it and do not target minors; client checks, email verification, or hidden controls never substitute for server eligibility
 - **Verification method:** Assert both signup UI and endpoint deny while gates are unmet; after approval test the configured eligibility policy with synthetic accounts
+
+### S016 — Async transition feedback
+
+- **Skill ID:** S016
+- **Name:** Async transition feedback
+- **Purpose:** Keep UI responsive while a nonurgent state transition completes
+- **When to use:** When filtering, navigation, or model-generated content authorized under S236 may take noticeable time; keep generation unavailable while that gate is closed
+- **Implementation approach:** Mark nonurgent updates as transitions and retain the last stable view; a UI transition never authorizes starting inference
+- **Recommended tools:** React useTransition, Suspense
+- **Security considerations:** Require S236 before inference and discard stale results after user or query context changes
+- **Verification method:** Race two slow transitions and confirm the newest intent wins
