@@ -445,3 +445,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ReactDOM createPortal, Floating UI
 - **Security considerations:** Lock background access for modal state and avoid leaking hidden dialog text
 - **Verification method:** Test nested scroll containers, stacking, Escape, and screen reader isolation
+
+### S039 — Focus trap lifecycle
+
+- **Skill ID:** S039
+- **Name:** Focus trap lifecycle
+- **Purpose:** Contain and restore focus for modal dialogs
+- **When to use:** When a dialog requires a modal interaction model
+- **Implementation approach:** Capture opener, trap Tab cycling only while modal, handle Escape, then restore focus; see S464 for dialog entry/exit focus placement
+- **Recommended tools:** React Aria Dialog, focus-trap library
+- **Security considerations:** Do not trap focus for nonmodal notifications or block emergency escape
+- **Verification method:** Test first/last Tab wrapping, Escape, and restoration after unmount; see S464 for initial focus and accessible dialog lifecycle
