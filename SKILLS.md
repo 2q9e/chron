@@ -5267,3 +5267,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS min-size tokens, mobile browser
 - **Security considerations:** Do not make destructive controls easy to mis-tap
 - **Verification method:** Measure tap area and test one-handed reach
+
+### S475 — Non-drag alternatives
+
+- **Skill ID:** S475
+- **Name:** Non-drag alternatives
+- **Purpose:** Expose calendar moves without pointer dragging
+- **When to use:** When drag/drop is offered
+- **Implementation approach:** Provide labelled date/time move form or menu action
+- **Recommended tools:** HTML form, keyboard controls
+- **Security considerations:** Require same authorization and approval path
+- **Verification method:** Move event via keyboard-only route
