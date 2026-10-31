@@ -3673,3 +3673,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** FSRS library, review event table
 - **Security considerations:** Keep review history private and exportable
 - **Verification method:** Replay known ratings and verify due dates
+
+### S331 — Atomic flashcard design
+
+- **Skill ID:** S331
+- **Name:** Atomic flashcard design
+- **Purpose:** Make each card test one useful retrieval target
+- **When to use:** When a learner authors cards or converts permitted notes; model-generated decks require the S236 gate
+- **Implementation approach:** Keep each card focused, concise, and source-linked; disable model generation until written permission and capability checks pass
+- **Recommended tools:** Card editor, citation component
+- **Security considerations:** Avoid copying whole copyrighted chapters; use only official Meta inference after S236, never another provider
+- **Verification method:** Check one-concept focus and source excerpt; confirm model generation is unavailable before S236
