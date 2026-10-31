@@ -535,3 +535,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL keyset queries, Zod, OpenAPI
 - **Security considerations:** Authorize each page and avoid embedding sensitive row values in cursors
 - **Verification method:** Insert and delete records between page calls; verify no duplicates or skips
+
+### S047 — Per-user API rate limits
+
+- **Skill ID:** S047
+- **Name:** Per-user API rate limits
+- **Purpose:** Bound abusive or accidental request bursts fairly
+- **When to use:** When endpoints consume CPU, provider quota, or expensive database work
+- **Implementation approach:** Use user and route buckets with clear retry metadata and distributed counters
+- **Recommended tools:** Redis token bucket, gateway limits, HTTP 429
+- **Security considerations:** Do not key limits on spoofable forwarded IP headers alone
+- **Verification method:** Drive bursts from multiple instances and confirm isolation by user
