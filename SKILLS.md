@@ -5478,3 +5478,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenFeature, config schema
 - **Security considerations:** Removal must preserve authorization and eligibility policy; flags never grant permissions
 - **Verification method:** CI reports expired flags and both rollout states; confirm no retired flag code/config remains after cleanup
+
+### S494 — Naming and vocabulary
+
+- **Skill ID:** S494
+- **Name:** Naming and vocabulary
+- **Purpose:** Use stable product terms across code and user-facing surfaces, including launch-gate status
+- **When to use:** When several modules name the same concept differently
+- **Implementation approach:** Maintain a small domain glossary and align public types; refer to S015/S236 for current signup, adult eligibility, Meta API, and attribution gates
+- **Recommended tools:** TypeScript names, glossary doc
+- **Security considerations:** Do not use Meta marks or “Powered by Meta AI” attribution without written authorization; do not imply the gated signup or inference flows are active
+- **Verification method:** Search for synonyms and unsupported provider claims; verify public copy reflects S015/S236 decisions
