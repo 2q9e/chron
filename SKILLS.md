@@ -269,3 +269,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML table, aria-sort, TanStack Table
 - **Security considerations:** Escape untrusted cell text; never render HTML from imported records
 - **Verification method:** Test sort behavior, column alignment, and semantic headers; use S476 for assistive-technology navigation coverage
+
+### S023 — Keyboard interaction model
+
+- **Skill ID:** S023
+- **Name:** Keyboard interaction model
+- **Purpose:** Define the expected keyboard behavior for each custom widget pattern
+- **When to use:** When a component implements menu, listbox, tabs, or grid behavior
+- **Implementation approach:** Map standard keys to predictable movement and keep focus visible; use S465 for broader keyboard accessibility review
+- **Recommended tools:** React, WAI-ARIA Authoring Practices, Testing Library
+- **Security considerations:** Prevent keyboard shortcuts from firing inside sensitive text inputs
+- **Verification method:** Run key-by-key tests including Escape, Tab, Home/End, and arrows; cover reusable widgets before S465 page-level checks
