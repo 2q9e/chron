@@ -3486,3 +3486,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PDF.js, Mammoth, isolated parser service configured under S285
 - **Security considerations:** The parser boundary has no network, credentials, or unrelated filesystem mounts; a worker alone does not provide those controls
 - **Verification method:** Parse test-only valid, malformed, and encrypted files; verify isolation and resource caps under S285
+
+### S314 — OCR for scanned pages
+
+- **Skill ID:** S314
+- **Name:** OCR for scanned pages
+- **Purpose:** Recover text from image-only materials
+- **When to use:** When PDFs lack selectable text
+- **Implementation approach:** Detect scan pages and record language/confidence
+- **Recommended tools:** Tesseract, image preprocessing
+- **Security considerations:** No unapproved inference service for images
+- **Verification method:** Compare OCR with known synthetic scans
