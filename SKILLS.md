@@ -3264,3 +3264,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OAuth client, row lock
 - **Security considerations:** Prevent stale worker overwriting a newer token
 - **Verification method:** Race two refreshes and verify newest token remains usable
+
+### S294 — Integration disconnect and revoke
+
+- **Skill ID:** S294
+- **Name:** Integration disconnect and revoke
+- **Purpose:** Let users sever access and clean stored tokens
+- **When to use:** Only after S291 activation review, when a user disconnects an enabled provider account
+- **Implementation approach:** Call official revoke where supported, invalidate queued work, and delete encrypted credentials; do not activate the integration before S291
+- **Recommended tools:** Provider revoke endpoint, deletion worker
+- **Security considerations:** Remove queued jobs that still reference tokens and verify local credentials are unusable after revoke
+- **Verification method:** Before activation, assert the integration is unavailable; after S291, disconnect and verify no future API call succeeds
