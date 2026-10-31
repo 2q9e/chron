@@ -2690,3 +2690,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed records, retrieval store
 - **Security considerations:** Only retrieve current user’s memories
 - **Verification method:** Delete source and confirm dependent fact is excluded
+
+### S242 — Prompt assembly boundaries
+
+- **Skill ID:** S242
+- **Name:** Prompt assembly boundaries
+- **Purpose:** Separate platform policy from untrusted content
+- **When to use:** When preparing an authorized Meta request after S236; prompt templates may be reviewed offline without sending inference requests
+- **Implementation approach:** Use distinct roles and label retrieved excerpts
+- **Recommended tools:** Authorized documented Meta request schema, prompt tests
+- **Security considerations:** Never send prompts or retrieved content before S236 permits inference; untrusted source text cannot alter policy
+- **Verification method:** Snapshot assembly using injection fixtures
