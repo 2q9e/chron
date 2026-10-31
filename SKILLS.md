@@ -137,3 +137,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Context, useMemo, Profiler
 - **Security considerations:** Never use context as a shortcut for delivering raw API credentials
 - **Verification method:** Profile a provider update and assert only intended consumers rerender
+
+### S011 — Custom hook contracts
+
+- **Skill ID:** S011
+- **Name:** Custom hook contracts
+- **Purpose:** Package reusable behavior with clear inputs, outputs, and lifecycle
+- **When to use:** When the same stateful browser behavior appears in multiple features
+- **Implementation approach:** Keep hooks deterministic, document returned actions, and clean up subscriptions
+- **Recommended tools:** React Hooks, ESLint hooks plugin, TypeScript
+- **Security considerations:** Do not let hooks bypass server authorization or expose secret-bearing responses
+- **Verification method:** Use hook tests for setup, rerender, cleanup, and error transitions
