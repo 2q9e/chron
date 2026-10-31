@@ -5001,3 +5001,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Syft, CycloneDX
 - **Security considerations:** Do not include private source paths or env values
 - **Verification method:** Compare SBOM packages with production artifact
+
+### S451 — Minimal container images
+
+- **Skill ID:** S451
+- **Name:** Minimal container images
+- **Purpose:** Reduce deployed image size and attack surface
+- **When to use:** When packaging server services
+- **Implementation approach:** Use multi-stage build and copy only runtime artifacts
+- **Recommended tools:** Docker BuildKit, distroless base
+- **Security considerations:** No build secrets or package cache in final layer
+- **Verification method:** Inspect layers and run image scan
