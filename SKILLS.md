@@ -2435,3 +2435,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL statement_timeout
 - **Security considerations:** Do not allow untrusted users to override limits
 - **Verification method:** Run intentionally slow query and verify cancellation plus clean retry
+
+### S219 — Lock ordering discipline
+
+- **Skill ID:** S219
+- **Name:** Lock ordering discipline
+- **Purpose:** Reduce deadlocks when operations update related tables
+- **When to use:** When transactions touch several entity types
+- **Implementation approach:** Acquire locks in one documented order and keep transactions short
+- **Recommended tools:** PostgreSQL lock monitoring
+- **Security considerations:** Avoid waiting for remote APIs while holding database locks
+- **Verification method:** Run competing writes and inspect deadlock rate under load
