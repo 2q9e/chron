@@ -5146,3 +5146,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS :focus-visible, design tokens
 - **Security considerations:** Never remove outline without a measured replacement
 - **Verification method:** Tab through page in every theme
+
+### S464 — Dialog focus lifecycle
+
+- **Skill ID:** S464
+- **Name:** Dialog focus lifecycle
+- **Purpose:** Place and restore focus predictably across dialog open and close
+- **When to use:** For confirmation and edit dialogs
+- **Implementation approach:** Set initial focus, expose the dialog name, and restore the opener; use S039 for modal Tab containment and Escape mechanics
+- **Recommended tools:** React Aria Dialog, focus manager
+- **Security considerations:** Do not trap focus in nonmodal status messages
+- **Verification method:** Test initial focus, accessible name, close return target, and nonmodal behavior; verify containment separately under S039
