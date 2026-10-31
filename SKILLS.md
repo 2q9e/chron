@@ -115,3 +115,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React, React DevTools Profiler
 - **Security considerations:** Avoid copying authorization status into client state as a trusted fact
 - **Verification method:** Change each input source and verify the derived value updates immediately
+
+### S009 — Reducer-based workflows
+
+- **Skill ID:** S009
+- **Name:** Reducer-based workflows
+- **Purpose:** Model multi-step UI transitions as explicit state changes
+- **When to use:** When interactions have guarded phases or rollback paths
+- **Implementation approach:** Define discriminated actions and keep transitions in a pure reducer
+- **Recommended tools:** React useReducer, TypeScript discriminated unions
+- **Security considerations:** Reject impossible states before they reach privileged mutation controls
+- **Verification method:** Unit-test every allowed transition and representative invalid action
