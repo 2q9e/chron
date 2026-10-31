@@ -2998,3 +2998,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Vitest, fixture runner
 - **Security considerations:** Fixtures contain no real student data or credentials
 - **Verification method:** Report regression pass and refusal failures
+
+### S270 — Refusal and capability boundaries
+
+- **Skill ID:** S270
+- **Name:** Refusal and capability boundaries
+- **Purpose:** Handle unsupported requests honestly
+- **When to use:** When request exceeds API or product capabilities
+- **Implementation approach:** Explain limit and offer safe in-scope alternative
+- **Recommended tools:** Typed refusal reasons, response renderer
+- **Security considerations:** Never imply a tool or integration succeeded
+- **Verification method:** Test unsupported API, unauthorized request, and graceful response
