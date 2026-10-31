@@ -3352,3 +3352,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Google Docs API
 - **Security considerations:** Do not share a document or broaden permissions implicitly; each consequential external write requires explicit approval
 - **Verification method:** Create test doc and inspect owner and sharing ACL
+
+### S302 — Sheets import workflow
+
+- **Skill ID:** S302
+- **Name:** Sheets import workflow
+- **Purpose:** Read selected spreadsheet data for study analysis
+- **When to use:** Only after S291, when a user selects a spreadsheet/range for an enabled workflow
+- **Implementation approach:** Request selected spreadsheet ranges and validate cell types
+- **Recommended tools:** Google Sheets API
+- **Security considerations:** Avoid importing unrelated tabs or hidden data
+- **Verification method:** Test named range, empty cells, and formula values
