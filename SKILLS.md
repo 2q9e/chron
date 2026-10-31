@@ -2954,3 +2954,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Prompt tests, source wrappers
 - **Security considerations:** Context labels cannot constrain execution or authorize a tool; server policy must independently validate the proposed action, its inputs/outputs, limits, and exact approval for consequential writes
 - **Verification method:** Run test-only hostile-source cases through planning and the server gate; prove unauthorized calls are rejected and no side effect occurs even when a schema-valid proposal is emitted
+
+### S266 — Grounded answer policy
+
+- **Skill ID:** S266
+- **Name:** Grounded answer policy
+- **Purpose:** Distinguish sourced claims from model explanation
+- **When to use:** When answers rely on notes or research; model-generated explanation is gated by S236
+- **Implementation approach:** Attach evidence references to supported claims and label unsupported context; use only official Meta inference after written permission
+- **Recommended tools:** Citation schema, answer renderer
+- **Security considerations:** Do not present confidence as evidence or call an alternate provider; keep inference disabled until S236 passes
+- **Verification method:** Remove a source and verify dependent claim status; assert no generation request occurs before S236
