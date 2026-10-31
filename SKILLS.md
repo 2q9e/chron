@@ -1993,3 +1993,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Parameterized SQL, DB driver
 - **Security considerations:** Never concatenate raw sort/search fragments
 - **Verification method:** Test quotes, comments, encoded payloads
+
+### S179 — Safe dynamic queries
+
+- **Skill ID:** S179
+- **Name:** Safe dynamic queries
+- **Purpose:** Support filters without raw SQL
+- **When to use:** When users select columns or directions
+- **Implementation approach:** Map public enums to fixed identifiers
+- **Recommended tools:** Typed query builder, Zod
+- **Security considerations:** Reject unknown fields
+- **Verification method:** Fuzz options and inspect generated SQL
