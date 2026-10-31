@@ -4359,3 +4359,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TanStack Query lifecycle
 - **Security considerations:** Never cache tokens or keys
 - **Verification method:** Switch users and confirm no prior data flashes; test post-mutation freshness separately under S388
+
+### S393 — Web Worker offload
+
+- **Skill ID:** S393
+- **Name:** Web Worker offload
+- **Purpose:** Move CPU parsing off the main thread
+- **When to use:** When large documents block input
+- **Implementation approach:** Transfer bounded buffers and report progress to keep CPU-heavy client work off the main thread; this is a responsiveness/concurrency mechanism, not isolation for a hostile server-side parser. Use S285's enforced OS boundary for server parsing
+- **Recommended tools:** Web Workers, Comlink
+- **Security considerations:** Pass no credentials; minimize copies; do not rely on worker separation to protect server files, network, or secrets
+- **Verification method:** Measure responsiveness during parsing and verify hostile server-side documents enter the S285 boundary rather than relying on worker offload
