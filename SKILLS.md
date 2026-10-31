@@ -2125,3 +2125,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed retrieval records, citation metadata
 - **Security considerations:** Never merge content into privileged policy text
 - **Verification method:** Inspect context built from malicious sources
+
+### S191 — Model output validation
+
+- **Skill ID:** S191
+- **Name:** Model output validation
+- **Purpose:** Prevent malformed generation reaching actions
+- **When to use:** After S236 authorizes official Meta inference, when structured model output enters application logic
+- **Implementation approach:** Parse strict schema, then validate domain rules
+- **Recommended tools:** Zod, JSON Schema
+- **Security considerations:** Treat all model output as untrusted data; schema validation is not authorization or approval
+- **Verification method:** Fuzz missing, extra, oversized, wrong-type fields
