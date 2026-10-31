@@ -2147,3 +2147,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Policy module, tool registry
 - **Security considerations:** Model cannot grant itself authority
 - **Verification method:** Attempt denied tools and cross-user IDs
+
+### S193 — Approval binding
+
+- **Skill ID:** S193
+- **Name:** Approval binding
+- **Purpose:** Authorize only the exact consequential action the user reviewed
+- **When to use:** Before every consequential mutation, regardless of risk tier or reversibility
+- **Implementation approach:** Persist approval bound to authenticated user, normalized action/payload hash, resource versions, approval scope, and expiry; require exact match at server execution
+- **Recommended tools:** Typed preview, approval record
+- **Security considerations:** Recheck identity, ownership, permissions, bounds, and approval server-side; any target, payload, version, or scope change invalidates approval; calendar edits remain drafts until approved under S369
+- **Verification method:** Attempt replay, cross-user use, expired use, and one-field payload/version/scope change; every mismatch must be denied
