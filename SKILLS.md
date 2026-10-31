@@ -4636,3 +4636,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Prompt fixture runner
 - **Security considerations:** Synthetic malicious strings only
 - **Verification method:** No unauthorized tool call is made
+
+### S418 — Tool permission tests
+
+- **Skill ID:** S418
+- **Name:** Tool permission tests
+- **Purpose:** Prove every tool checks required scope
+- **When to use:** When registering a capability
+- **Implementation approach:** Test allowed and denied owner/scope combinations
+- **Recommended tools:** Policy matrix, integration test
+- **Security considerations:** No real account tokens in fixtures
+- **Verification method:** Denied path makes zero dependency calls
