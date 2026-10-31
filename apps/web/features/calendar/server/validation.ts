@@ -1,3 +1,4 @@
+import { Temporal } from "@js-temporal/polyfill";
 import {
   calendarThemes,
   type CalendarConflictReview,
@@ -9,6 +10,11 @@ import {
   type CalendarPreferences,
   type CalendarTheme,
 } from "../domain/types.ts";
+import {
+  maximumRecurringEventDurationDays,
+  normalizeRecurrenceRule,
+  type RecurrenceRule,
+} from "../domain/recurrence.ts";
 import {
   parseCalendarDate,
   resolveCalendarRange,
@@ -71,6 +77,135 @@ function optionalDisambiguation(value: unknown): "earlier" | "later" | undefined
     return invalidPayload("Choose the earlier or later time when clocks repeat.");
   }
   return value;
+}
+
+export type CalendarSeriesDraftRequest =
+  | Readonly<{
+      action: "create";
+      scope: "series";
+      event: CalendarEventMutation;
+      recurrenceRule: RecurrenceRule;
+      calendarTimeZone: string;
+    }>
+  | Readonly<{
+      action: "update";
+      scope: "series";
+      targetEventId: string;
+      targetRevision: number;
+      event: CalendarEventMutation;
+      recurrenceRule: RecurrenceRule;
+      calendarTimeZone: string;
+    }>
+  | Readonly<{
+      action: "delete";
+      scope: "series";
+      targetEventId: string;
+      targetRevision: number;
+    }>;
+
+function parseRecurrenceRule(input: unknown): RecurrenceRule {
+  try {
+    const rule = normalizeRecurrenceRule(input);
+    const periodDays = rule.frequency === "weekly" ? 7 : 1;
+    if ((rule.count - 1) * rule.interval * periodDays > 365) {
+      return invalidPayload("Repeating events must end within 366 calendar dates.");
+    }
+    return rule;
+  } catch {
+    return invalidPayload("Choose a finite daily or weekly recurrence from 2 to 366 occurrences.");
+  }
+}
+
+function assertRecurringMutationDuration(event: CalendarEventMutation): void {
+  if (event.kind === "all-day") {
+    const durationDays = Temporal.PlainDate.from(event.startDate)
+      .until(Temporal.PlainDate.from(event.endDate), { largestUnit: "day" }).days;
+    if (durationDays > maximumRecurringEventDurationDays) {
+      return invalidPayload("Repeating all-day events may span up to 7 days.");
+    }
+    return;
+  }
+
+  const start = resolveLocalDateTime(event.startLocal, event.timeZone, event.startDisambiguation);
+  const end = resolveLocalDateTime(event.endLocal, event.timeZone, event.endDisambiguation);
+  const maximumNanoseconds = BigInt(maximumRecurringEventDurationDays) * BigInt(24) * BigInt(60) *
+    BigInt(60) * BigInt(1_000_000_000);
+  const durationNanoseconds = Temporal.Instant.from(end.instant).epochNanoseconds
+    - Temporal.Instant.from(start.instant).epochNanoseconds;
+  if (durationNanoseconds > maximumNanoseconds) {
+    return invalidPayload("Repeating timed events may last up to 7 days.");
+  }
+}
+
+function parseSeriesTarget(value: Record<string, unknown>): Readonly<{
+  targetEventId: string;
+  targetRevision: number;
+}> {
+  if (typeof value.targetEventId !== "string") {
+    return invalidPayload("Choose the calendar series to change.");
+  }
+  const targetEventId = validateCalendarEventId(value.targetEventId);
+  const targetRevision = value.targetRevision;
+  if (
+    typeof targetRevision !== "number" ||
+    !Number.isSafeInteger(targetRevision) ||
+    targetRevision < 1 ||
+    targetRevision > 2_147_483_647
+  ) {
+    return invalidPayload("Reload the calendar series before proposing a change.");
+  }
+  return { targetEventId, targetRevision };
+}
+
+export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesDraftRequest {
+  const value = objectRecord(input);
+  if (value.scope !== "series") {
+    return invalidPayload("Choose the entire series as the change scope.");
+  }
+
+  if (value.action === "delete") {
+    assertAllowedFields(value, ["action", "scope", "targetEventId", "targetRevision"]);
+    return { action: "delete", scope: "series", ...parseSeriesTarget(value) };
+  }
+
+  if (value.action === "create") {
+    assertAllowedFields(value, ["action", "scope", "event", "recurrenceRule", "calendarTimeZone"]);
+    const event = parseCalendarEventMutation(value.event);
+    assertRecurringMutationDuration(event);
+    const recurrenceRule = parseRecurrenceRule(value.recurrenceRule);
+    return {
+      action: "create",
+      scope: "series",
+      event,
+      recurrenceRule,
+      calendarTimeZone: validateTimeZone(value.calendarTimeZone),
+    };
+  }
+
+  if (value.action === "update") {
+    assertAllowedFields(value, [
+      "action",
+      "scope",
+      "targetEventId",
+      "targetRevision",
+      "event",
+      "recurrenceRule",
+      "calendarTimeZone",
+    ]);
+    const target = parseSeriesTarget(value);
+    const event = parseCalendarEventMutation(value.event);
+    assertRecurringMutationDuration(event);
+    return {
+      action: "update",
+      scope: "series",
+      ...target,
+      event,
+      recurrenceRule: parseRecurrenceRule(value.recurrenceRule),
+      calendarTimeZone: validateTimeZone(value.calendarTimeZone),
+    };
+  }
+
+  return invalidPayload("Choose a supported calendar series action.");
 }
 
 export function parseCalendarEventMutation(input: unknown): CalendarEventMutation {

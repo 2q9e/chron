@@ -23,6 +23,7 @@ import {
   parseCalendarConflictCheck,
   parseCalendarIdempotencyKey,
   parseCalendarEventSearchRequest,
+  parseCalendarSeriesDraftRequest,
   parseCalendarPreferences,
   validateCalendarEventId,
 } from "./validation.ts";
@@ -33,6 +34,15 @@ const validTimedEvent = {
   startLocal: "2026-10-30T09:00",
   endLocal: "2026-10-30T10:00",
   timeZone: "America/Montreal",
+};
+
+const validSeriesRule = { frequency: "weekly", interval: 1, count: 6 };
+const validSeriesCreate = {
+  action: "create",
+  scope: "series",
+  event: validTimedEvent,
+  recurrenceRule: validSeriesRule,
+  calendarTimeZone: "America/Montreal",
 };
 
 test("accepts a valid timed event and normalizes optional details", () => {
@@ -81,6 +91,112 @@ test("requires an explicit choice for repeated local times", () => {
     startDisambiguation: "later",
   });
   assert.equal(event.kind, "timed");
+});
+
+test("normalizes exact create and update series draft scopes", () => {
+  assert.deepEqual(parseCalendarSeriesDraftRequest(validSeriesCreate), {
+    ...validSeriesCreate,
+    event: validTimedEvent,
+    recurrenceRule: validSeriesRule,
+  });
+
+  const target = {
+    targetEventId: "de305d54-75b4-431b-adb2-eb6b9e546014",
+    targetRevision: 3,
+  };
+  assert.deepEqual(parseCalendarSeriesDraftRequest({
+    action: "update",
+    scope: "series",
+    ...target,
+    event: validTimedEvent,
+    recurrenceRule: validSeriesRule,
+    calendarTimeZone: "America/Montreal",
+  }), {
+    action: "update",
+    scope: "series",
+    ...target,
+    event: validTimedEvent,
+    recurrenceRule: validSeriesRule,
+    calendarTimeZone: "America/Montreal",
+  });
+
+  assert.deepEqual(parseCalendarSeriesDraftRequest({
+    action: "delete",
+    scope: "series",
+    ...target,
+  }), {
+    action: "delete",
+    scope: "series",
+    ...target,
+  });
+});
+
+test("requires a finite supported rule, exact series scope, and current target revision", () => {
+  const target = {
+    action: "delete",
+    scope: "series",
+    targetEventId: "de305d54-75b4-431b-adb2-eb6b9e546014",
+    targetRevision: 1,
+  };
+  const invalidRequests = [
+    { ...validSeriesCreate, scope: "occurrence" },
+    { ...validSeriesCreate, ownerId: "another-user" },
+    { ...validSeriesCreate, recurrenceRule: { ...validSeriesRule, until: "2027-01-01" } },
+    { ...validSeriesCreate, recurrenceRule: { frequency: "monthly", interval: 1, count: 2 } },
+    { ...validSeriesCreate, recurrenceRule: { frequency: "daily", interval: 1, count: 367 } },
+    { ...validSeriesCreate, recurrenceRule: { frequency: "weekly", interval: 1, count: 54 } },
+    { ...validSeriesCreate, calendarTimeZone: "Not/AZone" },
+    { ...target, targetEventId: "not-a-uuid" },
+    { ...target, targetRevision: 0 },
+    { ...target, targetRevision: 1.5 },
+    { ...target, proposalId: "client-controlled" },
+  ];
+  for (const input of invalidRequests) {
+    assert.throws(
+      () => parseCalendarSeriesDraftRequest(input),
+      (error) => error instanceof CalendarRouteError || error instanceof CalendarTimeError,
+    );
+  }
+});
+
+test("bounds recurring event duration while preserving the supported maximum", () => {
+  assert.doesNotThrow(() => parseCalendarSeriesDraftRequest({
+    ...validSeriesCreate,
+    event: {
+      kind: "all-day",
+      title: "Study week",
+      startDate: "2026-11-02",
+      endDate: "2026-11-09",
+    },
+    recurrenceRule: { frequency: "daily", interval: 1, count: 366 },
+  }));
+
+  const tooLongAllDay = {
+    ...validSeriesCreate,
+    event: {
+      kind: "all-day",
+      title: "Study week",
+      startDate: "2026-11-02",
+      endDate: "2026-11-10",
+    },
+  };
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest(tooLongAllDay),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+
+  const tooLongTimed = {
+    ...validSeriesCreate,
+    event: {
+      ...validTimedEvent,
+      startLocal: "2026-11-02T09:00",
+      endLocal: "2026-11-09T09:01",
+    },
+  };
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest(tooLongTimed),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
 });
 
 test("keeps all-day bounds date-only and end-exclusive", () => {
