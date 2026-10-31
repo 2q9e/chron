@@ -5100,3 +5100,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Managed DB backup, KMS
 - **Security considerations:** Restrict restore and export roles
 - **Verification method:** Check last successful backup and restore drill
+
+### S460 — Incident response runbook
+
+- **Skill ID:** S460
+- **Name:** Incident response runbook
+- **Purpose:** Give responders actionable containment steps
+- **When to use:** When handling credential or data exposure
+- **Implementation approach:** Document revoke, isolate, notify, preserve evidence sequence
+- **Recommended tools:** Runbook, on-call checklist
+- **Security considerations:** Do not put active secrets in incident notes
+- **Verification method:** Tabletop a synthetic key-exposure scenario
