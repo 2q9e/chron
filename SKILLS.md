@@ -4946,3 +4946,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Framework build CLI, CI cache
 - **Security considerations:** Do not inject production secrets into build logs
 - **Verification method:** Build with synthetic settings and scan artifacts
+
+### S446 — Test matrix planning
+
+- **Skill ID:** S446
+- **Name:** Test matrix planning
+- **Purpose:** Cover supported runtimes without waste
+- **When to use:** When browser or Node support changes
+- **Implementation approach:** Select representative versions and OS combinations
+- **Recommended tools:** GitHub Actions matrix
+- **Security considerations:** Keep credentials out of matrix variables
+- **Verification method:** Review actual jobs and compatibility failures
