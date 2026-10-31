@@ -4990,3 +4990,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Actionlint, Dependabot
 - **Security considerations:** Avoid unreviewed marketplace actions
 - **Verification method:** Verify pinned digest and permissions
+
+### S450 — Software bill of materials
+
+- **Skill ID:** S450
+- **Name:** Software bill of materials
+- **Purpose:** Track shipped dependency inventory
+- **When to use:** For release or customer security review
+- **Implementation approach:** Generate machine-readable SBOM from lockfile/build
+- **Recommended tools:** Syft, CycloneDX
+- **Security considerations:** Do not include private source paths or env values
+- **Verification method:** Compare SBOM packages with production artifact
