@@ -1795,3 +1795,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Secret manager, server-only modules, authenticated encryption library
 - **Security considerations:** Until permission, collect and store no Meta keys; never return, bundle, log, or URL-encode them
 - **Verification method:** Confirm intake is disabled before permission; inspect network, bundles, and logs after authorized implementation
+
+### S161 — Envelope encryption
+
+- **Skill ID:** S161
+- **Name:** Envelope encryption
+- **Purpose:** Protect credential rows with managed keys
+- **When to use:** Only for credentials whose collection and storage are authorized; Meta credentials additionally require written permission under S160/S236
+- **Implementation approach:** Wrap per-record data keys with KMS
+- **Recommended tools:** Cloud KMS, libsodium
+- **Security considerations:** Separate unwrap permission from database read; do not create or store Meta credential ciphertext before written permission
+- **Verification method:** Use synthetic test-only credentials to decrypt and rewrap after rotation; verify Meta key intake remains disabled before authorization
