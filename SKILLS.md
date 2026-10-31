@@ -368,3 +368,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS container queries, browser devtools
 - **Security considerations:** Ensure zoomed text and long labels cannot clip inside constrained containers
 - **Verification method:** Resize the host pane independently of viewport and inspect overflow
+
+### S032 — Responsive image delivery
+
+- **Skill ID:** S032
+- **Name:** Responsive image delivery
+- **Purpose:** Serve suitable image dimensions and formats for each viewport
+- **When to use:** When product imagery is larger than an icon or small illustration
+- **Implementation approach:** Use responsive sources, intrinsic dimensions, and crop rules per art direction
+- **Recommended tools:** Next.js Image, srcset, AVIF/WebP
+- **Security considerations:** Use trusted origins and avoid exposing private upload URLs in public markup
+- **Verification method:** Throttle mobile network and verify selected source, layout stability, and alt text
