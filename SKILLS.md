@@ -3961,3 +3961,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** date-fns/Temporal, memoized selectors
 - **Security considerations:** Filter by owner before composing view state
 - **Verification method:** Unit-test range boundaries and month padding
+
+### S357 — Day layout overlap
+
+- **Skill ID:** S357
+- **Name:** Day layout overlap
+- **Purpose:** Position overlapping events without hiding details
+- **When to use:** When simultaneous events share a day
+- **Implementation approach:** Compute interval columns and minimum visible geometry
+- **Recommended tools:** Interval tree, CSS grid
+- **Security considerations:** Do not make overlapping private events disclose titles
+- **Verification method:** Test nested, adjacent, and same-start intervals
