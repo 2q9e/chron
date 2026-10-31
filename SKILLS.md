@@ -104,3 +104,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React useState, TypeScript
 - **Security considerations:** Clear transient secrets and file previews when their owner unmounts
 - **Verification method:** Exercise open/close and unmount paths; inspect for stale visible state
+
+### S008 — Derived state discipline
+
+- **Skill ID:** S008
+- **Name:** Derived state discipline
+- **Purpose:** Prevent duplicated state from drifting out of sync
+- **When to use:** When a value can be calculated from props or stored records
+- **Implementation approach:** Compute it during render or memoize only measured expensive derivations
+- **Recommended tools:** React, React DevTools Profiler
+- **Security considerations:** Avoid copying authorization status into client state as a trusted fact
+- **Verification method:** Change each input source and verify the derived value updates immediately
