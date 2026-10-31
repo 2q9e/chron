@@ -529,3 +529,163 @@ receives credentials or user data.
   real browser. With an isolated synthetic auth configuration and no database,
   `/calendar` correctly displayed the account-service-unavailable state. No
   sign-in submission or authenticated persistence is claimed.
+
+## Calendar interaction remediation graph
+
+```text
+C1-r1 durable create idempotency ──┬─ C1-r2 retry-safe editor and reload focus ─┐
+C1-r3 short-event fallback ────────┴────────────────────────────────────────────┤
+                                                                                ├─ C1-r4 independent re-audit
+                                                                                ├─ C1-r5 authenticated browser verification (database gated)
+                                                                                └─ C1-a bounded title search
+```
+
+### C1-r1 — durable event-create idempotency
+
+- **Task ID:** C1-r1
+- **Objective:** Make retried event-creation requests return the original
+  result for one authenticated owner and exact normalized approval payload;
+  reject key reuse with a changed payload or another owner.
+- **Assigned agent:** `/root/calendar_idempotency_api`, GPT-6 Luna MAX,
+  MAX reasoning (requested setting; runtime model identity is not independently
+  exposed)
+- **Dependencies:** C1-a owner-scoped event repository and current C1 API
+- **Owned files:** `apps/web/db/migrations/0004_calendar_create_requests.sql`,
+  `apps/web/features/calendar/domain/types.ts`,
+  `apps/web/features/calendar/server/validation.ts`,
+  `apps/web/features/calendar/server/repository.ts`,
+  `apps/web/app/api/calendar/events/route.ts`,
+  `apps/web/features/calendar/server/calendar-api.test.mjs`
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
+  `PLAN.md`, this task graph, existing calendar migration, client API, and
+  `calendar-editor.tsx`
+- **Required skills:** S045, S193, S357, S369, S411, S494, plus relevant
+  PostgreSQL ownership/RLS and HTTP validation skills
+- **Security permissions:** Dedicated local worktree for coordination only;
+  no credentials, personal data, reference material, external network, commit,
+  or push. The runtime does not enforce filesystem isolation.
+- **Acceptance criteria:** `Idempotency-Key` is validated; the durable key is
+  scoped by owner and transactionally stored with creation; an identical retry
+  returns the same event without another insert; changed payload and cross-user
+  replay are rejected; event deletion and account deletion have explicit,
+  tested retention behavior; no key, event data, or secret is logged.
+- **Tests:** First create, concurrent or sequential replay, changed payload,
+  cross-owner replay, event deletion, transaction failure, and exact response
+  stability. Run the focused calendar API suite and inspect migration SQL.
+- **Expected deliverables:** migration, route/repository validation, focused
+  regression tests, and an evidence summary; no commit or push.
+- **Status:** In progress.
+
+### C1-r2 — retry-safe create editor and reload focus
+
+- **Task ID:** C1-r2
+- **Objective:** Keep one stable operation key for the approved create payload;
+  lock that payload after an uncertain response and permit only exact replay.
+  Restore focus only after reload completes, falling back to New event when a
+  deleted or rerendered opener is gone.
+- **Assigned agent:** main integration owner
+- **Dependencies:** C1-r1 HTTP header contract is fixed as `Idempotency-Key`;
+  current event editor and focus restoration
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-api.ts`,
+  `calendar-workspace.tsx`, and `calendar-editor.tsx`
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
+  `PLAN.md`, this task graph, calendar domain types, and C1-r1 server contract
+- **Required skills:** S013, S045, S193, S369, S411, S421, S423
+- **Security permissions:** Main local checkout and existing GitHub `main`;
+  no reference material, production credentials, deployment, or unrelated
+  repository. Do not commit root `AGENTS.md`; push reviewed changes to `main`
+  only.
+- **Acceptance criteria:** one key follows one editor create attempt; editing
+  before dispatch creates a new key; after an uncertain dispatched write, the
+  reviewed payload cannot change and the retry reuses the same key and exact
+  payload; stale edits cannot be approved; save/delete/discard focus waits for
+  load and busy completion, with a stable connected fallback.
+- **Tests:** API replay suite plus browser keyboard checks for close, save,
+  delete, discard, and uncertain create retry when an authenticated disposable
+  account is available; lint, typecheck, and build.
+- **Expected deliverables:** retry-only editor state, stable API request key,
+  reliable focus restoration, and updated audit/progress records.
+- **Status:** In progress.
+
+### C1-r3 — accessible target for short timed events
+
+- **Task ID:** C1-r3
+- **Objective:** Keep events whose day-clipped visual interval is below the
+  minimum hit target accessible without drawing over the following day.
+- **Assigned agent:** `/root/calendar_short_event_accessibility`, GPT-6 Luna
+  MAX, MAX reasoning (requested setting; runtime model identity is not
+  independently exposed)
+- **Dependencies:** C1-r2 implementation contract is independent; the current
+  elapsed-time layout in `calendar-model.ts` is the base
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-views.tsx`
+  and `calendar.module.css`
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
+  `PLAN.md`, this graph, calendar model, domain event types, and current views
+- **Required skills:** S357, S421, S423, S424, S494
+- **Security permissions:** Dedicated local worktree for coordination only;
+  no credentials, personal data, reference material, external network, commit,
+  or push. Worktrees are not a technical sandbox.
+- **Acceptance criteria:** short event segments are not left as tiny controls;
+  a visible, full-size keyboard target exposes them without covering the next
+  date; multi-day and midnight labels stay accurate; mobile week does not show
+  duplicate alternatives.
+- **Tests:** add regression coverage for a one-minute event ending at midnight
+  and verify all-day, normal, and continued events remain reachable. Run lint,
+  typecheck, layout tests, and `git diff --check`.
+- **Expected deliverables:** accessible full-size fallback and focused test;
+  no commit or push.
+- **Status:** In progress.
+
+### C1-r4 — independent calendar remediation review
+
+- **Task ID:** C1-r4
+- **Objective:** Independently verify C-01 through C-07 remediation and report
+  residual accessibility, interaction, data-integrity, or security findings.
+- **Assigned agent:** visual auditor GPT-6.1 Terra HIGH and security auditor
+  GPT-6 Luna MAX (requested settings; runtime identities are not independently
+  attested)
+- **Dependencies:** C1-r1, C1-r2, and C1-r3 integrated and locally verified
+- **Owned files:** findings only; read-only
+- **Read-only files:** AGENTS.md, SKILLS.md, audit report, current patch, and
+  relevant calendar files
+- **Required skills:** S013, S045, S193, S357, S369, S411, S421, S423, S494
+- **Security permissions:** Read-only local source; no credentials, user data,
+  reference material, external network, or modifications.
+- **Acceptance criteria:** every finding is tied to current code evidence;
+  no issue is closed solely because its implementation agent reports success.
+- **Tests:** review reported test outputs; do not claim browser verification
+  unless an authenticated calendar is rendered.
+- **Expected deliverables:** independent findings and closure recommendation.
+- **Status:** Waiting on C1-r1 through C1-r3.
+
+### C1-r5 — authenticated calendar browser verification
+
+- **Task ID:** C1-r5
+- **Objective:** Verify persisted create, replay, edit, delete, themes, keyboard
+  focus, and responsive states in a real browser using a disposable account.
+- **Assigned agent:** main integration owner
+- **Dependencies:** C1-r1 through C1-r3; a disposable PostgreSQL database and
+  test account
+- **Owned files:** audit evidence only, `docs/audits/calendar-page.md`,
+  `PROGRESS.md`, and `HANDOFF.md`
+- **Read-only files:** integrated application and migrations
+- **Required skills:** S421, S423, S424 and applicable accessibility skills
+- **Security permissions:** Synthetic local configuration only; no production
+  credentials or personal data and no real calendar writes.
+- **Acceptance criteria:** browser renders authenticated desktop and mobile
+  calendars; create/replay produces one saved event; keyboard focus returns to
+  a live control after close/save/delete; short events remain accessible.
+- **Tests:** actual browser walkthrough and disposable database assertions.
+- **Expected deliverables:** dated evidence, screenshots when supported, and
+  updated audit statuses; no fabricated user or sample event in the product.
+- **Status:** Blocked by the missing disposable PostgreSQL service/account;
+  source work continues without claiming this verification.
+
+### C1-a follow-on — bounded title search
+
+After C1-r4, implement the read-only owner-scoped date-window search proposed
+by the roadmap reviewer. Use `POST /api/calendar/events/search` to keep search
+terms out of URLs; defer course and occurrence-aware search until those data
+models exist. Add exact validation, literal matching, half-open date bounds,
+owner isolation, bounded results, and keyboard-usable empty/loading/error
+states before accepting this slice.

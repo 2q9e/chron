@@ -5,8 +5,8 @@
 F0 — foundation documentation, the scrubbed fresh history, and repository
 security are on public GitHub `main`; hosted checks and branch protection remain
 unverified. C1 — calendar — is active at the user's direction. Landing-page
-work is paused. The first calendar implementation is verified and pushed to
-the single public `main` branch at `bdf89fd`. No code or visual material was
+work is paused. The calendar implementation and first audit fixes are pushed
+to the single public `main` branch through `16a7eb0`. No code or visual material was
 copied from another folder.
 
 ## Completed
@@ -78,6 +78,13 @@ copied from another folder.
   overlap IDs and revisions under a per-owner PostgreSQL transaction lock and
   reject stale time-zone or conflict state. No real database or test account is
   configured, so persisted authenticated behavior is not yet runtime verified.
+- Fixed timezone-aware Today, localized operation errors, loading notice
+  priority, multi-day timed-event labels, and adjacent short-event collisions.
+  The independent re-audit left reload focus, midnight hit targets, and create
+  idempotency open; `docs/audits/calendar-page.md` records evidence and status.
+- Calendar API (17), time (7), layout (3), auth-config (9), and agent-skill
+  (10) tests pass, as do lint, typecheck, and the production build. These are
+  source-level checks; authenticated persistence remains unverified.
 
 ## Open work
 
@@ -86,8 +93,10 @@ copied from another folder.
 - Configure a disposable PostgreSQL test database/account, apply the auth and
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser.
-- Continue C1 with recurring events, reminders, drag scheduling, search, and
-  external calendar synchronization.
+- Close create idempotency, reload focus, and midnight hit-target findings
+  before starting the next calendar feature slice.
+- Continue C1 with bounded title search, recurrence, reminders, drag scheduling,
+  and external calendar synchronization.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -118,9 +127,10 @@ copied from another folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- Public GitHub `main` now has 555 non-empty, purposeful commits. Four reviewed
-  commits were pushed from local `main`; the initial calendar API, auth route,
-  sign-in screen, calendar views, and overlap review are included. Never count
+- Public GitHub `main` has more than 500 non-empty, purposeful commits; the
+  initial history had 533 and three reviewed calendar fixes were pushed from
+  local `main`. The calendar API, auth route, sign-in screen, calendar views,
+  and overlap review are included. Never count
   empty or duplicate commits toward the requested total.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
   reduced motion, keyboard, fallback, and performance review remain.
@@ -135,13 +145,14 @@ copied from another folder.
   linked incorporated terms not available without an authenticated source.
 - Landing lint, TypeScript, and production-build checks passed after the scene
   module split and visibility-fallback fix.
-- For the calendar increment, `npm run test:calendar-api --workspace @chron/web`
-  passed all 17 tests; `npm run test:calendar-time --workspace @chron/web`
-  passed all 6 tests; lint, typecheck, and the production build passed.
+- For the current calendar increment, calendar API passed all 17 tests, time
+  all 7, layout all 3, auth-config all 9, and agent-skills all 10. Lint,
+  typecheck, and the production build passed.
 - Reviewed the outgoing diff from `origin/main`, checked `git diff --check`,
   scanned staged and outgoing content for common secret patterns, and pushed to
-  `origin/main`. `git ls-remote --heads origin` reports only `main`, now at
-  `bdf89fd` with 555 commits.
+  `origin/main`. The remote exposes only `main`; the latest three calendar
+  source changes were pushed as ordinary commits by the configured `2q9e`
+  author. This history now exceeds 500 purposeful commits.
 - Inspected the real sign-in route in the browser at desktop and 390px mobile
   widths. The form remained usable with no horizontal overflow. With only a
   synthetic local auth configuration and an unreachable local PostgreSQL

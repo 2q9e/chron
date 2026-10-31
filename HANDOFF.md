@@ -3,7 +3,8 @@
 ## Current state
 
 Chron is a standalone repository on one published branch, public GitHub
-`main`. Remote and local `main` match at `bdf89fd` with 555 purposeful commits.
+`main`. Remote and local `main` match and contain more than 500 purposeful
+commits.
 The calendar API, protected route, sign-in, views, preferences, and conflict
 review are pushed. Secret scanning, push protection, Dependabot alerts and
 security updates, and private vulnerability reporting are enabled. Continue
@@ -18,7 +19,9 @@ existing-account sign-in, protected routing, four calendar views, event
 create/edit/delete, theme and display preferences, and a server-side overlap
 check shown before manual approval. Recurrence, reminders, drag scheduling,
 search, external sync, database-backed runtime verification, and real
-authenticated browser walkthrough remain open.
+authenticated browser walkthrough remain open. The current calendar audit also
+tracks three open issues: idempotent create retry, focus after reload, and a
+full-size target for short events near midnight.
 
 ## Product and security gates
 
@@ -46,6 +49,11 @@ authenticated browser walkthrough remain open.
   exist and pass locally; live PostgreSQL integration remains unverified.
 - Do not add samples, placeholders, stubs, fake demos, or nonfunctional
   controls to the product.
+- `docs/audits/calendar-page.md` records the independent visual and security
+  reviews, scores, evidence, closed findings, and the current three open
+  findings. Source review confirmed timezone-aware Today, localized errors,
+  loading priority, and multi-day labels; it found a possible duplicate after
+  an uncertain create response plus two remaining accessibility issues.
 - This runtime does not enforce per-agent filesystem or network sandboxes.
   Worktrees are coordination boundaries only; never provide secrets or private
   data to agents. Requested agent model settings were assigned, but this
@@ -99,7 +107,11 @@ awaits narrow and zoom browser checks.
 - `npm run lint --workspace @chron/web` — passed.
 - `npm run typecheck --workspace @chron/web` — passed.
 - `npm run test:calendar-api --workspace @chron/web` — all 17 tests passed.
-- `npm run test:calendar-time --workspace @chron/web` — all 6 tests passed.
+- `npm run test:calendar-time --workspace @chron/web` — all 7 tests passed.
+- `npm run test:calendar-layout --workspace @chron/web` — all 3 tests passed
+  for adjacent short events, midnight clipping, and spring-forward layout.
+- `npm run test:auth-config --workspace @chron/web` — all 9 tests passed.
+- `npm run test:agent-skills --workspace @chron/web` — all 10 tests passed.
 - `npm run build --workspace @chron/web` — passed with the calendar API,
   conflict route, protected route, and sign-in route included.
 - Production route inspected in Chrome at 1230×480. Opening, Week, Study,
@@ -126,10 +138,12 @@ awaits narrow and zoom browser checks.
 1. Configure a disposable PostgreSQL test database/account, apply both
    migrations, and run authenticated persistence, isolation, and browser
    walkthroughs.
-2. Continue C1 with recurrence, reminders, drag scheduling, and search, while
-   keeping landing work paused.
-3. Retain persisted, payload-bound draft approval before agent or bulk
+2. Fix the three open calendar findings; create retries must replay one exact
+   approved payload without duplicating rows.
+3. Continue C1 with bounded title search, recurrence, reminders, and drag
+   scheduling while keeping landing work paused.
+4. Retain persisted, payload-bound draft approval before agent or bulk
    integration can write calendar records.
-4. Resume remaining landing browser checks only when the user reprioritizes it.
-5. Before every push, inspect staged paths and rescan staged content and commit
+5. Resume remaining landing browser checks only when the user reprioritizes it.
+6. Before every push, inspect staged paths and rescan staged content and commit
    history for secrets and excluded material.
