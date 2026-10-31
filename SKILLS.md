@@ -1529,3 +1529,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** BufferGeometry, typed arrays
 - **Security considerations:** Clamp parameters to prevent unbounded buffer allocation
 - **Verification method:** Test extreme dimensions and inspect indices and normals
+
+### S137 — Postprocessing budget
+
+- **Skill ID:** S137
+- **Name:** Postprocessing budget
+- **Purpose:** Apply render effects only when they improve clarity
+- **When to use:** A scene needs restrained visual finishing
+- **Implementation approach:** Keep the composer chain short and remove unmeasurable passes
+- **Recommended tools:** postprocessing, WebGL timer queries
+- **Security considerations:** Do not process private user images without consent
+- **Verification method:** Benchmark each pass on representative hardware
