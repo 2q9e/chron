@@ -2259,3 +2259,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Prisma Migrate, Drizzle Kit, SQL migration tool
 - **Security considerations:** Never put real user data into migration fixtures
 - **Verification method:** Apply migrations from clean and previous-version schemas
+
+### S203 — Expand-contract migrations
+
+- **Skill ID:** S203
+- **Name:** Expand-contract migrations
+- **Purpose:** Deploy schema changes across overlapping app versions
+- **When to use:** When renaming or splitting a live column
+- **Implementation approach:** Add new shape, dual-write/read, backfill, then remove old field later
+- **Recommended tools:** SQL migrations, background backfill job
+- **Security considerations:** Keep authorization consistent during dual-read period
+- **Verification method:** Test old and new app versions against each migration stage
