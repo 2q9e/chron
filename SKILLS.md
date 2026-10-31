@@ -711,3 +711,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTTP Cache-Control, CDN rules, ETag
 - **Security considerations:** Use private/no-store for credential or personal-data responses
 - **Verification method:** Inspect browser, proxy, and CDN behavior across two authenticated users
+
+### S063 — Response DTO boundaries
+
+- **Skill ID:** S063
+- **Name:** Response DTO boundaries
+- **Purpose:** Expose deliberate API shapes rather than database records
+- **When to use:** When returning persisted entities to browser clients
+- **Implementation approach:** Map domain objects to allowlisted response DTOs at the transport layer
+- **Recommended tools:** TypeScript types, Zod response schemas
+- **Security considerations:** Exclude password hashes, encrypted fields, provider tokens, and internal flags
+- **Verification method:** Snapshot responses and assert forbidden properties are absent
