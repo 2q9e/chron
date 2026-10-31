@@ -3198,3 +3198,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed error map, UI error state
 - **Security considerations:** Never return raw upstream response body
 - **Verification method:** Test auth, quota, timeout, and malformed response mappings
+
+### S288 — Untrusted result wrapping
+
+- **Skill ID:** S288
+- **Name:** Untrusted result wrapping
+- **Purpose:** Keep fetched content separate from tool instructions
+- **When to use:** When web/document text is assembled for an authorized model request under S236
+- **Implementation approach:** Attach provenance and present retrieved text as quoted data; labels are defense in depth and never replace server authorization (S189/S265)
+- **Recommended tools:** Prompt builder, source metadata
+- **Security considerations:** A source label cannot grant identity, ownership, tool permissions, or approval; server checks every execution
+- **Verification method:** Use hostile test-only result text; inspect assembled request and prove source labels do not authorize server-side calls
