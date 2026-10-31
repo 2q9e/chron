@@ -667,3 +667,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** BullMQ job IDs, transaction table, unique constraints
 - **Security considerations:** Bind dedupe records to tenant and operation type
 - **Verification method:** Redeliver identical job payloads and assert one output record
+
+### S059 — Webhook signature verification
+
+- **Skill ID:** S059
+- **Name:** Webhook signature verification
+- **Purpose:** Authenticate callbacks before they can change internal state
+- **When to use:** When an external provider posts events to the service
+- **Implementation approach:** Verify raw-body HMAC, timestamp tolerance, and event identity before parsing actions
+- **Recommended tools:** Provider SDK verifier, Node crypto timingSafeEqual
+- **Security considerations:** Reject unsigned callbacks; never trust claimed event owner fields alone
+- **Verification method:** Replay valid, altered, stale, and malformed webhook fixtures
