@@ -3950,3 +3950,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Intl.Locale, date-fns locale
 - **Security considerations:** Do not change persisted dates when display locale changes
 - **Verification method:** Test Monday/Sunday starts across locale fixtures
+
+### S356 — Calendar view model
+
+- **Skill ID:** S356
+- **Name:** Calendar view model
+- **Purpose:** Separate date calculations from visual components
+- **When to use:** When supporting day, week, month, agenda
+- **Implementation approach:** Build typed visible-range selectors around canonical dates
+- **Recommended tools:** date-fns/Temporal, memoized selectors
+- **Security considerations:** Filter by owner before composing view state
+- **Verification method:** Unit-test range boundaries and month padding
