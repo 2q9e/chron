@@ -590,3 +590,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Framework CSRF middleware, Origin and Fetch Metadata headers
 - **Security considerations:** Do not accept state-changing GETs or wildcard credentialed CORS
 - **Verification method:** Submit forged cross-origin forms/fetches against each mutation route; verify no write occurs
+
+### S052 — Password storage
+
+- **Skill ID:** S052
+- **Name:** Password storage
+- **Purpose:** Define safe password-record storage and lifecycle policy
+- **When to use:** When account storage, rehashing, or password-field handling is designed; see S168 for hash algorithm and cost calibration
+- **Implementation approach:** Persist only adaptive password hashes with per-password salt and versioned parameters; never retain plaintext or reversible password ciphertext
+- **Recommended tools:** Argon2id library, bcrypt as supported fallback
+- **Security considerations:** Never log or reversibly encrypt passwords; apply S168 hashing guidance and avoid exposing account existence through verification errors
+- **Verification method:** Inspect storage schema for hash-only fields and verify parameter upgrades preserve login; use S168 for algorithm benchmarks
