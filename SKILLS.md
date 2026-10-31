@@ -4304,3 +4304,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTTP Cache-Control, Next cache
 - **Security considerations:** Never share personal responses
 - **Verification method:** Inspect cache after account switch
+
+### S388 — Cache invalidation
+
+- **Skill ID:** S388
+- **Name:** Cache invalidation
+- **Purpose:** Refresh dependent server-data views after a confirmed mutation
+- **When to use:** When events or notebooks change
+- **Implementation approach:** Invalidate the entity and dependent query keys after server confirmation; use S019 for query-key ownership and S392 for identity-change clearing
+- **Recommended tools:** TanStack Query, revalidation tags
+- **Security considerations:** Clear session cache on logout
+- **Verification method:** Confirm a committed mutation refreshes dependent views; test user-switch clearing separately under S392
