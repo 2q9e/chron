@@ -4891,3 +4891,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** .gitignore, git check-ignore
 - **Security considerations:** Do not rely on ignore rules to untrack existing secrets
 - **Verification method:** Verify representative paths are ignored
+
+### S441 — Secret scanning in CI
+
+- **Skill ID:** S441
+- **Name:** Secret scanning in CI
+- **Purpose:** Catch credentials before merge
+- **When to use:** On pull requests and default branch
+- **Implementation approach:** Run maintained scanner on full tree and diff
+- **Recommended tools:** Gitleaks, GitHub secret scanning
+- **Security considerations:** Fail closed on confirmed high-confidence secret
+- **Verification method:** Seed canary and confirm job failure
