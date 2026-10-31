@@ -2767,3 +2767,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** AbortController, queue worker
 - **Security considerations:** A deadline stops local waiting or cooperative work, not an already committed remote effect; do not assume rollback and deduplicate retries under S284
 - **Verification method:** Delay a test-only remote operation past its deadline, simulate commit-before-timeout, and verify unknown status is reconciled without duplicate writes
+
+### S249 — Failure classification
+
+- **Skill ID:** S249
+- **Name:** Failure classification
+- **Purpose:** Map failures to retry or user action
+- **When to use:** When a tool step fails
+- **Implementation approach:** Use typed transient, validation, permission, terminal errors
+- **Recommended tools:** Error enum, policy map
+- **Security considerations:** Do not expose raw provider bodies
+- **Verification method:** Test timeout, auth, 4xx, and parse cases
