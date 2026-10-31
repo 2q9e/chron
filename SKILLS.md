@@ -579,3 +579,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Secure cookie sessions, Redis or database session store
 - **Security considerations:** Use HttpOnly, Secure, SameSite cookies and defend against fixation
 - **Verification method:** Verify cookie flags, rotation, logout, expiry, and revoked-session denial
+
+### S051 — Route-bound CSRF enforcement
+
+- **Skill ID:** S051
+- **Name:** Route-bound CSRF enforcement
+- **Purpose:** Apply CSRF defenses at each cookie-authenticated mutation route
+- **When to use:** When cookies authenticate cross-site-capable browser requests
+- **Implementation approach:** Use framework tokens or strict Origin/Fetch Metadata checks plus SameSite; use S170 for session-wide token lifecycle and cookie policy
+- **Recommended tools:** Framework CSRF middleware, Origin and Fetch Metadata headers
+- **Security considerations:** Do not accept state-changing GETs or wildcard credentialed CORS
+- **Verification method:** Submit forged cross-origin forms/fetches against each mutation route; verify no write occurs
