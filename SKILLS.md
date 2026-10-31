@@ -5456,3 +5456,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** AbortController, React cleanup, `using` where supported
 - **Security considerations:** Cleanup must run when account or route changes
 - **Verification method:** Unmount, cancel, and failure-path leak tests
+
+### S492 — Schema ownership boundaries
+
+- **Skill ID:** S492
+- **Name:** Schema ownership boundaries
+- **Purpose:** Avoid unrelated features editing shared database contracts
+- **When to use:** When several domains need common entities
+- **Implementation approach:** Assign canonical schema owner and review additive changes
+- **Recommended tools:** Migration review, CODEOWNERS
+- **Security considerations:** Review impact on data access and retention
+- **Verification method:** Check all consumers against migration plan
