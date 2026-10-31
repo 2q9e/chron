@@ -3297,3 +3297,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Google Calendar API, sync worker
 - **Security considerations:** Request read scope unless user explicitly enables writes; do not commit imported event changes before S369 approval
 - **Verification method:** Import synthetic event and compare fields and timezone
+
+### S297 — Google Calendar approved write
+
+- **Skill ID:** S297
+- **Name:** Google Calendar approved write
+- **Purpose:** Create or update only events the user approved
+- **When to use:** Only after S291 review and when a user requests an external calendar write
+- **Implementation approach:** Create a preview, bind explicit approval to the exact event diff under S193, then call the verified official events endpoint with an idempotency ledger
+- **Recommended tools:** Calendar API, idempotency ledger
+- **Security considerations:** Every consequential external write requires approval; never mutate from model output alone and never enable before S291
+- **Verification method:** Before S291, verify writes are unavailable; afterward confirm approved event ID and before/after state, and deny changed or unapproved payloads
