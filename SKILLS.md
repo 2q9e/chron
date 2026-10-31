@@ -4924,3 +4924,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** pnpm, npm ci
 - **Security considerations:** Do not allow resolution from untrusted registries
 - **Verification method:** Clean install in CI and compare lockfile state
+
+### S444 — CI quality gates
+
+- **Skill ID:** S444
+- **Name:** CI quality gates
+- **Purpose:** Run consistent checks before integration
+- **When to use:** For every pull request
+- **Implementation approach:** Execute lint, typecheck, tests, build in deterministic order
+- **Recommended tools:** GitHub Actions, package scripts
+- **Security considerations:** Use least-privilege workflow token
+- **Verification method:** Break each check intentionally and confirm block
