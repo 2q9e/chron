@@ -4880,3 +4880,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** git diff --cached, git status
 - **Security considerations:** Reject env, uploads, logs, private data
 - **Verification method:** Automated path denylist plus manual check
+
+### S440 — Repository ignore policy
+
+- **Skill ID:** S440
+- **Name:** Repository ignore policy
+- **Purpose:** Keep generated and sensitive files untracked
+- **When to use:** At project setup and when tools add artifacts
+- **Implementation approach:** Ignore env, build output, local DB, caches
+- **Recommended tools:** .gitignore, git check-ignore
+- **Security considerations:** Do not rely on ignore rules to untrack existing secrets
+- **Verification method:** Verify representative paths are ignored
