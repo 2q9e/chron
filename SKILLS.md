@@ -4337,3 +4337,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenAPI, Zod
 - **Security considerations:** Exclude secrets and irrelevant private fields
 - **Verification method:** Compare bytes and UI requirements
+
+### S391 — N+1 query detection
+
+- **Skill ID:** S391
+- **Name:** N+1 query detection
+- **Purpose:** Avoid repeated database round trips
+- **When to use:** When list views load relations
+- **Implementation approach:** Batch relations or use measured joins
+- **Recommended tools:** ORM logger, pg_stat_statements
+- **Security considerations:** Scope batches to tenant
+- **Verification method:** Measure query count at 100 rows
