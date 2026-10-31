@@ -4482,3 +4482,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Testcontainers, PostgreSQL
 - **Security considerations:** Synthetic accounts only
 - **Verification method:** Parallel suites do not share mutable rows
+
+### S404 — Authentication flow tests
+
+- **Skill ID:** S404
+- **Name:** Authentication flow tests
+- **Purpose:** Verify login, logout, reset, and expiry
+- **When to use:** When auth routes change
+- **Implementation approach:** Exercise cookies, rotation, and revocation end-to-end
+- **Recommended tools:** Playwright, auth helpers
+- **Security considerations:** Fake mail sink and synthetic credentials
+- **Verification method:** Assert flags and revoked-session denial
