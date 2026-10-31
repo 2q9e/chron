@@ -4858,3 +4858,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GitHub branch protection
 - **Security considerations:** Restrict bypass to documented admins
 - **Verification method:** Attempt unreviewed push in test repository
+
+### S438 — Small coherent commits
+
+- **Skill ID:** S438
+- **Name:** Small coherent commits
+- **Purpose:** Keep review and rollback focused
+- **When to use:** After one verified improvement
+- **Implementation approach:** Stage only owned files and commit one behavior change
+- **Recommended tools:** Git, diff viewer
+- **Security considerations:** No secrets or scratch artifacts
+- **Verification method:** Review commit diff and run relevant check
