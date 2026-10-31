@@ -3728,3 +3728,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Rubric tags, rule analysis
 - **Security considerations:** Do not assign diagnostic labels to learners; no model inference before S236
 - **Verification method:** Test synthetic misconception cases and verify the deterministic path; assert model path is blocked before S236
+
+### S336 — Learning objective mapping
+
+- **Skill ID:** S336
+- **Name:** Learning objective mapping
+- **Purpose:** Connect materials and practice to intended outcomes
+- **When to use:** When a syllabus or unit structure exists
+- **Implementation approach:** Link objectives to sources, quizzes, and cards
+- **Recommended tools:** Objective taxonomy, relational links
+- **Security considerations:** Do not invent official course outcomes
+- **Verification method:** Verify each objective traces to supplied syllabus
