@@ -8,6 +8,7 @@ import { CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent,
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, navigateDate, newEventDraft, validateEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
 import { CalendarEditor, type Editor } from "./calendar-editor";
+import { CalendarSearch } from "./calendar-search";
 import { CalendarPreferencesForm } from "./calendar-preferences";
 import { AgendaCalendar, MonthCalendar, TimeCalendar } from "./calendar-views";
 import styles from "./calendar.module.css";
@@ -410,6 +411,14 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       <h2>{preferences && date ? formatRangeHeading(view, date, preferences.weekStartsOn, locale) : "Calendar"}</h2>
       <div className={styles.viewSwitcher} aria-label="Calendar view">{views.map((item) => <button type="button" key={item} aria-pressed={view === item} disabled={calendarLocked} onClick={() => changeView(item)}>{item}</button>)}</div>
     </div>
+    {preferences && date && <CalendarSearch
+      key={`${userId}:${preferences.timeZone}`}
+      initialDate={date}
+      locale={locale}
+      timeZone={preferences.timeZone}
+      disabled={calendarLocked || !!editor}
+      onSelect={openEvent}
+    />}
     {preferences && <p className={styles.zone}>Times shown in {preferences.timeZone}</p>}
     <p role="status" className={styles.status}>{loading ? "Loading calendar…" : notice}</p>
     {loadError && <div className={styles.error} role="alert"><p>{loadError}</p><button type="button" onClick={() => { setLoadError(""); if (!preferences) window.location.reload(); else setReload((value) => value + 1); }}>Retry loading calendar</button></div>}

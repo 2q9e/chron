@@ -1,17 +1,40 @@
-import { calendarThemes } from "../domain/types";
+import { Temporal } from "@js-temporal/polyfill";
+import { calendarThemes } from "../domain/types.ts";
 import type {
   CalendarApiError,
   CalendarConflict,
   CalendarConflictReview,
   CalendarEvent,
+  CalendarEventSearchRequest,
   CalendarEventMutation,
   CalendarPreferences,
-} from "../domain/types";
+} from "../domain/types.ts";
+
+export type CalendarEventSearchFields = Readonly<{
+  query: string;
+  from: string;
+  through: string;
+  timeZone: string;
+  kind: "" | CalendarEvent["kind"];
+}>;
+
+export type CalendarEventSearchValidation =
+  | Readonly<{ ok: true; request: CalendarEventSearchRequest }>
+  | Readonly<{
+      ok: false;
+      field: "query" | "from" | "through" | "form";
+      message: string;
+    }>;
 
 export class CalendarRequestError extends Error {
-  constructor(message: string, readonly status: number, readonly code: string) {
+  readonly status: number;
+  readonly code: string;
+
+  constructor(message: string, status: number, code: string) {
     super(message);
     this.name = "CalendarRequestError";
+    this.status = status;
+    this.code = code;
   }
 }
 
@@ -21,6 +44,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
+}
+
+function isAbortError(reason: unknown): reason is Error {
+  return reason instanceof Error && reason.name === "AbortError";
 }
 
 function isCalendarEvent(value: unknown): value is CalendarEvent {
@@ -97,6 +124,111 @@ async function parseJson(response: Response): Promise<unknown> {
       "INVALID_RESPONSE",
     );
   }
+}
+
+export function prepareCalendarEventSearchRequest(
+  fields: CalendarEventSearchFields,
+): CalendarEventSearchValidation {
+  const query = fields.query.trim();
+  if (query.length === 0) {
+    return { ok: false, field: "query", message: "Enter a title to search for." };
+  }
+  if (Array.from(query).length > 120) {
+    return { ok: false, field: "query", message: "Use 120 characters or fewer." };
+  }
+  if (/[\p{Cc}\p{Cs}]/u.test(query)) {
+    return { ok: false, field: "query", message: "Remove control or invalid characters from the title search." };
+  }
+
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  let fromDate: Temporal.PlainDate;
+  let throughDate: Temporal.PlainDate;
+  try {
+    if (!datePattern.test(fields.from) || fields.from.startsWith("0000")) throw new RangeError("Invalid date");
+    fromDate = Temporal.PlainDate.from(fields.from);
+  } catch {
+    return { ok: false, field: "from", message: "Enter a valid start date." };
+  }
+  try {
+    if (!datePattern.test(fields.through) || fields.through.startsWith("0000")) throw new RangeError("Invalid date");
+    throughDate = Temporal.PlainDate.from(fields.through);
+  } catch {
+    return { ok: false, field: "through", message: "Enter a valid end date." };
+  }
+  if (Temporal.PlainDate.compare(throughDate, fromDate) < 0) {
+    return { ok: false, field: "through", message: "Through must be on or after From." };
+  }
+
+  let to: string;
+  try {
+    const exclusiveTo = throughDate.add({ days: 1 });
+    if (exclusiveTo.year > 9999) {
+      return { ok: false, field: "through", message: "Choose an end date before 9999-12-31." };
+    }
+    if (fromDate.until(exclusiveTo, { largestUnit: "days" }).days > 93) {
+      return { ok: false, field: "through", message: "Choose a date window of 93 days or fewer." };
+    }
+    to = exclusiveTo.toString();
+  } catch {
+    return { ok: false, field: "through", message: "Choose a valid end date." };
+  }
+
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: fields.timeZone });
+  } catch {
+    return { ok: false, field: "form", message: "The calendar time zone is invalid. Reload your preferences and try again." };
+  }
+  if (fields.kind !== "" && fields.kind !== "timed" && fields.kind !== "all-day") {
+    return { ok: false, field: "form", message: "Choose a valid event type." };
+  }
+
+  return {
+    ok: true,
+    request: {
+      query,
+      from: fromDate.toString(),
+      to,
+      timeZone: fields.timeZone,
+      ...(fields.kind ? { kind: fields.kind } : {}),
+    },
+  };
+}
+
+export async function searchCalendarEvents(
+  request: CalendarEventSearchRequest,
+  signal?: AbortSignal,
+): Promise<readonly CalendarEvent[]> {
+  let response: Response;
+  try {
+    response = await fetch("/api/calendar/events/search", {
+      method: "POST",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+      signal,
+    });
+  } catch (reason) {
+    if (signal?.aborted || isAbortError(reason)) throw reason;
+    throw new CalendarRequestError(
+      "Chron couldn't reach the calendar. Check your connection and try again.",
+      0,
+      "NETWORK_ERROR",
+    );
+  }
+  if (!response.ok) throw await readCalendarError(response);
+  const payload = await parseJson(response);
+  if (!isRecord(payload) || !Array.isArray(payload.events) || !payload.events.every(isCalendarEvent)) {
+    throw new CalendarRequestError(
+      "Chron returned search results in an unexpected format. Search again to retry.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  return payload.events;
 }
 
 export async function fetchCalendarEvents(

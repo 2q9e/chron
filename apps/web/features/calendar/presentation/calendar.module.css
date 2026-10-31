@@ -1,4 +1,5 @@
 .workspace {
+  color-scheme: light;
   --bg: #f8f5f5;
   --surface: rgba(255, 255, 255, .86);
   --text: #252127;
@@ -22,6 +23,7 @@
   --focus: #1f4b78;
 }
 .workspace[data-theme="premium-dark"] {
+  color-scheme: dark;
   --bg: #171619;
   --surface: #242126;
   --text: #f5eef2;
@@ -73,7 +75,7 @@
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
-.header, .toolbar, .panelHeading, .agendaDayHeader {
+.header, .toolbar, .panelHeading, .agendaDayHeader, .searchHeading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -341,6 +343,140 @@
   background: transparent;
   color: var(--accent);
 }
+.searchPanel {
+  margin-block: 1rem;
+  padding: clamp(1rem,2.2vw,1.5rem);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.searchHeading {
+  align-items: flex-end;
+  padding-bottom: .9rem;
+  border-bottom: 1px solid var(--line);
+}
+.searchHeading h2 {
+  margin: .15rem 0 0;
+  font-size: 1.2rem;
+  letter-spacing: -.02em;
+}
+.searchEyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.searchHint, .searchDateNote, .searchQueryHint {
+  margin: 0;
+  color: var(--muted);
+  font-size: .85rem;
+}
+.searchForm {
+  display: grid;
+  grid-template-columns: minmax(14rem,2fr) repeat(3,minmax(8rem,1fr));
+  align-items: end;
+  gap: .8rem;
+  padding-top: 1rem;
+}
+.searchField {
+  display: grid;
+  min-width: 0;
+  gap: .35rem;
+}
+.searchField label {
+  font-size: .85rem;
+  font-weight: 650;
+}
+.searchField input, .searchField select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: .55rem;
+  border: 1px solid var(--line);
+  border-radius: .3rem;
+  background: var(--surface);
+}
+.searchField input[aria-invalid="true"] {
+  border-color: var(--accent);
+}
+.searchFieldError, .searchError {
+  margin: .15rem 0 0;
+  color: var(--accent);
+  font-size: .85rem;
+  font-weight: 650;
+}
+.searchDateNote {
+  grid-column: 1 / 4;
+  align-self: center;
+}
+.searchActions {
+  grid-column: 4;
+  justify-self: end;
+}
+.searchActions button {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+.searchActions button:hover {
+  background: var(--event);
+}
+.searchFeedback:empty {
+  display: none;
+}
+.searchStatus, .searchError {
+  margin: .9rem 0 0;
+  font-size: .9rem;
+}
+.searchStatus {
+  color: var(--muted);
+}
+.searchResults {
+  list-style: none;
+  margin: .7rem 0 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+.searchResults li {
+  min-width: 0;
+}
+.workspace .searchResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 3.75rem;
+  padding: .65rem .25rem;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+}
+.workspace .searchResult:hover:not(:disabled) {
+  background: var(--event);
+}
+.searchResultMain {
+  display: grid;
+  min-width: 0;
+  gap: .2rem;
+}
+.searchResultTitle {
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+.searchResultDate, .searchResultKind {
+  color: var(--muted);
+  font-size: .82rem;
+}
+.searchResultKind {
+  flex: 0 0 auto;
+  text-align: right;
+}
 .panel, .settings {
   margin-top: 2rem;
   padding: clamp(1rem,3vw,2rem);
@@ -456,6 +592,25 @@
     display: none;
   }
 }
+@media(max-width:46rem) {
+  .searchHeading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .45rem;
+  }
+  .searchForm {
+    grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  }
+  .searchQuery, .searchDateNote, .searchActions {
+    grid-column: 1 / -1;
+  }
+  .searchActions, .searchActions button {
+    width: 100%;
+  }
+  .workspace .searchResult {
+    align-items: flex-start;
+  }
+}
 @media(prefers-reduced-motion:reduce) {
   .workspace * {
     scroll-behavior: auto;
@@ -466,6 +621,7 @@
 
 .workspace[data-theme="pink-liquid-glass"] .calendarSurface,
 .workspace[data-theme="pink-liquid-glass"] .panel,
+.workspace[data-theme="pink-liquid-glass"] .searchPanel,
 .workspace[data-theme="pink-liquid-glass"] .settings {
   background: rgba(255, 255, 255, .86);
   backdrop-filter: blur(14px);
