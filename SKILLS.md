@@ -777,3 +777,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, envalid, dotenv only for local development
 - **Security considerations:** Never print raw environment values in startup errors
 - **Verification method:** Boot with missing, malformed, and valid synthetic configuration cases
+
+### S069 — Liveness and readiness probes
+
+- **Skill ID:** S069
+- **Name:** Liveness and readiness probes
+- **Purpose:** Let orchestration distinguish a live process from a ready service
+- **When to use:** When deploying behind a load balancer or worker manager
+- **Implementation approach:** Keep liveness dependency-light; readiness checks only required services
+- **Recommended tools:** Kubernetes probes, health endpoint middleware
+- **Security considerations:** Do not reveal dependency hostnames or configuration details publicly
+- **Verification method:** Simulate dependency outage and confirm readiness drops while liveness stays true
