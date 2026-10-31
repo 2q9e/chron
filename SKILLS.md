@@ -2866,3 +2866,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod, domain validators
 - **Security considerations:** Success strings alone do not prove persistence
 - **Verification method:** Re-read durable state and compare expected result
+
+### S258 — Result verification stage
+
+- **Skill ID:** S258
+- **Name:** Result verification stage
+- **Purpose:** Verify final work before reporting done
+- **When to use:** At end of an agent run
+- **Implementation approach:** Run explicit postconditions and source checks
+- **Recommended tools:** Verification policy, repository read
+- **Security considerations:** Do not claim success when evidence is absent
+- **Verification method:** Inject partial failure; report must stay incomplete
