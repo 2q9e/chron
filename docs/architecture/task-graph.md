@@ -369,3 +369,137 @@ and layer integration; it includes browser checks at desktop and mobile sizes.
 Every task is reviewed for correctness, security, responsiveness, and its
 acceptance evidence before merge. Shared files remain under one owner. No
 feature is described as complete until its actual behavior has been tested.
+
+## Calendar milestone C1
+
+Landing implementation is paused at the user's direction. Calendar tasks use
+separate local worktrees and only publish reviewed, purposeful commits to the
+single remote `main` branch. The runtime cannot enforce agent filesystem or
+network isolation; task scopes are coordination boundaries, and no worker
+receives credentials or user data.
+
+### Shared calendar contract
+
+- The authenticated collection is `/api/calendar/events`.
+- `GET` takes `from` and `to` as canonical `YYYY-MM-DD` date bounds, with
+  `to` exclusive, plus an IANA `timeZone` for projecting timed bounds. It
+  returns `{ "events": CalendarEvent[] }` and includes only the signed-in
+  owner's events overlapping the requested range.
+- `POST` accepts one `CalendarEventMutation`, resolves timed wall times in the
+  submitted zone, and returns `{ "event": CalendarEvent }` with status 201
+  and an ETag containing the event revision.
+- `PUT /api/calendar/events/{id}` replaces the submitted event fields and
+  requires `If-Match` for the revision the user reviewed. `DELETE` requires the
+  same precondition. A stale revision returns 412; an absent precondition
+  returns 428; an unknown or foreign event returns 404.
+- `GET` and `PUT /api/calendar/preferences` read or update the signed-in
+  owner's theme, density, week start, and IANA display time zone.
+- Responses use `Cache-Control: private, no-store`. Errors use
+  `{ "error": { "code": string, "message": string } }`, without SQL, stack,
+  or provider details.
+- Timed events preserve local wall time, IANA zone, resolved instant, and
+  explicit earlier/later choice for an ambiguous fall-back time. Nonexistent
+  spring-forward times are rejected. All-day events use date-only,
+  end-exclusive bounds and never pass through UTC midnight.
+- The form's explicit save action approves that exact manual event mutation.
+  Agent-produced or bulk changes remain a later, persisted draft-and-approval
+  feature under S369.
+
+### C1-a — persisted calendar service and API
+
+- **Task ID:** C1-a
+- **Objective:** Add owner-isolated PostgreSQL event and preference storage,
+  authenticated collection/item handlers, optimistic concurrency, and safe
+  validation using the shared contract above.
+- **Assigned agent:** backend engineer, GPT-6 Luna, MAX reasoning
+- **Dependencies:** committed `features/calendar/domain/types.ts`,
+  `features/calendar/domain/time.ts`, and server-only access to the existing
+  Better Auth PostgreSQL pool
+- **Owned files:** `apps/web/db/migrations/0002_calendar.sql`,
+  `apps/web/features/calendar/server/**`,
+  `apps/web/app/api/calendar/**`
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
+  `PLAN.md`, this task graph, calendar domain types/time helpers,
+  Better Auth server configuration, the existing auth migration, and installed
+  Next.js Route Handler/headers documentation
+- **Required skills:** S041, S042, S044, S048, S049, S051, S063, S178,
+  S201–S216, S346–S349, S363, and S369
+- **Security permissions:** own-worktree edits only; no auth configuration,
+  package manifest, production credentials, personal data, external API calls,
+  other project folders, reference material, or push to GitHub. Worktree
+  separation is not a technical sandbox.
+- **Acceptance criteria:** auth comes from a verified Better Auth session;
+  owner scope is enforced in parameterized SQL and PostgreSQL RLS with
+  transaction-local user context; writes reject cross-origin requests and
+  require current revision; malformed, oversized, or unsupported fields are
+  rejected; only deliberate DTO fields are returned; reads are bounded and
+  no-store; deletion cascades from the account.
+- **Tests:** unit-test boundary parsing, schema validation, error mapping,
+  ownership paths, origin checks, and revision conflicts. Apply and inspect
+  migration in a clean disposable PostgreSQL-compatible test database if
+  available; report plainly if the runtime has no test database.
+- **Expected deliverables:** migration, scoped repository, route handlers,
+  tests, and a concise review summary; commit locally under the configured
+  `2q9e` author, but do not push or create a remote branch.
+
+### C1-b — calendar views and interactions
+
+- **Task ID:** C1-b
+- **Objective:** Build a responsive, accessible calendar for persisted user
+  events with day, week, month, and agenda views; date navigation; create,
+  edit, and delete forms; and real persisted theme/density/week/time-zone
+  preferences.
+- **Assigned agent:** frontend engineer, GPT-6 Luna, MAX reasoning
+- **Dependencies:** shared contract above; reads/writes use C1-a endpoints
+- **Owned files:** `apps/web/features/calendar/presentation/**` only
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
+  `PLAN.md`, this task graph, calendar domain types/time helpers, root design
+  tokens, calendar API contract, and installed Next.js server/client boundary
+  documentation
+- **Required skills:** S005–S012, S020–S021, S037, S356–S358, S360–S361,
+  S370, S421, and S423
+- **Security permissions:** own-worktree edits only; no database, auth,
+  package, route, external API, credentials, personal data, other project
+  folders, reference material, or push to GitHub. No samples, placeholder
+  records, or fake endpoints; display an honest empty state for an empty
+  account. Worktree separation is not a technical sandbox.
+- **Acceptance criteria:** every control performs its stated action; saved
+  events reload through the API; event details are never seeded; all-day dates
+  stay date-only; DST ambiguity is explained and resolved explicitly; focus,
+  keyboard operation, reduced motion, mobile reflow, loading, error, empty, and
+  conflict states are complete; the five themes alter coherent tokens.
+- **Tests:** test date-grid boundaries, event overlap layout, form validation,
+  API error recovery, and keyboard dialogs. Main agent inspects the rendered
+  desktop and mobile calendar in a real browser after route integration.
+- **Expected deliverables:** calendar presentation components/CSS, focused
+  tests, and review summary; commit locally under the configured `2q9e`
+  author, but do not push or create a remote branch.
+
+### C1-c — protected route and end-to-end integration
+
+- **Task ID:** C1-c
+- **Objective:** Make the application open to the calendar, protect it with the
+  existing auth provider, provide a working sign-in form for existing verified
+  accounts, connect C1-a and C1-b, and conduct the real-browser walkthrough.
+- **Assigned agent:** main integration owner
+- **Dependencies:** reviewed C1-a and C1-b commits
+- **Owned files:** `apps/web/app/**`, sign-in presentation, project memory,
+  CI wiring, and narrow integration fixes approved by the main owner
+- **Read-only files:** all C1 API and presentation work before review
+- **Required skills:** S048, S049, S051, S012, S013, S015, S055, S421,
+  S423, and applicable accessibility/design audit skills
+- **Security permissions:** local Chron repository and configured GitHub
+  `main`; no reference material, production credentials, deployment, paid
+  service, or other project. Push only reviewed, staged source changes to the
+  existing single remote branch.
+- **Acceptance criteria:** root leads to `/calendar`; unauthenticated visitors
+  reach sign-in; sign-in uses Better Auth and never fakes session state; a
+  verified account can create, edit, list, delete, and reload events with
+  user-isolated data; one-user mutations cannot affect another; five calendar
+  themes and preferences persist server-side; rendered desktop and mobile
+  behavior is reviewed.
+- **Tests:** run the relevant unit/security suites, lint, typecheck, dependency
+  audit, build, and browser checks. Full authenticated persistence is only
+  claimed if a disposable test account and database are actually configured.
+- **Expected deliverables:** integrated calendar route, auth UI, updated
+  progress/handoff, audit findings and fixes, and reviewed commits on `main`.
