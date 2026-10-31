@@ -4282,3 +4282,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next analyzer, React Profiler
 - **Security considerations:** Do not serialize private server data
 - **Verification method:** Measure hydration tasks and payload
+
+### S386 — Streaming boundary placement
+
+- **Skill ID:** S386
+- **Name:** Streaming boundary placement
+- **Purpose:** Show content before slow data
+- **When to use:** When route queries finish at different times
+- **Implementation approach:** Place Suspense around delayed region
+- **Recommended tools:** React Suspense, Server Timing
+- **Security considerations:** Authorize before streaming protected data
+- **Verification method:** Compare first paint on slow fixture
