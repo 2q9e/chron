@@ -1351,3 +1351,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Screenshot audit, heuristic rubric, content inventory
 - **Security considerations:** Flag fake metrics, testimonials, integrations, and product previews for correction
 - **Verification method:** Score originality, hierarchy, function, responsiveness, and verify each fix
+
+## 3D graphics and animation
+
+### S121 — R3F scene shell
+
+- **Skill ID:** S121
+- **Name:** R3F scene shell
+- **Purpose:** Compose a bounded three-dimensional world with React
+- **When to use:** A landing chapter needs real scene depth
+- **Implementation approach:** Keep Canvas local and split scene primitives into components
+- **Recommended tools:** Three.js, @react-three/fiber
+- **Security considerations:** Never place account data in public scene assets
+- **Verification method:** Production-render a minimal scene and navigate away to check cleanup
