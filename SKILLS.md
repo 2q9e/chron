@@ -3906,3 +3906,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** rrule, date-fns/Temporal
 - **Security considerations:** Apply owner scope before expanding stored series
 - **Verification method:** Compare generated instances to known RRULE fixture
+
+### S352 — Recurrence exceptions
+
+- **Skill ID:** S352
+- **Name:** Recurrence exceptions
+- **Purpose:** Track edited or canceled instances within a series
+- **When to use:** When one occurrence differs from pattern
+- **Implementation approach:** Store original occurrence key plus exception payload
+- **Recommended tools:** iCalendar EXDATE, recurrence exception table
+- **Security considerations:** Ensure one user’s exception cannot alter shared series
+- **Verification method:** Edit/cancel one occurrence and preserve neighbors
