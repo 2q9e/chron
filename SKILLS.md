@@ -2026,3 +2026,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL RLS, repositories
 - **Security considerations:** UI filtering is not authorization
 - **Verification method:** Run cross-tenant tests through service entry points
+
+### S182 — Privilege escalation review
+
+- **Skill ID:** S182
+- **Name:** Privilege escalation review
+- **Purpose:** Prevent self-granted roles or permissions
+- **When to use:** When roles or tool scopes change
+- **Implementation approach:** Centralize transitions; validate actor and target
+- **Recommended tools:** Policy engine, permission matrix
+- **Security considerations:** Ignore role claims from model output
+- **Verification method:** Test self-promotion and delegation boundaries
