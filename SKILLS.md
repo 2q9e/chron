@@ -4979,3 +4979,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GitHub OIDC, cloud IAM
 - **Security considerations:** Bind trust to repo, branch, and environment
 - **Verification method:** Verify unauthorized branch cannot assume role
+
+### S449 — Action pinning and provenance
+
+- **Skill ID:** S449
+- **Name:** Action pinning and provenance
+- **Purpose:** Reduce risk from mutable CI dependencies
+- **When to use:** When adding GitHub Actions
+- **Implementation approach:** Pin by commit SHA and review upstream provenance
+- **Recommended tools:** Actionlint, Dependabot
+- **Security considerations:** Avoid unreviewed marketplace actions
+- **Verification method:** Verify pinned digest and permissions
