@@ -909,3 +909,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Fetch ReadableStream, SSE, AbortController
 - **Security considerations:** Authorize before opening; do not stream tool secrets or hidden reasoning
 - **Verification method:** Test reconnect, disconnect, malformed frames, and concurrent user isolation
+
+## UI/UX and visual design
+
+### S081 — Product art direction brief
+
+- **Skill ID:** S081
+- **Name:** Product art direction brief
+- **Purpose:** Give the product a recognizable visual premise before component styling starts
+- **When to use:** When beginning a new route or major redesign
+- **Implementation approach:** Define audience, mood, material references, type, palette, and one signature composition
+- **Recommended tools:** Figma, moodboard, design tokens, browser screenshots
+- **Security considerations:** Do not imply affiliation through another company’s distinctive visual identity
+- **Verification method:** Review a one-page direction against product purpose and existing screens
