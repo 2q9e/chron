@@ -4293,3 +4293,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Suspense, Server Timing
 - **Security considerations:** Authorize before streaming protected data
 - **Verification method:** Compare first paint on slow fixture
+
+### S387 — Cache policy selection
+
+- **Skill ID:** S387
+- **Name:** Cache policy selection
+- **Purpose:** Reuse data only with safe visibility
+- **When to use:** When repeated reads may be cached
+- **Implementation approach:** Separate public and user-scoped policies
+- **Recommended tools:** HTTP Cache-Control, Next cache
+- **Security considerations:** Never share personal responses
+- **Verification method:** Inspect cache after account switch
