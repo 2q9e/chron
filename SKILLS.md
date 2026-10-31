@@ -2523,3 +2523,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** pgvector, migration job, confirmed official API client
 - **Security considerations:** Require written permission before Meta credentials or inference; never substitute another embedding provider
 - **Verification method:** Check source deletion removes every vector and stale index reference
+
+### S227 — Backup restore drills
+
+- **Skill ID:** S227
+- **Name:** Backup restore drills
+- **Purpose:** Prove database backups restore into a usable, isolated environment
+- **When to use:** When enabling scheduled backups
+- **Implementation approach:** Automate scheduled backup restore into a separate project and verify schema, data integrity, and access; use S435 for application-level checkpoint and run-resume recovery
+- **Recommended tools:** Managed backup tooling, restore script
+- **Security considerations:** Restrict backup download and scrub isolated restore targets; never restore private backup material into shared developer worktrees
+- **Verification method:** Run a database restore drill, record measured recovery point, and verify the isolated restore; exercise app checkpoints separately under S435
