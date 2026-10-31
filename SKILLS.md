@@ -313,3 +313,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript, React, tsd
 - **Security considerations:** Do not let a visual primitive turn a noninteractive element into a fake control
 - **Verification method:** Compile positive and negative usage examples and inspect rendered semantics
+
+### S027 — Type-safe event handlers
+
+- **Skill ID:** S027
+- **Name:** Type-safe event handlers
+- **Purpose:** Preserve native event types through reusable interaction helpers
+- **When to use:** When extracting keyboard, pointer, or form handlers
+- **Implementation approach:** Use specific React event types and narrow target values before access
+- **Recommended tools:** TypeScript, React types, ESLint
+- **Security considerations:** Do not trust event payloads as validated server input
+- **Verification method:** Run strict type checking and exercise the event with a realistic DOM target
