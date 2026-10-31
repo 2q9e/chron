@@ -5179,3 +5179,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML anchor, CSS focus state
 - **Security considerations:** Do not route around required consent or safety notices
 - **Verification method:** Activate first Tab and verify destination focus
+
+### S467 — Live region announcements
+
+- **Skill ID:** S467
+- **Name:** Live region announcements
+- **Purpose:** Announce async status without moving focus
+- **When to use:** For save, upload, and agent progress
+- **Implementation approach:** Use polite status and reserve assertive alerts for urgent errors
+- **Recommended tools:** aria-live, React Aria
+- **Security considerations:** Never announce keys, private content, or hidden reasoning
+- **Verification method:** Check screen reader output for duplicate/noisy updates
