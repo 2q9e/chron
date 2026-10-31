@@ -5234,3 +5234,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Semantic tokens, icon set
 - **Security considerations:** Avoid symbols that imply false approval
 - **Verification method:** Test grayscale and color-vision simulation
+
+### S472 — Zoom and reflow support
+
+- **Skill ID:** S472
+- **Name:** Zoom and reflow support
+- **Purpose:** Preserve function at high zoom and narrow widths
+- **When to use:** When layout uses fixed dimensions
+- **Implementation approach:** Allow text expansion and stack content at container breakpoints
+- **Recommended tools:** Browser zoom, CSS Grid
+- **Security considerations:** Do not hide legal or approval content when space is tight
+- **Verification method:** Test 200–400% zoom and 320px viewport
