@@ -4392,3 +4392,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** renderer.info, glTF Transform
 - **Security considerations:** No user-specific scene telemetry
 - **Verification method:** Compare draw calls and frame rate
+
+### S396 — Animation frame budget
+
+- **Skill ID:** S396
+- **Name:** Animation frame budget
+- **Purpose:** Keep motion inside refresh budget
+- **When to use:** When scroll animation stutters
+- **Implementation approach:** Animate transform/opacity; batch DOM work
+- **Recommended tools:** Chrome Performance, GSAP
+- **Security considerations:** Honor reduced motion; avoid flashing
+- **Verification method:** Profile 60Hz and high-refresh screens
