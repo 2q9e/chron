@@ -1606,3 +1606,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML buttons, R3F callbacks
 - **Security considerations:** Do not convey labels or status only by color
 - **Verification method:** Complete the flow with WebGL disabled and keyboard only
+
+### S144 — DOM and canvas composition
+
+- **Skill ID:** S144
+- **Name:** DOM and canvas composition
+- **Purpose:** Keep narrative text selectable and crisp beside 3D
+- **When to use:** When copy overlays or accompanies a scene
+- **Implementation approach:** Separate DOM and canvas layers with explicit pointer ownership
+- **Recommended tools:** CSS stacking contexts, R3F Canvas
+- **Security considerations:** Overlays must not mask navigation or focus rings
+- **Verification method:** Test text selection, link clicks, and stacking at every chapter
