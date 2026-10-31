@@ -4913,3 +4913,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Dependabot, Renovate
 - **Security considerations:** Review package ownership and install scripts
 - **Verification method:** Run lockfile, tests, typecheck after update
+
+### S443 — Lockfile integrity
+
+- **Skill ID:** S443
+- **Name:** Lockfile integrity
+- **Purpose:** Make installs repeatable across machines
+- **When to use:** When changing package manifests
+- **Implementation approach:** Commit one authoritative lockfile and use frozen installs
+- **Recommended tools:** pnpm, npm ci
+- **Security considerations:** Do not allow resolution from untrusted registries
+- **Verification method:** Clean install in CI and compare lockfile state
