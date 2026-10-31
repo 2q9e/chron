@@ -2180,3 +2180,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Data inventory, event catalog
 - **Security considerations:** Do not send study content to analytics by default
 - **Verification method:** Compare fields with actual behavior
+
+### S196 — Deletion propagation
+
+- **Skill ID:** S196
+- **Name:** Deletion propagation
+- **Purpose:** Remove account data across dependent stores
+- **When to use:** On account deletion request
+- **Implementation approach:** Run idempotent cleanup and record status
+- **Recommended tools:** Deletion state machine, revoke APIs
+- **Security considerations:** Revoke sessions and keys before cleanup finishes
+- **Verification method:** Verify every store reaches documented terminal state
