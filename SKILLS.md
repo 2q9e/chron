@@ -1861,3 +1861,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Framework cookie API
 - **Security considerations:** Avoid broad domain scope without need
 - **Verification method:** Assert attributes in browser and integration tests
+
+### S167 — Session fixation defense
+
+- **Skill ID:** S167
+- **Name:** Session fixation defense
+- **Purpose:** Prevent pre-login IDs becoming authenticated
+- **When to use:** Login and privilege changes
+- **Implementation approach:** Rotate identifiers; revoke previous value
+- **Recommended tools:** Session middleware, Redis
+- **Security considerations:** Invalidate old identifier server-side
+- **Verification method:** Replay old cookie after login; expect denial
