@@ -21,6 +21,62 @@ type EventButtonProps = Readonly<{
   compact?: boolean;
 }>;
 
+type TimedEventDaySegment = Readonly<{
+  startsOnDate: boolean;
+  endsOnDate: boolean;
+  endsAtMidnight: boolean;
+}>;
+
+function timedEventDaySegment(
+  event: Extract<CalendarEvent, { kind: "timed" }>,
+  selectedDate: string,
+  timeZone: string,
+): TimedEventDaySegment {
+  const date = Temporal.PlainDate.from(selectedDate);
+  const dayStart = date.toZonedDateTime(timeZone).toInstant();
+  const dayEnd = date.add({ days: 1 }).toZonedDateTime(timeZone).toInstant();
+  const start = Temporal.Instant.from(event.startsAt);
+  const end = Temporal.Instant.from(event.endsAt);
+  const startAtOrAfterDayStart = Temporal.Instant.compare(start, dayStart) >= 0;
+  const startBeforeDayEnd = Temporal.Instant.compare(start, dayEnd) < 0;
+  const endAfterDayStart = Temporal.Instant.compare(end, dayStart) > 0;
+  const endAtOrBeforeDayEnd = Temporal.Instant.compare(end, dayEnd) <= 0;
+  const endsAtMidnight = Temporal.Instant.compare(end, dayEnd) === 0;
+
+  return {
+    startsOnDate: startAtOrAfterDayStart && startBeforeDayEnd,
+    endsOnDate: endAfterDayStart && endAtOrBeforeDayEnd,
+    endsAtMidnight,
+  };
+}
+
+function timedEventEndLabel(
+  event: Extract<CalendarEvent, { kind: "timed" }>,
+  selectedDate: string,
+  timeZone: string,
+  locale: string,
+  withZone = false,
+): string {
+  const segment = timedEventDaySegment(event, selectedDate, timeZone);
+  return segment.endsAtMidnight
+    ? "midnight"
+    : formatInstant(event.endsAt, timeZone, locale, withZone);
+}
+
+function timedEventDayLabel(
+  event: Extract<CalendarEvent, { kind: "timed" }>,
+  selectedDate: string,
+  timeZone: string,
+  locale: string,
+): string {
+  const segment = timedEventDaySegment(event, selectedDate, timeZone);
+  if (segment.startsOnDate) return formatInstant(event.startsAt, timeZone, locale);
+  if (segment.endsOnDate) {
+    return `Until ${timedEventEndLabel(event, selectedDate, timeZone, locale)}`;
+  }
+  return "Continues";
+}
+
 function eventAccessibleLabel(
   event: CalendarEvent,
   selectedDate: string,
@@ -33,17 +89,16 @@ function eventAccessibleLabel(
     return `${event.title}, all day, ${formatDateOnly(event.startDate, locale, { month: "long", day: "numeric", year: "numeric" })} through ${formatDateOnly(lastDay, locale, { month: "long", day: "numeric", year: "numeric" })}`;
   }
 
-  const startsOnDate = Temporal.Instant.from(event.startsAt)
-    .toZonedDateTimeISO(timeZone).toPlainDate().toString() === selectedDate;
-  const endsOnDate = Temporal.Instant.from(event.endsAt)
-    .toZonedDateTimeISO(timeZone).toPlainDate().toString() === selectedDate;
-  const start = startsOnDate
-    ? formatInstant(event.startsAt, timeZone, locale, true)
+  const segment = timedEventDaySegment(event, selectedDate, timeZone);
+  const start = segment.startsOnDate
+    ? `starts at ${formatInstant(event.startsAt, timeZone, locale, true)}`
     : "continues from an earlier day";
-  const end = endsOnDate
-    ? formatInstant(event.endsAt, timeZone, locale, true)
+  const end = segment.endsOnDate
+    ? segment.endsAtMidnight
+      ? "ends at midnight"
+      : `ends at ${formatInstant(event.endsAt, timeZone, locale, true)}`
     : "continues into a later day";
-  return `${event.title}, ${start} to ${end}, ${formatDateOnly(selectedDate, locale, { month: "long", day: "numeric", year: "numeric" })}`;
+  return `${event.title}, ${start} and ${end}, ${formatDateOnly(selectedDate, locale, { month: "long", day: "numeric", year: "numeric" })}`;
 }
 
 export function CalendarEventButton({
@@ -55,7 +110,7 @@ export function CalendarEventButton({
   compact = false,
 }: EventButtonProps) {
   const timeLabel = event.kind === "timed"
-    ? formatInstant(event.startsAt, timeZone, locale)
+    ? timedEventDayLabel(event, date, timeZone, locale)
     : "All day";
   return (
     <button
@@ -201,15 +256,19 @@ function DayColumn({
           {timeline.events.map((segment) => {
             const time = segment.startsOnDate
               ? `${segment.localStartLabel} ${segment.timeZoneLabel}`
-              : "Continues from an earlier day";
-            const suffix = segment.endsOnDate ? "" : "; continues into a later day";
+            : segment.endsOnDate
+              ? `Until ${timedEventEndLabel(segment.event, date, timeZone, locale, true)}`
+              : "Continues";
+            const suffix = segment.startsOnDate && !segment.endsOnDate
+              ? "; continues into a later day"
+              : "";
             return (
               <button
                 className={`${styles.timedEvent} ${styles.eventButton}`}
                 type="button"
                 key={segment.event.id}
                 onClick={() => onSelectEvent(segment.event)}
-                aria-label={`${segment.event.title}, ${time}${suffix}`}
+                aria-label={eventAccessibleLabel(segment.event, date, timeZone, locale)}
                 title={`${segment.event.title} · ${time}${suffix}`}
                 style={{
                   top: `${segment.topRem}rem`,
