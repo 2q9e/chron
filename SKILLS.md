@@ -1883,3 +1883,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** argon2 library
 - **Security considerations:** Never log or reversibly encrypt passwords; benchmark to resist offline guessing without exhausting online capacity
 - **Verification method:** Inspect encoded hash parameters and benchmark verification under production-like limits; test upgrade and old-hash rehash paths
+
+### S169 — MFA recovery
+
+- **Skill ID:** S169
+- **Name:** MFA recovery
+- **Purpose:** Add second factor without recovery bypass
+- **When to use:** When enabling TOTP or passkeys
+- **Implementation approach:** Use established library and one-time hashed codes
+- **Recommended tools:** WebAuthn, TOTP library
+- **Security considerations:** Require step-up before factor removal
+- **Verification method:** Test replay, drift, lost device, single use
