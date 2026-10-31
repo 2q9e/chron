@@ -546,3 +546,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Redis token bucket, gateway limits, HTTP 429
 - **Security considerations:** Do not key limits on spoofable forwarded IP headers alone
 - **Verification method:** Drive bursts from multiple instances and confirm isolation by user
+
+### S048 — Authentication middleware
+
+- **Skill ID:** S048
+- **Name:** Authentication middleware
+- **Purpose:** Attach a verified session identity to each protected request
+- **When to use:** When server routes need a common authentication gate
+- **Implementation approach:** Verify signature, expiry, issuer, and revocation before creating request context
+- **Recommended tools:** Auth.js or established OIDC middleware, jose
+- **Security considerations:** Fail closed on invalid or missing sessions; never trust user IDs from body
+- **Verification method:** Test expired, malformed, revoked, and valid sessions across routes
