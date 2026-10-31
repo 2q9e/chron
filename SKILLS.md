@@ -4082,3 +4082,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Sync ledger, unique key
 - **Security considerations:** Namespace external IDs by connected account
 - **Verification method:** Reconnect and update without duplicate event
+
+### S368 — Import conflict resolution
+
+- **Skill ID:** S368
+- **Name:** Import conflict resolution
+- **Purpose:** Detect inbound provider changes that conflict with local edits without writing back to the provider
+- **When to use:** Only after S291, when provider records are imported one-way and the corresponding local record changed since the last import; use S307 only when both sides are writable
+- **Implementation approach:** Compare the last-imported base version with the local revision and incoming provider version/ETag; show the conflict and persist the proposed local diff as an S369 draft until exact user approval
+- **Recommended tools:** Provider ETag, sync service
+- **Security considerations:** Never overwrite user changes silently; approval must match exact imported diff and target
+- **Verification method:** Make a local edit, then import a changed provider record; verify conflict state and an approval-bound local draft, with no outbound provider write
