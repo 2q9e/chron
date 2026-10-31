@@ -1584,3 +1584,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Raycaster, R3F events
 - **Security considerations:** Never make a canvas hit the sole path to an important feature
 - **Verification method:** Test pointer bounds plus keyboard equivalent
+
+### S142 — Pointer parallax
+
+- **Skill ID:** S142
+- **Name:** Pointer parallax
+- **Purpose:** Add restrained desktop depth response
+- **When to use:** Pointer orientation gives context to a hero
+- **Implementation approach:** Normalize pointer and damp toward a small capped offset
+- **Recommended tools:** R3F useFrame, pointer events
+- **Security considerations:** Disable for reduced motion and coarse pointers
+- **Verification method:** Test edge travel, focus state, and absence of layout shift
