@@ -3,7 +3,7 @@
 ## Current state
 
 Fresh project folder: `Chron project root`.
-It is an independent Git repository on `main` with 525 non-empty local commits.
+It is an independent Git repository on `main` with 526 non-empty local commits.
 No credentials, private data, or reference materials are in Git. The public
 repository `2q9e/chron` is still empty; no code or history has been pushed.
 Secret scanning, push protection, Dependabot alerts/security updates, and
@@ -29,7 +29,7 @@ pending. L1 — premium landing page and design system — is in progress.
   be reviewed before launch. See `docs/research/meta-api.md`.
 - New Git history must be independent and must exclude private/reference
   material.
-- Local `main` has 525 non-empty, reviewed commits; no changes have been pushed
+- Local `main` has 526 non-empty, reviewed commits; no changes have been pushed
   yet. Continue to count only useful, distinct commits, never empty or
   duplicate churn.
 - Spawnable agents must use GPT-6 Luna MAX or GPT-6.1 Terra HIGH. This runtime
@@ -91,5 +91,7 @@ pending. L1 — premium landing page and design system — is in progress.
   The page rendered in a real browser at the default desktop viewport and
   390×844. These checks do not verify the unintegrated scene or the full L1
   acceptance matrix.
+- Next.js generated `apps/web/AGENTS.md`; its version-specific guidance is
+  retained and added to the required instruction set.
 - Latest implementation commit: `9d2c06d update`; task-graph review checkpoint:
   `cbc7e28 update`.

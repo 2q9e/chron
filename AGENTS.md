@@ -40,6 +40,9 @@ Chron's planned key flow.
   never claim a model ran without runtime confirmation.
 - Before significant work, each agent reads this file and `SKILLS.md`, then
   names and applies the relevant skills in its task notes.
+- Read any nearer `AGENTS.md` before editing files in its directory. Next.js
+  generates `apps/web/AGENTS.md`; preserve that version-specific guidance and
+  read the relevant installed framework docs before changing the web app.
 - Use a dedicated Git worktree and task branch per independent agent. Assign
   file ownership and review every patch before integration.
 - The current tool runtime does not enforce per-agent filesystem or network
