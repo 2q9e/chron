@@ -4812,3 +4812,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Pino sink, OTel exporter
 - **Security considerations:** Never use a real secret
 - **Verification method:** Sentinels absent from emitted events
+
+### S434 — Account deletion tests
+
+- **Skill ID:** S434
+- **Name:** Account deletion tests
+- **Purpose:** Verify connected data and sessions terminate
+- **When to use:** When deletion workflow changes
+- **Implementation approach:** Create synthetic data graph and run deletion
+- **Recommended tools:** Integration DB, fake revoke endpoint
+- **Security considerations:** Test environment only
+- **Verification method:** Rows, files, tokens, sessions reach terminal state
