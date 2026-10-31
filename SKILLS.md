@@ -4680,3 +4680,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright
 - **Security considerations:** Disposable synthetic account
 - **Verification method:** Event remains after reload
+
+### S422 — Drag scheduling browser tests
+
+- **Skill ID:** S422
+- **Name:** Drag scheduling browser tests
+- **Purpose:** Verify drag lands on correct slot
+- **When to use:** When drag/drop behavior changes
+- **Implementation approach:** Test snap, scroll offset, and resize boundaries
+- **Recommended tools:** Playwright pointer API
+- **Security considerations:** Do not mutate real calendars
+- **Verification method:** Read saved start/end and zone
