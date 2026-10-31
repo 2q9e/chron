@@ -5045,3 +5045,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed config schema, README
 - **Security considerations:** Do not commit real .env files
 - **Verification method:** Run startup with missing and synthetic values
+
+### S455 — Deployment rollback plan
+
+- **Skill ID:** S455
+- **Name:** Deployment rollback plan
+- **Purpose:** Restore service quickly after bad release
+- **When to use:** Before production rollout
+- **Implementation approach:** Use immutable releases and documented rollback trigger
+- **Recommended tools:** Platform release tooling, runbook
+- **Security considerations:** Rollback must not re-enable revoked credentials
+- **Verification method:** Practice rollback in staging and record recovery
