@@ -3099,3 +3099,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed adapters, permission map
 - **Security considerations:** Read permission cannot imply write permission
 - **Verification method:** Verify read-only token cannot trigger a write path
+
+### S279 — External adapter boundary
+
+- **Skill ID:** S279
+- **Name:** External adapter boundary
+- **Purpose:** Isolate external provider wire formats from internal product services
+- **When to use:** For Google adapters only after shared activation gate S291, or for Meta only after written authorization and S236
+- **Implementation approach:** Map documented provider calls to internal domain DTOs; satisfy S291 before any Google OAuth/API use and S236 before Meta inference
+- **Recommended tools:** OpenAPI client, adapter interfaces
+- **Security considerations:** Do not handle Meta keys before written permission, expose provider tokens to features, or activate an unreviewed Google integration
+- **Verification method:** Contract-test adapters with sanitized, test-only fixtures after their respective S291/S236 gates pass
