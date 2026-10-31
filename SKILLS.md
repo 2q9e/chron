@@ -4957,3 +4957,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GitHub Actions matrix
 - **Security considerations:** Keep credentials out of matrix variables
 - **Verification method:** Review actual jobs and compatibility failures
+
+### S447 — Workflow permission minimization
+
+- **Skill ID:** S447
+- **Name:** Workflow permission minimization
+- **Purpose:** Limit what CI tokens can change
+- **When to use:** When authoring GitHub Actions
+- **Implementation approach:** Set permissions per job and pin third-party actions
+- **Recommended tools:** GitHub Actions YAML
+- **Security considerations:** Use read-only token unless write is required
+- **Verification method:** Audit token permissions in workflow file
