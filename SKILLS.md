@@ -2457,3 +2457,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL partial indexes, repository methods
 - **Security considerations:** Deleted data must not reappear in search, exports, or agent context
 - **Verification method:** Test all query paths before and after soft deletion
+
+### S221 — Retention purge jobs
+
+- **Skill ID:** S221
+- **Name:** Retention purge jobs
+- **Purpose:** Remove expired records according to a documented schedule
+- **When to use:** When legal or product retention requires cleanup
+- **Implementation approach:** Select bounded batches, record outcomes, and make jobs idempotent
+- **Recommended tools:** Scheduled worker, database cursor
+- **Security considerations:** Protect deletion jobs from broad unauthenticated triggers
+- **Verification method:** Seed expired and retained rows; verify only due data is removed
