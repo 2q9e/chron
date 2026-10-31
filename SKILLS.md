@@ -2070,3 +2070,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** file-type, MIME database
 - **Security considerations:** Do not trust extension or browser MIME
 - **Verification method:** Upload renamed executable and malformed file
+
+### S186 — Archive expansion limits
+
+- **Skill ID:** S186
+- **Name:** Archive expansion limits
+- **Purpose:** Stop zip bombs and traversal
+- **When to use:** When parsing office containers
+- **Implementation approach:** Cap entries, expanded bytes, depth, normalized paths
+- **Recommended tools:** Archive limits, isolated worker
+- **Security considerations:** Reject symlinks and root escape
+- **Verification method:** Test high-ratio and traversal archives
