@@ -3396,3 +3396,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** [Google Tasks `tasks.list` reference](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks/list) after S291, service-specific sync adapter
 - **Security considerations:** Keep lists scoped to connected account; every consequential external write requires explicit exact-action approval under S193
 - **Verification method:** Under S291, verify current official `tasks.list` pagination and `updatedMin` semantics; test page traversal, overlapping updates, deduplication, and reconciliation without claiming a change-feed, deletion-detection, or convergence guarantee unsupported by the API
+
+### S306 — Service-specific sync cursors and filters
+
+- **Skill ID:** S306
+- **Name:** Service-specific sync cursors and filters
+- **Purpose:** Apply provider-specific pagination and change filters without assuming a durable sync cursor
+- **When to use:** Only after S291, when current official documentation for the exact enabled service endpoint defines pagination or change-filter behavior
+- **Implementation approach:** Discover each adapter's documented contract and preserve the distinction between traversal tokens and change filters. For Google Tasks `tasks.list`, `pageToken`/`nextPageToken` paginate results and `updatedMin` filters by modification time; the cited API documents no `syncToken`. Treat a page token as traversal state, not proof of a durable change feed or complete sync. Persist and reuse provider tokens only as their service documentation permits; claim only the coverage and recovery semantics it specifies
+- **Recommended tools:** Current official API documentation after S291, typed provider adapter, database
+- **Security considerations:** Scope cursor to encrypted account identity
+- **Verification method:** Record exact per-service evidence under S291; test documented pagination and change filters, interruption handling, duplicate reconciliation, and expiry only where specified. For Google Tasks, verify page traversal and `updatedMin` use without assuming a sync token, change feed, or complete deletion detection
