@@ -3464,3 +3464,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Relational schema, TypeScript
 - **Security considerations:** Scope every record to its owner
 - **Verification method:** Test create, move, archive, delete
+
+### S312 — Source manifest
+
+- **Skill ID:** S312
+- **Name:** Source manifest
+- **Purpose:** Track origin and processing status
+- **When to use:** When documents enter a notebook
+- **Implementation approach:** Store checksum, type, pages, parser version, state
+- **Recommended tools:** Database, object storage
+- **Security considerations:** Keep originals private under opaque keys
+- **Verification method:** Inspect manifest through owner-scoped API
