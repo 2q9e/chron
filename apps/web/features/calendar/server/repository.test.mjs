@@ -21,6 +21,7 @@ function createPool(queryHandler) {
 }
 
 test("creates an owner-scoped event inside one transaction", async () => {
+  const operationKey = "create-study-session";
   const row = {
     id: "de305d54-75b4-431b-adb2-eb6b9e546014",
     kind: "timed",
@@ -37,28 +38,38 @@ test("creates an owner-scoped event inside one transaction", async () => {
     created_at: new Date("2026-10-01T12:00:00.000Z"),
     updated_at: new Date("2026-10-01T12:00:00.000Z"),
   };
-  const { pool, calls } = createPool((sql) => ({
-    rows: sql.startsWith("INSERT INTO calendar_events") ? [row] : [],
-  }));
+  const { pool, calls } = createPool((sql) => {
+    if (sql.startsWith("INSERT INTO calendar_events")) return { rows: [row] };
+    if (sql.includes("INSERT INTO calendar_event_create_requests")
+      || sql.includes("UPDATE calendar_event_create_requests")) {
+      return { rows: [{ idempotency_key: operationKey }] };
+    }
+    return { rows: [] };
+  });
   const repository = new CalendarRepository(pool);
-  const event = await repository.createEvent(ownerId, {
+  const result = await repository.createEvent(ownerId, {
     kind: "timed",
     title: "Study session",
     startLocal: "2026-10-30T09:00",
     endLocal: "2026-10-30T10:00",
     timeZone: "America/Montreal",
-  }, "America/Montreal", []);
+  }, "America/Montreal", [], operationKey);
 
+  assert.equal(result.replayed, false);
+  const event = result.event;
   assert.equal(event.id, row.id);
   assert.equal(event.kind, "timed");
-  assert.equal(calls.length, 7);
+  assert.equal(calls.length, 10);
   assert.equal(calls[0].sql, "BEGIN");
   assert.equal(calls[1].sql, "SELECT set_config('chron.user_id', $1, true)");
   assert.match(calls[2].sql, /pg_advisory_xact_lock/);
-  assert.match(calls[5].sql, /INSERT INTO calendar_events/);
-  assert.equal(calls[6].sql, "COMMIT");
+  assert.match(calls[3].sql, /FROM calendar_event_create_requests/);
+  assert.match(calls[4].sql, /INSERT INTO calendar_event_create_requests/);
+  assert.match(calls[7].sql, /INSERT INTO calendar_events/);
+  assert.match(calls[8].sql, /UPDATE calendar_event_create_requests/);
+  assert.equal(calls[9].sql, "COMMIT");
   assert.equal(calls[1].values[0], ownerId);
-  assert.equal(calls[5].values[1], ownerId);
+  assert.equal(calls[7].values[1], ownerId);
 });
 
 test("does not commit an event when its reviewed conflict set is stale", async () => {
@@ -78,9 +89,12 @@ test("does not commit an event when its reviewed conflict set is stale", async (
     created_at: new Date("2026-10-01T12:00:00.000Z"),
     updated_at: new Date("2026-10-01T12:00:00.000Z"),
   };
-  const { pool, calls } = createPool((sql) => ({
-    rows: sql.includes("FROM calendar_events") ? [conflictRow] : [],
-  }));
+  const { pool, calls } = createPool((sql) => {
+    if (sql.includes("INSERT INTO calendar_event_create_requests")) {
+      return { rows: [{ idempotency_key: "create-conflicted" }] };
+    }
+    return { rows: sql.includes("FROM calendar_events") ? [conflictRow] : [] };
+  });
   const repository = new CalendarRepository(pool);
 
   await assert.rejects(repository.createEvent(ownerId, {
@@ -89,10 +103,10 @@ test("does not commit an event when its reviewed conflict set is stale", async (
     startLocal: "2026-10-30T09:30",
     endLocal: "2026-10-30T10:30",
     timeZone: "America/Montreal",
-  }, "America/Montreal", []), (error) => error.code === "CONFLICT_REVIEW_REQUIRED");
+  }, "America/Montreal", [], "create-conflicted"), (error) => error.code === "CONFLICT_REVIEW_REQUIRED");
 
   assert.match(calls[2].sql, /pg_advisory_xact_lock/);
-  assert.match(calls[4].sql, /SELECT[\s\S]*FROM calendar_events/);
+  assert.match(calls[6].sql, /SELECT[\s\S]*FROM calendar_events/);
   assert.equal(calls.some(({ sql }) => sql.startsWith("INSERT INTO calendar_events")), false);
   assert.equal(calls.at(-1).sql, "ROLLBACK");
 });

@@ -4,12 +4,15 @@ import {
   readCalendarJson,
   requireSameOriginMutation,
 } from "../../../../features/calendar/server/http.ts";
-import { withCalendarErrors } from "../../../../features/calendar/server/errors.ts";
+import { CalendarRouteError, withCalendarErrors } from "../../../../features/calendar/server/errors.ts";
 import {
   getCalendarRepository,
   requireCalendarUser,
 } from "../../../../features/calendar/server/runtime.ts";
-import { parseCalendarEventCommit } from "../../../../features/calendar/server/validation.ts";
+import {
+  parseCalendarEventCreateRequest,
+  parseCalendarIdempotencyKey,
+} from "../../../../features/calendar/server/validation.ts";
 
 export async function GET(request: Request): Promise<Response> {
   return withCalendarErrors(async () => {
@@ -33,17 +36,41 @@ export async function POST(request: Request): Promise<Response> {
   return withCalendarErrors(async () => {
     requireSameOriginMutation(request, process.env.BETTER_AUTH_URL);
     const userId = await requireCalendarUser(request);
+    const idempotencyKey = parseCalendarIdempotencyKey(request.headers.get("Idempotency-Key"));
+    const createRequest = parseCalendarEventCreateRequest(await readCalendarJson(request));
     const repository = await getCalendarRepository();
-    const commit = parseCalendarEventCommit(await readCalendarJson(request));
-    const event = await repository.createEvent(
+    if (createRequest.operation === "reconcile") {
+      const reconciliation = await repository.reconcileEventCreate(userId, idempotencyKey);
+      if (reconciliation.status === "not-found") {
+        throw new CalendarRouteError(
+          404,
+          "CREATE_OPERATION_NOT_FOUND",
+          "No completed event creation was found for this request key. It cannot be created with this key now.",
+        );
+      }
+      if (reconciliation.status === "deleted") {
+        throw new CalendarRouteError(
+          410,
+          "CREATED_EVENT_DELETED",
+          "This event was deleted after it was created. Review a new event before saving it again.",
+        );
+      }
+      return calendarJson(
+        JSON.parse(reconciliation.result.responseBody) as unknown,
+        { status: 201, headers: { ETag: `"${reconciliation.result.event.revision}"` } },
+      );
+    }
+    const { commit } = createRequest;
+    const result = await repository.createEvent(
       userId,
       commit.event,
       commit.calendarTimeZone,
       commit.reviewedConflicts,
+      idempotencyKey,
     );
     return calendarJson(
-      { event },
-      { status: 201, headers: { ETag: `"${event.revision}"` } },
+      JSON.parse(result.responseBody) as unknown,
+      { status: 201, headers: { ETag: `"${result.event.revision}"` } },
     );
   });
 }

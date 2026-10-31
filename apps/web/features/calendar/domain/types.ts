@@ -66,6 +66,16 @@ export type CalendarConflictReview = Readonly<{
   revision: number;
 }>;
 
+export type CalendarEventCommit = Readonly<{
+  event: CalendarEventMutation;
+  calendarTimeZone: string;
+  reviewedConflicts: readonly CalendarConflictReview[];
+}>;
+
+export type CalendarEventCreateRequest =
+  | Readonly<{ operation: "create"; commit: CalendarEventCommit }>
+  | Readonly<{ operation: "reconcile" }>;
+
 export type CreateTimedCalendarEvent = Readonly<{
   kind: "timed";
   title: string;

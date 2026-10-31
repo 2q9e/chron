@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { Temporal } from "@js-temporal/polyfill";
 import type { Pool, PoolClient, QueryResultRow } from "pg";
 import {
@@ -11,6 +11,7 @@ import {
 import type {
   CalendarConflict,
   CalendarConflictReview,
+  CalendarEventCommit,
   CalendarEvent,
   CalendarEventMutation,
   CalendarPreferences,
@@ -43,6 +44,23 @@ type PreferencesRow = QueryResultRow & {
   week_starts_on: number;
   time_zone: string;
 };
+
+type CreateRequestRow = QueryResultRow & {
+  request_hash: string | null;
+  event_id: string | null;
+  state: "pending" | "complete" | "deleted" | "abandoned";
+};
+
+export type CalendarEventCreateResult = Readonly<{
+  event: CalendarEvent;
+  responseBody: string;
+  replayed: boolean;
+}>;
+
+export type CalendarEventCreateReconciliation =
+  | Readonly<{ status: "found"; result: CalendarEventCreateResult }>
+  | Readonly<{ status: "not-found" }>
+  | Readonly<{ status: "deleted" }>;
 
 const eventColumns = `
   id,
@@ -158,6 +176,94 @@ function throwMissingOrStale(revision: number | undefined): never {
     throw new CalendarRouteError(404, "EVENT_NOT_FOUND", "That calendar event could not be found.");
   }
   throw new CalendarRouteError(412, "REVISION_MISMATCH", "This event changed. Reload it before saving.");
+}
+
+function idempotencyKeyConflict(): CalendarRouteError {
+  return new CalendarRouteError(
+    409,
+    "IDEMPOTENCY_KEY_REUSED",
+    "This event request key was already used for a different request.",
+  );
+}
+
+function abandonedCreateKey(): CalendarRouteError {
+  return new CalendarRouteError(
+    409,
+    "IDEMPOTENCY_KEY_ABANDONED",
+    "This event request key was checked before completion and can no longer create an event.",
+  );
+}
+
+function fingerprintCreateRequest(commit: CalendarEventCommit): Buffer {
+  const event = commit.event.kind === "timed"
+    ? {
+        kind: "timed",
+        title: commit.event.title,
+        details: commit.event.details ?? null,
+        startLocal: commit.event.startLocal,
+        endLocal: commit.event.endLocal,
+        timeZone: commit.event.timeZone,
+        startDisambiguation: commit.event.startDisambiguation ?? null,
+        endDisambiguation: commit.event.endDisambiguation ?? null,
+      }
+    : {
+        kind: "all-day",
+        title: commit.event.title,
+        details: commit.event.details ?? null,
+        startDate: commit.event.startDate,
+        endDate: commit.event.endDate,
+      };
+  const reviewedConflicts = commit.reviewedConflicts
+    .map(({ id, revision }) => ({ id, revision }))
+    .sort((left, right) => left.id < right.id
+      ? -1
+      : left.id > right.id
+        ? 1
+        : left.revision - right.revision);
+  const normalizedCommit = {
+    event,
+    calendarTimeZone: commit.calendarTimeZone,
+    reviewedConflicts,
+  };
+  return createHash("sha256").update(JSON.stringify(normalizedCommit)).digest();
+}
+
+function createResultFromEvent(event: CalendarEvent, replayed: boolean): CalendarEventCreateResult {
+  const responseBody = JSON.stringify({ event });
+  return {
+    event,
+    responseBody,
+    replayed,
+  };
+}
+
+async function loadCreatedEvent(
+  client: PoolClient,
+  ownerId: string,
+  eventId: string | null,
+): Promise<CalendarEvent> {
+  if (eventId === null) {
+    throw new CalendarRouteError(
+      503,
+      "IDEMPOTENCY_RESULT_UNAVAILABLE",
+      "The saved event result is temporarily unavailable. Retry with the same request key.",
+    );
+  }
+  const result = await client.query<EventRow>(
+    `SELECT ${eventColumns}
+     FROM calendar_events
+     WHERE user_id = $1 AND id = $2::uuid`,
+    [ownerId, eventId],
+  );
+  const row = result.rows[0];
+  if (!row) {
+    throw new CalendarRouteError(
+      410,
+      "CREATED_EVENT_DELETED",
+      "This event was deleted after it was created. Review a new event before saving it again.",
+    );
+  }
+  return toCalendarEvent(row);
 }
 
 type ConflictBounds = Readonly<{
@@ -379,27 +485,148 @@ export class CalendarRepository {
     mutation: CalendarEventMutation,
     calendarTimeZone: string,
     reviewedConflicts: readonly CalendarConflictReview[],
-  ): Promise<CalendarEvent> {
-    const bounds = conflictBounds(mutation, calendarTimeZone);
+    idempotencyKey: string,
+  ): Promise<CalendarEventCreateResult> {
+    const commit: CalendarEventCommit = { event: mutation, calendarTimeZone, reviewedConflicts };
+    const requestHash = fingerprintCreateRequest(commit);
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const existing = await client.query<CreateRequestRow>(
+        `SELECT encode(request_hash, 'hex') AS request_hash, event_id, state
+         FROM calendar_event_create_requests
+         WHERE user_id = $1 AND idempotency_key = $2`,
+        [ownerId, idempotencyKey],
+      );
+      const existingRow = existing.rows[0];
+      if (existingRow) {
+        if (existingRow.state === "abandoned") throw abandonedCreateKey();
+        if (existingRow.state === "deleted") {
+          throw new CalendarRouteError(
+            410,
+            "CREATED_EVENT_DELETED",
+            "This event was deleted after it was created. Review a new event before saving it again.",
+          );
+        }
+        if (existingRow.request_hash !== requestHash.toString("hex")) {
+          throw idempotencyKeyConflict();
+        }
+        if (existingRow.state !== "complete") {
+          throw new CalendarRouteError(
+            503,
+            "IDEMPOTENCY_RESULT_UNAVAILABLE",
+            "The saved event result is temporarily unavailable. Retry the same request key.",
+          );
+        }
+        return createResultFromEvent(
+          await loadCreatedEvent(client, ownerId, existingRow.event_id),
+          true,
+        );
+      }
+
+      const eventId = randomUUID();
+      const reservation = await client.query<{ idempotency_key: string } & QueryResultRow>(
+        `INSERT INTO calendar_event_create_requests (
+           user_id, idempotency_key, request_hash, event_id, state
+         ) VALUES ($1, $2, $3, $4, 'pending')
+         ON CONFLICT (user_id, idempotency_key) DO NOTHING
+         RETURNING idempotency_key`,
+        [ownerId, idempotencyKey, requestHash, eventId],
+      );
+      if (!reservation.rows[0]) throw idempotencyKeyConflict();
+
+      const bounds = conflictBounds(mutation, calendarTimeZone);
       await assertCalendarTimeZoneCurrent(client, ownerId, bounds.calendarTimeZone);
       assertConflictReview(
         await conflictsInTransaction(client, ownerId, bounds),
         reviewedConflicts,
       );
-      const id = randomUUID();
       const result = mutation.kind === "timed"
-        ? await this.insertTimed(client, ownerId, id, mutation)
+        ? await this.insertTimed(client, ownerId, eventId, mutation)
         : await client.query<EventRow>(
           `INSERT INTO calendar_events (
              id, user_id, kind, title, details, start_date, end_date, revision
            ) VALUES ($1, $2, 'all-day', $3, $4, $5::date, $6::date, 1)
            RETURNING ${eventColumns}`,
-          [id, ownerId, mutation.title, mutation.details ?? null, mutation.startDate, mutation.endDate],
+          [eventId, ownerId, mutation.title, mutation.details ?? null, mutation.startDate, mutation.endDate],
         );
       const row = result.rows[0];
       if (!row) throw new Error("Calendar event insert returned no row.");
-      return toCalendarEvent(row);
+      const event = toCalendarEvent(row);
+      const completed = await client.query(
+        `UPDATE calendar_event_create_requests
+         SET state = 'complete', completed_at = CURRENT_TIMESTAMP
+         WHERE user_id = $1 AND idempotency_key = $2 AND event_id = $3::uuid AND state = 'pending'
+         RETURNING idempotency_key`,
+        [ownerId, idempotencyKey, eventId],
+      );
+      if (!completed.rows[0]) throw new Error("Calendar create request result was not recorded.");
+      return createResultFromEvent(event, false);
+    }, true);
+  }
+
+  reconcileEventCreate(
+    ownerId: string,
+    idempotencyKey: string,
+  ): Promise<CalendarEventCreateReconciliation> {
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const existing = await client.query<CreateRequestRow>(
+        `SELECT encode(request_hash, 'hex') AS request_hash, event_id, state
+         FROM calendar_event_create_requests
+         WHERE user_id = $1 AND idempotency_key = $2`,
+        [ownerId, idempotencyKey],
+      );
+      const existingRow = existing.rows[0];
+      if (existingRow) {
+        if (existingRow.state === "complete") {
+          const result = await client.query<EventRow>(
+            `SELECT ${eventColumns}
+             FROM calendar_events
+             WHERE user_id = $1 AND id = $2::uuid`,
+            [ownerId, existingRow.event_id],
+          );
+          const row = result.rows[0];
+          if (!row) {
+            await client.query(
+              `UPDATE calendar_event_create_requests
+               SET state = 'deleted', request_hash = NULL, event_id = NULL, completed_at = CURRENT_TIMESTAMP
+               WHERE user_id = $1 AND idempotency_key = $2 AND state = 'complete'`,
+              [ownerId, idempotencyKey],
+            );
+            return { status: "deleted" };
+          }
+          const event = toCalendarEvent(row);
+          return {
+            status: "found",
+            result: createResultFromEvent(event, true),
+          };
+        }
+        if (existingRow.state === "deleted") return { status: "deleted" };
+        if (existingRow.state === "abandoned") return { status: "not-found" };
+        throw new CalendarRouteError(
+          503,
+          "IDEMPOTENCY_RESULT_UNAVAILABLE",
+          "The saved event result is temporarily unavailable. Retry reconciliation with the same key.",
+        );
+      }
+
+      // Keep a missing operation key while holding the same owner write lock
+      // used by createEvent. A delayed POST can then never execute after this
+      // reconciliation reports that no create was committed.
+      const reservation = await client.query<{ idempotency_key: string } & QueryResultRow>(
+        `INSERT INTO calendar_event_create_requests (
+           user_id, idempotency_key, state, completed_at
+         ) VALUES ($1, $2, 'abandoned', CURRENT_TIMESTAMP)
+         ON CONFLICT (user_id, idempotency_key) DO NOTHING
+         RETURNING idempotency_key`,
+        [ownerId, idempotencyKey],
+      );
+      if (!reservation.rows[0]) {
+        throw new CalendarRouteError(
+          503,
+          "IDEMPOTENCY_RESERVATION_UNAVAILABLE",
+          "The request key could not be reserved safely. Retry reconciliation with the same key.",
+        );
+      }
+      return { status: "not-found" };
     }, true);
   }
 
@@ -545,7 +772,15 @@ export class CalendarRepository {
          RETURNING id`,
         [ownerId, eventId, expectedRevision],
       );
-      if (result.rows.length > 0) return;
+      if (result.rows.length > 0) {
+        await client.query(
+          `UPDATE calendar_event_create_requests
+           SET state = 'deleted', request_hash = NULL, event_id = NULL, completed_at = CURRENT_TIMESTAMP
+           WHERE user_id = $1 AND event_id = $2::uuid AND state = 'complete'`,
+          [ownerId, eventId],
+        );
+        return;
+      }
 
       const current = await client.query<{ revision: number } & QueryResultRow>(
         "SELECT revision FROM calendar_events WHERE user_id = $1 AND id = $2::uuid",

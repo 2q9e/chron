@@ -2,6 +2,8 @@ import {
   calendarThemes,
   type CalendarConflictReview,
   type CalendarDensity,
+  type CalendarEventCreateRequest,
+  type CalendarEventCommit,
   type CalendarEventMutation,
   type CalendarPreferences,
   type CalendarTheme,
@@ -152,6 +154,24 @@ export function validateCalendarEventId(value: string): string {
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
     throw new CalendarRouteError(404, "EVENT_NOT_FOUND", "That calendar event could not be found.");
   }
+  return value.toLowerCase();
+}
+
+export function parseCalendarIdempotencyKey(value: string | null): string {
+  if (value === null) {
+    throw new CalendarRouteError(
+      400,
+      "IDEMPOTENCY_KEY_REQUIRED",
+      "This event request needs an idempotency key. Retry with the same key.",
+    );
+  }
+  if (!/^[A-Za-z0-9._~-]{1,128}$/.test(value)) {
+    throw new CalendarRouteError(
+      400,
+      "INVALID_IDEMPOTENCY_KEY",
+      "The event request key must be 1 to 128 safe characters.",
+    );
+  }
   return value;
 }
 
@@ -177,11 +197,7 @@ export function parseCalendarConflictCheck(input: unknown): Readonly<{
   };
 }
 
-export function parseCalendarEventCommit(input: unknown): Readonly<{
-  event: CalendarEventMutation;
-  calendarTimeZone: string;
-  reviewedConflicts: readonly CalendarConflictReview[];
-}> {
+export function parseCalendarEventCommit(input: unknown): CalendarEventCommit {
   const value = objectRecord(input);
   assertAllowedFields(value, ["event", "calendarTimeZone", "reviewedConflicts"]);
   const event = parseCalendarEventMutation(value.event);
@@ -210,4 +226,13 @@ export function parseCalendarEventCommit(input: unknown): Readonly<{
   });
 
   return { event, calendarTimeZone, reviewedConflicts };
+}
+
+export function parseCalendarEventCreateRequest(input: unknown): CalendarEventCreateRequest {
+  const value = objectRecord(input);
+  if (value.operation === "reconcile") {
+    assertAllowedFields(value, ["operation"]);
+    return { operation: "reconcile" };
+  }
+  return { operation: "create", commit: parseCalendarEventCommit(input) };
 }
