@@ -5489,3 +5489,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript names, glossary doc
 - **Security considerations:** Do not use Meta marks or “Powered by Meta AI” attribution without written authorization; do not imply the gated signup or inference flows are active
 - **Verification method:** Search for synonyms and unsupported provider claims; verify public copy reflects S015/S236 decisions
+
+### S495 — Reuse versus bespoke choice
+
+- **Skill ID:** S495
+- **Name:** Reuse versus bespoke choice
+- **Purpose:** Share only patterns with the same behavior and lifecycle
+- **When to use:** When considering a generic component or utility
+- **Implementation approach:** Compare real consumers; extract after two stable cases
+- **Recommended tools:** Code search, component catalog
+- **Security considerations:** Do not create generic hooks that bypass feature permissions
+- **Verification method:** Verify shared API supports each consumer without flags explosion
