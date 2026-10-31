@@ -3110,3 +3110,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenAPI client, adapter interfaces
 - **Security considerations:** Do not handle Meta keys before written permission, expose provider tokens to features, or activate an unreviewed Google integration
 - **Verification method:** Contract-test adapters with sanitized, test-only fixtures after their respective S291/S236 gates pass
+
+### S280 — Trusted caller context
+
+- **Skill ID:** S280
+- **Name:** Trusted caller context
+- **Purpose:** Pass authenticated identity to tool execution safely
+- **When to use:** When workers execute a user request
+- **Implementation approach:** Derive owner and scopes from server session record
+- **Recommended tools:** Request context, queue metadata
+- **Security considerations:** Never use model-supplied owner or email
+- **Verification method:** Tamper queue payload and verify mismatch denial
