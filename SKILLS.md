@@ -181,3 +181,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React, React Hook Form, Zod
 - **Security considerations:** Avoid logging field contents; mask passwords and key inputs
 - **Verification method:** Keyboard-submit valid, invalid, and corrected forms; assert error association
+
+### S015 — Progressive form enhancement
+
+- **Skill ID:** S015
+- **Name:** Progressive form enhancement
+- **Purpose:** Keep essential forms usable while enforcing verified account-eligibility gates
+- **When to use:** For search/settings normally; public signup stays unavailable until operator/legal facts, Meta eligibility, and adult-use gates are verified under S236
+- **Implementation approach:** Keep signup inactive until the server-side policy gate passes; then use semantic native forms and validate all submitted fields on the server
+- **Recommended tools:** HTML forms, Next.js actions, React
+- **Security considerations:** Apply 18+ eligibility while current Meta terms require it and do not target minors; client checks, email verification, or hidden controls never substitute for server eligibility
+- **Verification method:** Assert both signup UI and endpoint deny while gates are unmet; after approval test the configured eligibility policy with synthetic accounts
