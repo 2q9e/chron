@@ -82,3 +82,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next.js Server Actions, Zod, TypeScript
 - **Security considerations:** Treat hidden action identifiers as public; reauthorize every request
 - **Verification method:** Submit malformed and cross-user inputs and assert no mutation occurs
+
+### S006 — URL-backed view state
+
+- **Skill ID:** S006
+- **Name:** URL-backed view state
+- **Purpose:** Make filters and selected views shareable and browser-navigable
+- **When to use:** When search, tabs, sort, or calendar mode should survive reload
+- **Implementation approach:** Parse query params into a validated state model and update with history-aware navigation
+- **Recommended tools:** URLSearchParams, Next.js navigation
+- **Security considerations:** Do not put tokens, private notes, or sensitive search terms in URLs
+- **Verification method:** Reload, copy link, and use back/forward while checking state fidelity
