@@ -1894,3 +1894,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** WebAuthn, TOTP library
 - **Security considerations:** Require step-up before factor removal
 - **Verification method:** Test replay, drift, lost device, single use
+
+### S170 — CSRF protection
+
+- **Skill ID:** S170
+- **Name:** CSRF protection
+- **Purpose:** Define session-level CSRF token and origin defenses for cookie-based authentication
+- **When to use:** When sessions are ambient credentials
+- **Implementation approach:** Pair session tokens, SameSite cookies, and strict Origin/Fetch Metadata validation; use S051 to apply the policy at every mutation route
+- **Recommended tools:** CSRF middleware, Fetch Metadata
+- **Security considerations:** Keep GET side-effect free
+- **Verification method:** Test token generation/rotation and cross-site form/fetch denial across representative session states
