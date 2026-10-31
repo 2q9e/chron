@@ -2490,3 +2490,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL grants, immutable event table
 - **Security considerations:** Avoid sensitive payloads and direct identifiers where unnecessary
 - **Verification method:** Attempt update/delete as app role and confirm denial
+
+### S224 — JSON column boundaries
+
+- **Skill ID:** S224
+- **Name:** JSON column boundaries
+- **Purpose:** Use flexible JSON only for evolving bounded metadata
+- **When to use:** When a feature has stable core fields plus sparse extensions
+- **Implementation approach:** Keep query-critical values relational and validate JSON shape at ingress
+- **Recommended tools:** PostgreSQL JSONB, Zod
+- **Security considerations:** Do not use JSON as a bypass around ownership constraints
+- **Verification method:** Test malformed documents and query index needs
