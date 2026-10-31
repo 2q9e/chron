@@ -2048,3 +2048,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Redis, gateway limits
 - **Security considerations:** Avoid attacker-triggered permanent lockout
 - **Verification method:** Test bursts, proxy behavior, recovery
+
+### S184 — Credential stuffing defense
+
+- **Skill ID:** S184
+- **Name:** Credential stuffing defense
+- **Purpose:** Detect repeated leaked-password attempts
+- **When to use:** Internet-facing sign-in
+- **Implementation approach:** Add progressive delay and approved breach screening
+- **Recommended tools:** Auth provider controls
+- **Security considerations:** Equalize unknown-user and wrong-password errors
+- **Verification method:** Test repeats and enumeration resistance
