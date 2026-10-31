@@ -7,6 +7,11 @@
   "workspaces": [
     "apps/web"
   ],
+  "devDependencies": {
+    "@next/eslint-plugin-next": "16.4.3",
+    "eslint-plugin-react-hooks": "7.1.0",
+    "typescript-eslint": "8.56.0"
+  },
   "scripts": {
     "dev": "npm run dev --workspace @chron/web",
     "build": "npm run build --workspace @chron/web",
