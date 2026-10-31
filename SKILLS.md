@@ -3838,3 +3838,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Rule engine, citation links
 - **Security considerations:** Do not make high-stakes academic claims or invoke model inference before written permission and capability checks
 - **Verification method:** Verify each suggestion maps to an existing source/activity and model requests are disabled before S236
+
+## Calendar engineering
+
+### S346 — Temporal event model
+
+- **Skill ID:** S346
+- **Name:** Temporal event model
+- **Purpose:** Represent timed events and date-only events with distinct, non-coercible types
+- **When to use:** When defining calendar persistence
+- **Implementation approach:** Use a discriminated union: timed start/end store local wall time, IANA zone, and resolved instant; all-day start/end store calendar dates only (prefer end-exclusive bounds). Timed recurrence retains its zone; all-day recurrence uses date arithmetic, and zone changes never silently rewrite dates
+- **Recommended tools:** Temporal polyfill, PostgreSQL
+- **Security considerations:** Scope event records to owner and source account
+- **Verification method:** Round-trip timed and all-day records across API/DB and multiple display zones; test DST gaps/folds, timed recurrence, and date-only recurrence without midnight conversion
