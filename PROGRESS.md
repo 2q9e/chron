@@ -2,10 +2,9 @@
 
 ## Current milestone
 
-F0 — foundation documentation and security settings are complete; the final
-fresh public history checkpoint is pending. L1 — landing page and design
-system — is next. The new project folder contains no application code copied
-from any other folder.
+F0 — foundation documentation and repository security are complete locally;
+the first reviewed push is pending. L1 — landing page and design system — is
+in progress. No code or visual material was copied from any other folder.
 
 ## Completed
 
@@ -37,15 +36,30 @@ from any other folder.
 - Recorded the landing-page art direction and copy constraints in
   `docs/design/landing-brief.md`; selected one recurring time instrument as the
   original 3D motif. No sample content or application references are used.
+- Added the first Next.js route, self-hosted typeface, shared design tokens,
+  responsive editorial story, and native-scroll progress bridge. The page
+  contains no signup, Meta-key form, fake product demo, sample data, or
+  nonfunctional controls.
+- Added the bridge's request/reply progress handshake, invalid-marker `null`
+  state, reachable scroll-end mapping, and scoped structural observation.
+- Ran `npm run lint`, `npm run typecheck`, and `npm run build`; all passed on
+  the landing shell. Next.js generated `next-env.d.ts` and applied required
+  TypeScript settings during the build.
+- Created 525 distinct local commits on the fresh `main` history. The latest
+  landing commits are `cbc7e28` and `9d2c06d`; none has been pushed yet.
 
 ## In progress
 
-- Establish the clean public history, keep every commit small and reviewed,
-  and push only after the staged-file and history review.
-- Start the landing-page implementation with a real Next.js app shell, a
-  persistent Three.js/R3F scroll world, and truthful product copy. Do not add
-  signup or Meta-key controls until the related policy and operator gates are
-  cleared and the flows are real.
+- Integrate the persistent Three.js/R3F scroll world behind the story copy;
+  finish request lifecycle and layer order, then lazy-load it and inspect
+  fallback behavior.
+- Run the integrated landing route in a real browser at desktop and mobile
+  sizes, including anchor reload, reverse/fast scroll, reduced motion, and
+  WebGL fallback.
+- Keep each reviewed change small and commit it; inspect staged files and
+  history before the first push to the public repository.
+- Do not add signup or Meta-key controls until related policy and operator
+  gates are cleared and the flows are real.
 - Obtain qualified review of the integrated Meta report; inspect the
   incorporated processor/security terms through an authorized source before
   launch.
@@ -68,11 +82,11 @@ from any other folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- Public GitHub history remains empty; only the existing local history contains
-  foundation commits. The requested target is at least 501 non-empty,
-  purposeful commits on the fresh public `main`; no empty or duplicate commits
-  count toward it.
-- No application build or browser verification has been performed yet.
+- The public GitHub repository is still empty; local `main` has 525 non-empty,
+  reviewed commits. Never count empty or duplicate commits toward the requested
+  target.
+- The 3D scene is not yet integrated; only the landing shell has partial
+  browser inspection.
 
 ## Verification performed
 
@@ -82,5 +96,10 @@ from any other folder.
 - Checked Meta policy claims against current first-party pages. The report
   identifies remaining legal and account-level verification work, including
   linked incorporated terms not available without an authenticated source.
-- No application code exists yet; no build, application tests, or browser
-  walkthrough have been performed.
+- Landing-shell lint, TypeScript, and production-build checks passed. No
+  integrated 3D-browser walkthrough has been performed.
+- Rendered and inspected the landing shell in a real browser at the default
+  desktop viewport and at 390×844. The semantic copy, primary in-page link,
+  navigation, and mobile reflow appeared as authored. This is partial browser
+  review only; the scene is not integrated, and 320px, tablet, scrolling,
+  reduced-motion, and WebGL fallback checks remain.

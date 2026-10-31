@@ -3,17 +3,16 @@
 ## Current state
 
 Fresh project folder: `Chron project root`.
-It is an independent Git repository on `main` with local foundation and
-Next.js dependency-setup commits. No credentials, private data, or reference
-materials are in the repository. The public repository `2q9e/chron` is still
-empty. Secret scanning, push protection, Dependabot alerts/security updates,
-and private vulnerability reporting are enabled; no code or history has been
-pushed yet.
+It is an independent Git repository on `main` with 525 non-empty local commits.
+No credentials, private data, or reference materials are in Git. The public
+repository `2q9e/chron` is still empty; no code or history has been pushed.
+Secret scanning, push protection, Dependabot alerts/security updates, and
+private vulnerability reporting are enabled.
 
 ## Current milestone
 
-F0 — foundation, with fresh public-history assembly pending; L1 — premium
-landing page and design system — is next.
+F0 — foundation is complete locally; the first reviewed public push remains
+pending. L1 — premium landing page and design system — is in progress.
 
 ## Important constraints
 
@@ -30,9 +29,9 @@ landing page and design system — is next.
   be reviewed before launch. See `docs/research/meta-api.md`.
 - New Git history must be independent and must exclude private/reference
   material.
-- Create at least 501 non-empty, reviewed commits in fresh public `main`; the
-  actual count must come from useful, distinct changes rather than empty or
-  duplicate commits. The current remote history count is zero.
+- Local `main` has 525 non-empty, reviewed commits; no changes have been pushed
+  yet. Continue to count only useful, distinct commits, never empty or
+  duplicate churn.
 - Spawnable agents must use GPT-6 Luna MAX or GPT-6.1 Terra HIGH. This runtime
   does not provide enforceable per-agent filesystem/network isolation.
 - Do not claim browser verification until the app has been rendered and
@@ -40,19 +39,21 @@ landing page and design system — is next.
 
 ## Next actions
 
-1. Assemble the fresh public history. The 500-entry skill library passed the
-   final text audits; skill entries and other useful changes should be
-   committed in small, distinct increments.
-2. Build the landing shell and persistent 3D scroll world in separate task
-   worktrees. The independent direction review's copy, accessibility,
-   no-WebGL, and performance findings are acceptance checks.
-3. Add real lint, type, build, security, and browser checks when the app source
-   and their commands exist. Inspect desktop, tablet, mobile, and reduced-motion
-   rendering before calling the UI milestone complete.
-4. Obtain qualified review of the integrated Meta report and inspect the
+1. Review and integrate the persistent 3D scene patch from its task worktree.
+   Mount it behind the semantic story, use one fallback graphic, and preserve
+   the correct current scroll position after initial load or lazy mount.
+2. Lazy-load the 3D bundle and establish the layer order so the scene appears
+   through authored sections while copy and navigation stay legible.
+3. Run lint, typecheck, and production build after integration. Inspect
+   production rendering at 1440×900, 768×1024, 390×844, and 320px; test anchor
+   navigation, deep-link reload, reverse/fast scroll, reduced motion, and WebGL
+   fallback. Record findings before closing L1.
+4. Review staged files and every public-history path before pushing the fresh
+   `main` history; do not push `local-only/prior-main`.
+5. Obtain qualified review of the integrated Meta report and inspect the
    incorporated processor/security terms through an authorized source before
    launch.
-5. Do not add fake signup, user-key intake, Meta attribution, demos, or
+6. Do not add fake signup, user-key intake, Meta attribution, demos, or
    nonfunctional controls while their policy gates and implementations remain
    unresolved.
 
@@ -70,5 +71,25 @@ landing page and design system — is next.
   public links require an authenticated source.
 - Independent landing direction critique: GPT-6.1 Terra HIGH setting
   requested; no blocker in the written direction. Its release requirements are
-  recorded in `docs/design/landing-brief.md`; no rendered UI was reviewed.
+  recorded in `docs/design/landing-brief.md`; a separate source audit found
+  issues now tracked in `docs/architecture/task-graph.md`.
 - The runtime provides no hard per-agent filesystem or network isolation.
+
+## Current implementation checkpoint
+
+- Landing route and story: `apps/web/app/page.tsx` and
+  `apps/web/features/landing/presentation/landing-story.tsx`.
+- Story layout and shared tokens: `apps/web/features/landing/presentation/landing-story.module.css`,
+  `apps/web/styles/tokens.css`, and `apps/web/styles/globals.css`.
+- Native scroll bridge: `apps/web/features/landing/presentation/story-progress-bridge.tsx`;
+  it emits `number | null`, handles late subscriber requests, and maps the final
+  story stop to reachable scroll end.
+- The world implementation remains in `/tmp/chron-worktrees/landing-world`
+  pending root review and integration; it is not in the main commit yet. The
+  main route currently has no 3D Canvas.
+- `npm run lint`, `npm run typecheck`, and `npm run build` passed on the shell.
+  The page rendered in a real browser at the default desktop viewport and
+  390×844. These checks do not verify the unintegrated scene or the full L1
+  acceptance matrix.
+- Latest implementation commit: `9d2c06d update`; task-graph review checkpoint:
+  `cbc7e28 update`.
