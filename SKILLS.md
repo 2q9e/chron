@@ -2158,3 +2158,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed preview, approval record
 - **Security considerations:** Recheck identity, ownership, permissions, bounds, and approval server-side; any target, payload, version, or scope change invalidates approval; calendar edits remain drafts until approved under S369
 - **Verification method:** Attempt replay, cross-user use, expired use, and one-field payload/version/scope change; every mismatch must be denied
+
+### S194 — Egress allowlisting
+
+- **Skill ID:** S194
+- **Name:** Egress allowlisting
+- **Purpose:** Limit outbound requests to approved services
+- **When to use:** When backend fetches network URLs
+- **Implementation approach:** Use proxy with explicit host and port rules
+- **Recommended tools:** Firewall, egress proxy
+- **Security considerations:** Block private ranges and metadata globally
+- **Verification method:** Denied hosts open no socket
