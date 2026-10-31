@@ -2103,3 +2103,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTTP headers, file parser
 - **Security considerations:** Isolate or force-download risky formats
 - **Verification method:** Open hostile SVG/HTML and confirm inert behavior
+
+### S189 — Prompt injection defense
+
+- **Skill ID:** S189
+- **Name:** Prompt injection defense
+- **Purpose:** Isolate policy from untrusted retrieved text during context assembly
+- **When to use:** When documents or web passages enter model context; use S265 for planner validation and server-enforced action checks
+- **Implementation approach:** Keep policy and retrieved data in separate fields, retain source provenance, and label passages as untrusted defense in depth; this context boundary is not an execution control (see S265)
+- **Recommended tools:** Prompt tests, source wrappers
+- **Security considerations:** Labels only help preserve context trust; they neither constrain tools nor grant authority. Server-side identity, ownership, permission, bounds, and approval enforcement belong to S265 with S192/S193
+- **Verification method:** Use test-only hostile-source cases to verify policy and passages stay distinct in assembled context; separately verify S265 rejects unauthorized proposed actions even when source labels are present
