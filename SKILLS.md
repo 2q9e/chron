@@ -4614,3 +4614,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** fast-check, Vitest
 - **Security considerations:** Seeded generated data only
 - **Verification method:** Save failing seed and reproduce
+
+### S416 — Model output schema tests
+
+- **Skill ID:** S416
+- **Name:** Model output schema tests
+- **Purpose:** Keep malformed output from reaching actions
+- **When to use:** When structured schemas change
+- **Implementation approach:** Test missing, extra, oversized, wrong-type fields
+- **Recommended tools:** Zod, JSON Schema
+- **Security considerations:** Fixtures remain test-only
+- **Verification method:** Invalid output is rejected
