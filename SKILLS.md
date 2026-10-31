@@ -1208,3 +1208,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Screenshot annotations, heuristic checklist, usability notes
 - **Security considerations:** Separate verified findings from personal preference
 - **Verification method:** Revisit the same task after changes and compare specific failure evidence
+
+### S108 — Data visualization honesty
+
+- **Skill ID:** S108
+- **Name:** Data visualization honesty
+- **Purpose:** Represent values without exaggerating trend, uncertainty, or completeness
+- **When to use:** When displaying study progress or calendar load
+- **Implementation approach:** Choose an encoding that matches data type and show units, range, and missingness
+- **Recommended tools:** Observable Plot, D3, chart accessibility review
+- **Security considerations:** Never invent product/demo metrics or calculate claims from incomplete records; synthetic chart fixtures belong only in tests
+- **Verification method:** Recompute labels from fixture data and compare chart scale to underlying values
