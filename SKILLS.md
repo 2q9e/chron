@@ -2202,3 +2202,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Audit table, SIEM bridge
 - **Security considerations:** Exclude secrets and content
 - **Verification method:** Attempt unauthorized update/delete as app role and assert sanitized critical transitions remain queryable by permitted reviewers
+
+### S198 — Backup confidentiality
+
+- **Skill ID:** S198
+- **Name:** Backup confidentiality
+- **Purpose:** Protect snapshots and restore workflows
+- **When to use:** When backups contain user data
+- **Implementation approach:** Encrypt; restrict restore roles; document expiry
+- **Recommended tools:** Cloud KMS, backup IAM
+- **Security considerations:** Treat snapshots as production data
+- **Verification method:** Restore in isolation; verify permission and expiry
