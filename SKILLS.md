@@ -3862,3 +3862,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Temporal, IANA tz database
 - **Security considerations:** Do not infer the event zone from an untrusted client offset alone; keep all-day values date-only under S349
 - **Verification method:** View same event in two zones and compare
+
+### S348 — DST gap and fold handling
+
+- **Skill ID:** S348
+- **Name:** DST gap and fold handling
+- **Purpose:** Disambiguate nonexistent and repeated local times
+- **When to use:** When scheduling near clock changes
+- **Implementation approach:** Prompt or apply documented policy for gaps and folds
+- **Recommended tools:** Temporal, timezone fixtures
+- **Security considerations:** Never silently shift approved event without notice
+- **Verification method:** Test spring gap and autumn duplicate-hour cases
