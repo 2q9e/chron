@@ -39,6 +39,9 @@ jobs:
       - name: Test agent skill and evidence policies
         run: npm run test:agent-skills --workspace @chron/web
 
+      - name: Test authentication configuration
+        run: npm run test:auth-config --workspace @chron/web
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=moderate
 

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test:agent-skills": "node --no-warnings --experimental-strip-types --test features/agent/skills/*.test.mjs"
+    "test:agent-skills": "node --no-warnings --experimental-strip-types --test features/agent/skills/*.test.mjs",
+    "test:auth-config": "node --no-warnings --experimental-strip-types --test features/auth/server/*.test.mjs"
   },
   "dependencies": {
     "@fontsource-variable/hanken-grotesk": "5.3.0",
