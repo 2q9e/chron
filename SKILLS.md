@@ -3220,3 +3220,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OAuth client library, PKCE
 - **Security considerations:** Keep client secret and verifier server-side
 - **Verification method:** Test missing verifier, wrong redirect, and replay
+
+### S290 — OAuth state and nonce validation
+
+- **Skill ID:** S290
+- **Name:** OAuth state and nonce validation
+- **Purpose:** Bind callback to the initiating browser session
+- **When to use:** Only after S291 has approved the Google service, when handling its OAuth redirects
+- **Implementation approach:** Use random one-time state and validate nonce where OIDC applies
+- **Recommended tools:** OAuth SDK, secure session store
+- **Security considerations:** Consume state once; reject unbound callbacks
+- **Verification method:** Replay callback and attempt cross-session state swap
