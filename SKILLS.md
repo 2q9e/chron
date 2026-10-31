@@ -1905,3 +1905,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSRF middleware, Fetch Metadata
 - **Security considerations:** Keep GET side-effect free
 - **Verification method:** Test token generation/rotation and cross-site form/fetch denial across representative session states
+
+### S171 — CORS policy
+
+- **Skill ID:** S171
+- **Name:** CORS policy
+- **Purpose:** Limit origins reading authenticated responses
+- **When to use:** When browser API crosses origins
+- **Implementation approach:** Allow exact origins, methods, and headers
+- **Recommended tools:** CORS middleware, gateway config
+- **Security considerations:** Never wildcard with credentials
+- **Verification method:** Test hostile preflight and credentialed fetch
