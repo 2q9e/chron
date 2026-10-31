@@ -4447,3 +4447,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** requestIdleCallback, scheduler API
 - **Security considerations:** Cancel work on account switch
 - **Verification method:** Interact during background load and check latency
+
+## Testing and reliability
+
+### S401 — Pure function unit tests
+
+- **Skill ID:** S401
+- **Name:** Pure function unit tests
+- **Purpose:** Check deterministic domain logic in isolation
+- **When to use:** For date, recurrence, permission helpers
+- **Implementation approach:** Feed explicit inputs and assert stable outputs
+- **Recommended tools:** Vitest, table fixtures
+- **Security considerations:** Use synthetic values only
+- **Verification method:** Cover boundaries and invalid input
