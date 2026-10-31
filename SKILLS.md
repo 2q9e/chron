@@ -3508,3 +3508,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Token-aware splitter, AST parser
 - **Security considerations:** Carry owner and source ID on every chunk
 - **Verification method:** Reconstruct excerpts from chunk offsets
+
+### S316 — Source quality assessment
+
+- **Skill ID:** S316
+- **Name:** Source quality assessment
+- **Purpose:** Expose missing pages and extraction uncertainty
+- **When to use:** When parsing is sparse or noisy
+- **Implementation approach:** Report unreadable pages and unsupported layouts
+- **Recommended tools:** Parser diagnostics, OCR metrics
+- **Security considerations:** Never invent missing source text
+- **Verification method:** Test partial and corrupted documents
