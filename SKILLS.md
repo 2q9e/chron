@@ -1496,3 +1496,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Three.js lights, drei Environment
 - **Security considerations:** Bound animation and avoid flashing
 - **Verification method:** Inspect material separation at each chapter and quality tier
+
+### S134 — Physically based materials
+
+- **Skill ID:** S134
+- **Name:** Physically based materials
+- **Purpose:** Make metal, plastic, paper, and glass respond plausibly
+- **When to use:** A surface reads as flat or artificial
+- **Implementation approach:** Tune base color, roughness, and metalness against the actual environment
+- **Recommended tools:** MeshStandardMaterial, MeshPhysicalMaterial
+- **Security considerations:** Use original materials and respect asset branding rights
+- **Verification method:** Render swatches in neutral and accent light; inspect highlights
