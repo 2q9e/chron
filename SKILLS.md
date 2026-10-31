@@ -1828,3 +1828,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Credential endpoint, provider adapter, key manager
 - **Security considerations:** Do not build Meta key intake before written permission under S160/S236; clear decrypted caches and revoke where supported
 - **Verification method:** Verify intake stays disabled before permission; then test replacement and removal with synthetic test keys
+
+### S164 — Log redaction
+
+- **Skill ID:** S164
+- **Name:** Log redaction
+- **Purpose:** Redact telemetry, exporter, and SDK data at external observability boundaries
+- **When to use:** When errors contain upstream data
+- **Implementation approach:** Sanitize structured events before queues/exporters and review vendor SDK capture fields; use S067 for in-process application log serialization
+- **Recommended tools:** Pino, OpenTelemetry
+- **Security considerations:** Sanitize before event queues
+- **Verification method:** Inject sentinels into telemetry envelopes and vendor errors; inspect emitted events, not just console logs
