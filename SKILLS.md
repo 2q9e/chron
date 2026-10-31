@@ -557,3 +557,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Auth.js or established OIDC middleware, jose
 - **Security considerations:** Fail closed on invalid or missing sessions; never trust user IDs from body
 - **Verification method:** Test expired, malformed, revoked, and valid sessions across routes
+
+### S049 — Authorization policy checks
+
+- **Skill ID:** S049
+- **Name:** Authorization policy checks
+- **Purpose:** Decide access from subject, resource, and action together
+- **When to use:** When users read or mutate any persisted object
+- **Implementation approach:** Call a centralized policy with the resource loaded under tenant scope
+- **Recommended tools:** CASL or small typed policy module, repository layer
+- **Security considerations:** Prevent IDOR by checking ownership on every server path
+- **Verification method:** Attempt cross-user read and write using guessed valid identifiers
