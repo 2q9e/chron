@@ -3761,3 +3761,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Observable Plot, D3
 - **Security considerations:** Avoid causal claims from simple correlation
 - **Verification method:** Compare plotted points with query output
+
+### S339 — Math visualization interaction
+
+- **Skill ID:** S339
+- **Name:** Math visualization interaction
+- **Purpose:** Let learners manipulate mathematical relationships
+- **When to use:** For functions, geometry, or statistics
+- **Implementation approach:** Bound inputs and provide equation labels
+- **Recommended tools:** JSXGraph, KaTeX
+- **Security considerations:** Do not execute arbitrary learner scripts
+- **Verification method:** Test extremes and keyboard operation
