@@ -3497,3 +3497,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Tesseract, image preprocessing
 - **Security considerations:** No unapproved inference service for images
 - **Verification method:** Compare OCR with known synthetic scans
+
+### S315 — Source chunking
+
+- **Skill ID:** S315
+- **Name:** Source chunking
+- **Purpose:** Create retrieval units with useful context
+- **When to use:** For long notebooks and model context
+- **Implementation approach:** Split by heading/page and retain source offsets
+- **Recommended tools:** Token-aware splitter, AST parser
+- **Security considerations:** Carry owner and source ID on every chunk
+- **Verification method:** Reconstruct excerpts from chunk offsets
