@@ -236,3 +236,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TanStack Query, React Query Devtools
 - **Security considerations:** Clear user-scoped cache on logout and avoid secrets in cache keys
 - **Verification method:** Switch mock accounts and verify no previous account data flashes
+
+### S020 — Infinite list pagination
+
+- **Skill ID:** S020
+- **Name:** Infinite list pagination
+- **Purpose:** Load large collections incrementally without duplicates or missing rows
+- **When to use:** When a notebook, task list, or activity feed exceeds one viewport
+- **Implementation approach:** Use cursor pagination, stable item keys, and a clear end-of-list state
+- **Recommended tools:** TanStack Query, IntersectionObserver
+- **Security considerations:** Authorize every cursor request and avoid leaking total counts across tenants
+- **Verification method:** Insert records between pages and verify cursor traversal remains stable
