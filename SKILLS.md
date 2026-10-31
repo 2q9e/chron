@@ -3121,3 +3121,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Request context, queue metadata
 - **Security considerations:** Never use model-supplied owner or email
 - **Verification method:** Tamper queue payload and verify mismatch denial
+
+### S281 — Execution timeout
+
+- **Skill ID:** S281
+- **Name:** Execution timeout
+- **Purpose:** Enforce a hard local execution budget for an individual tool
+- **When to use:** For network, parsing, or query operations
+- **Implementation approach:** Enforce the deadline selected under S248, pass AbortSignal, terminate local work at expiry, and persist dispatched operation state for reconciliation; handle user-requested run cancellation separately under S247
+- **Recommended tools:** AbortController, queue worker
+- **Security considerations:** Remote services may commit after local timeout; never infer rollback from a rejected promise, and require idempotency/status reconciliation for writes
+- **Verification method:** Simulate timeout before dispatch and after remote commit; verify no unsupported rollback claim and reconcile the unknown result
