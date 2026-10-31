@@ -6,7 +6,7 @@ import {
   resolveAllDayRange,
   resolveLocalDateTime,
   resolveTimedDuration,
-} from "../domain/time";
+} from "../domain/time.ts";
 import type {
   CalendarEvent,
   CalendarEventMutation,
@@ -48,6 +48,8 @@ export type EventDraftValidation =
 const agendaDays = 30;
 const millisecondsPerHour = 60 * 60 * 1000;
 const rowHeightRem = 2.75;
+const minimumTimedEventHeightRem = 1.8;
+const minimumTimedEventDurationMs = (minimumTimedEventHeightRem / rowHeightRem) * millisecondsPerHour;
 
 export function localToday(): string {
   return Temporal.Now.plainDateISO().toString();
@@ -375,7 +377,7 @@ export type TimedEventSegment = Readonly<{
 type PositionedSegment = {
   event: TimedCalendarEvent;
   startMs: number;
-  endMs: number;
+  layoutEndMs: number;
   topRem: number;
   heightRem: number;
   startsOnDate: boolean;
@@ -411,18 +413,21 @@ export function timedEventSegmentsForDate(
   const positioned: PositionedSegment[] = [];
   for (const event of events) {
     if (event.kind !== "timed") continue;
-    const startMs = Math.max(Number(Temporal.Instant.from(event.startsAt).epochMilliseconds), dayStartMs);
-    const endMs = Math.min(Number(Temporal.Instant.from(event.endsAt).epochMilliseconds), dayEndMs);
+    const eventStartMs = Number(Temporal.Instant.from(event.startsAt).epochMilliseconds);
+    const eventEndMs = Number(Temporal.Instant.from(event.endsAt).epochMilliseconds);
+    const startMs = Math.max(eventStartMs, dayStartMs);
+    const endMs = Math.min(eventEndMs, dayEndMs);
     if (endMs <= startMs) continue;
+    const layoutEndMs = Math.min(dayEndMs, Math.max(endMs, startMs + minimumTimedEventDurationMs));
     const startZoned = Temporal.Instant.from(event.startsAt).toZonedDateTimeISO(timeZone);
     positioned.push({
       event,
       startMs,
-      endMs,
+      layoutEndMs,
       topRem: ((startMs - dayStartMs) / millisecondsPerHour) * rowHeightRem,
-      heightRem: Math.max(((endMs - startMs) / millisecondsPerHour) * rowHeightRem, 1.8),
-      startsOnDate: Number(Temporal.Instant.from(event.startsAt).epochMilliseconds) >= dayStartMs,
-      endsOnDate: Number(Temporal.Instant.from(event.endsAt).epochMilliseconds) <= dayEndMs,
+      heightRem: ((layoutEndMs - startMs) / millisecondsPerHour) * rowHeightRem,
+      startsOnDate: eventStartMs >= dayStartMs,
+      endsOnDate: eventEndMs <= dayEndMs,
       localStartLabel: startZoned.toPlainTime().toLocaleString(locale, { hour: "numeric", minute: "2-digit" }),
       timeZoneLabel: new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: "short" })
         .format(new Date(startMs)),
@@ -432,7 +437,7 @@ export function timedEventSegmentsForDate(
   }
 
   positioned.sort((left, right) => left.startMs - right.startMs
-    || right.endMs - left.endMs
+    || right.layoutEndMs - left.layoutEndMs
     || left.event.id.localeCompare(right.event.id));
 
   let cluster: PositionedSegment[] = [];
@@ -443,9 +448,9 @@ export function timedEventSegmentsForDate(
       let lane = laneEnds.findIndex((endMs) => endMs <= segment.startMs);
       if (lane < 0) {
         lane = laneEnds.length;
-        laneEnds.push(segment.endMs);
+        laneEnds.push(segment.layoutEndMs);
       } else {
-        laneEnds[lane] = segment.endMs;
+        laneEnds[lane] = segment.layoutEndMs;
       }
       segment.lane = lane;
     }
@@ -457,7 +462,7 @@ export function timedEventSegmentsForDate(
   for (const segment of positioned) {
     if (cluster.length > 0 && segment.startMs >= clusterEnd) assignCluster();
     cluster.push(segment);
-    clusterEnd = Math.max(clusterEnd, segment.endMs);
+    clusterEnd = Math.max(clusterEnd, segment.layoutEndMs);
   }
   if (cluster.length > 0) assignCluster();
 

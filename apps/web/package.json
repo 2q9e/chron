@@ -11,6 +11,7 @@
     "test:agent-skills": "node --no-warnings --experimental-strip-types --test features/agent/skills/*.test.mjs",
     "test:auth-config": "node --no-warnings --experimental-strip-types --test features/auth/server/*.test.mjs",
     "test:calendar-time": "node --no-warnings --experimental-strip-types --test features/calendar/domain/*.test.mjs",
+    "test:calendar-layout": "node --no-warnings --experimental-strip-types --test features/calendar/presentation/*.test.mjs",
     "test:calendar-api": "node --no-warnings --experimental-strip-types --test features/calendar/server/*.test.mjs"
   },
   "dependencies": {
