@@ -2191,3 +2191,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Deletion state machine, revoke APIs
 - **Security considerations:** Revoke sessions and keys before cleanup finishes
 - **Verification method:** Verify every store reaches documented terminal state
+
+### S197 — Security audit trail
+
+- **Skill ID:** S197
+- **Name:** Security audit trail
+- **Purpose:** Define durable, append-only audit record structure for sensitive security events
+- **When to use:** Credential, OAuth, role, export actions
+- **Implementation approach:** Specify actor, action, target, time, request ID, retention, and DB write restrictions; use S078 for which account events to emit, S268 for run history, and S286 for tool-call records
+- **Recommended tools:** Audit table, SIEM bridge
+- **Security considerations:** Exclude secrets and content
+- **Verification method:** Attempt unauthorized update/delete as app role and assert sanitized critical transitions remain queryable by permitted reviewers
