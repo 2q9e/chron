@@ -3794,3 +3794,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Timer hook, Page Visibility API
 - **Security considerations:** Do not monitor keystrokes or background activity
 - **Verification method:** Test tab suspension and pause/resume; verify card review state remains governed by S334
+
+### S342 — Learning content accessibility
+
+- **Skill ID:** S342
+- **Name:** Learning content accessibility
+- **Purpose:** Provide equivalent access to interactive study content
+- **When to use:** When charts, math, or quizzes appear
+- **Implementation approach:** Add text descriptions, keyboard paths, non-color feedback
+- **Recommended tools:** ARIA patterns, KaTeX, axe
+- **Security considerations:** No sound or color-only answer signal
+- **Verification method:** Complete workflow with keyboard and screen reader
