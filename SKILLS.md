@@ -1186,3 +1186,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Content design, confirmation dialog, action preview
 - **Security considerations:** Do not use vague confirm labels for irreversible operations
 - **Verification method:** Ask users to restate the consequence before approval in usability testing
+
+### S106 — Interaction feedback timing
+
+- **Skill ID:** S106
+- **Name:** Interaction feedback timing
+- **Purpose:** Return feedback close to the action that caused it
+- **When to use:** When save, copy, selection, or drag operations need confirmation
+- **Implementation approach:** Use local status near the control and remove transient feedback predictably
+- **Recommended tools:** ARIA live region, toast system, CSS transitions
+- **Security considerations:** Do not announce sensitive values in public or shared-screen notifications
+- **Verification method:** Test fast and slow responses with keyboard and screen reader output
