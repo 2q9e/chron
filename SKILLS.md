@@ -3176,3 +3176,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Rootless OCI runtime or gVisor, seccomp/AppArmor, cgroups, isolated parser service
 - **Security considerations:** Worker threads share process privileges and are not a security boundary; mount no host paths, secrets, sockets, or cloud credentials
 - **Verification method:** Run malicious and resource-exhaustion fixtures; prove the parser cannot read unrelated files/secrets or reach network/metadata and that each cap terminates work
+
+### S286 — Tool audit records
+
+- **Skill ID:** S286
+- **Name:** Tool audit records
+- **Purpose:** Record each tool invocation and its actual outcome for audit and reconciliation
+- **When to use:** For per-tool invocation/outcome records; use S197 for append-only security event architecture and S268 for a user-facing run narrative
+- **Implementation approach:** Write actor, tool, target, scope, approval reference, operation ID, outcome, and time; distinguish dispatched, confirmed, failed, and unknown remote outcomes
+- **Recommended tools:** Audit table, trace IDs
+- **Security considerations:** Exclude raw arguments with secrets/content; do not mark a remote outcome successful without provider evidence or reconciliation
+- **Verification method:** Compare records to executed operations and provider reconciliation status; confirm no outcome is marked successful without evidence
