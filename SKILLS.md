@@ -3022,3 +3022,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** JSON Schema, Zod
 - **Security considerations:** Do not expose secret-bearing fields to the model
 - **Verification method:** Validate fixtures and reject unknown properties
+
+### S272 — Tool input validation
+
+- **Skill ID:** S272
+- **Name:** Tool input validation
+- **Purpose:** Reject invalid arguments before side effects
+- **When to use:** At every tool invocation
+- **Implementation approach:** Parse arguments server-side and normalize identifiers
+- **Recommended tools:** Zod, Valibot
+- **Security considerations:** Never trust model-produced values
+- **Verification method:** Fuzz bounds, types, and missing fields
