@@ -4801,3 +4801,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** k6, Redis test instance
 - **Security considerations:** Synthetic accounts and test keys only
 - **Verification method:** Check cap, metadata, tenant fairness
+
+### S433 — Telemetry redaction tests
+
+- **Skill ID:** S433
+- **Name:** Telemetry redaction tests
+- **Purpose:** Keep secret-like data out of logs
+- **When to use:** When logging or SDK code changes
+- **Implementation approach:** Inject sentinel token, email, prompt values
+- **Recommended tools:** Pino sink, OTel exporter
+- **Security considerations:** Never use a real secret
+- **Verification method:** Sentinels absent from emitted events
