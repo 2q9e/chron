@@ -3363,3 +3363,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Google Sheets API
 - **Security considerations:** Avoid importing unrelated tabs or hidden data
 - **Verification method:** Test named range, empty cells, and formula values
+
+### S303 — Slides text extraction
+
+- **Skill ID:** S303
+- **Name:** Slides text extraction
+- **Purpose:** Use presentation text as a study source
+- **When to use:** Only after S291, when a user selects a Slides deck from an enabled integration
+- **Implementation approach:** Request permitted page text and preserve slide/page provenance
+- **Recommended tools:** Google Slides API
+- **Security considerations:** Avoid fetching images or notes beyond consented scope
+- **Verification method:** Compare extracted text with a synthetic slide deck
