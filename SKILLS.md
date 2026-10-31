@@ -2281,3 +2281,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** UUIDv7, ULID, PostgreSQL identity
 - **Security considerations:** Do not expose sequential IDs when enumeration creates risk
 - **Verification method:** Load-test inserts and verify IDs are not client-controlled
+
+### S205 — Foreign-key integrity
+
+- **Skill ID:** S205
+- **Name:** Foreign-key integrity
+- **Purpose:** Prevent orphaned records when related objects change
+- **When to use:** When records depend on accounts, notebooks, or events
+- **Implementation approach:** Add explicit foreign keys and choose deletion behavior per relationship
+- **Recommended tools:** PostgreSQL constraints, migration tooling
+- **Security considerations:** Never cascade-delete shared or legal-hold records implicitly
+- **Verification method:** Attempt orphan inserts and deletion edge cases in DB tests
