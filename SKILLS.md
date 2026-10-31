@@ -2169,3 +2169,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Firewall, egress proxy
 - **Security considerations:** Block private ranges and metadata globally
 - **Verification method:** Denied hosts open no socket
+
+### S195 — Data minimization
+
+- **Skill ID:** S195
+- **Name:** Data minimization
+- **Purpose:** Avoid collecting fields without product purpose
+- **When to use:** New profile or telemetry fields
+- **Implementation approach:** Document purpose and retention before schema change
+- **Recommended tools:** Data inventory, event catalog
+- **Security considerations:** Do not send study content to analytics by default
+- **Verification method:** Compare fields with actual behavior
