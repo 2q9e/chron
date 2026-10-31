@@ -1,0 +1,16 @@
+{
+  "name": "chron-platform",
+  "private": true,
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @chron/web",
+    "build": "npm run build --workspace @chron/web",
+    "lint": "npm run lint --workspace @chron/web",
+    "typecheck": "npm run typecheck --workspace @chron/web"
+  }
+}
