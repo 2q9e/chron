@@ -2059,3 +2059,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Auth provider controls
 - **Security considerations:** Equalize unknown-user and wrong-password errors
 - **Verification method:** Test repeats and enumeration resistance
+
+### S185 — File type verification
+
+- **Skill ID:** S185
+- **Name:** File type verification
+- **Purpose:** Reject renamed or disguised uploads
+- **When to use:** When importing study materials
+- **Implementation approach:** Check magic bytes and parser success
+- **Recommended tools:** file-type, MIME database
+- **Security considerations:** Do not trust extension or browser MIME
+- **Verification method:** Upload renamed executable and malformed file
