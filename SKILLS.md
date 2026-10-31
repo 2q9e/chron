@@ -2833,3 +2833,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL, job queue
 - **Security considerations:** Scope every status query to owner
 - **Verification method:** Restart process and fetch run from authorized account
+
+### S255 — Context budget
+
+- **Skill ID:** S255
+- **Name:** Context budget
+- **Purpose:** Fit source and conversation within model limits
+- **When to use:** When planning context for officially authorized Meta inference under S236
+- **Implementation approach:** Count tokens, rank excerpts, reserve completion budget
+- **Recommended tools:** Meta tokenizer if documented, context planner
+- **Security considerations:** Never call inference before S236 and never drop safety policy to fit more sources
+- **Verification method:** Test boundary length and included source IDs
