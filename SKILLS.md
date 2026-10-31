@@ -1153,3 +1153,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Content design, Figma, component library
 - **Security considerations:** No examples, seeded records, fake previews, or placeholders in product UI; use only user-provided/authorized runtime content and test-only synthetic fixtures
 - **Verification method:** Review copy against a clean test account, confirm no sample content is visible, and verify the S036 action reaches a real flow
+
+### S103 — Error recovery language
+
+- **Skill ID:** S103
+- **Name:** Error recovery language
+- **Purpose:** Explain what failed and how the user can continue
+- **When to use:** When a request or integration fails visibly
+- **Implementation approach:** Name the affected action, distinguish retryable failures, and preserve safe inputs
+- **Recommended tools:** Content design, error taxonomy, support runbooks
+- **Security considerations:** Avoid exposing provider internals or blaming users for system faults
+- **Verification method:** Review copy against injected errors and confirm each message has a recovery path
