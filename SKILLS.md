@@ -4115,3 +4115,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS variables, theme presets
 - **Security considerations:** Do not encode conflict solely by color
 - **Verification method:** Render all views, themes, and keyboard focus states
+
+## Performance optimization
+
+### S371 — Real-user metrics
+
+- **Skill ID:** S371
+- **Name:** Real-user metrics
+- **Purpose:** Measure actual speed and responsiveness
+- **When to use:** After a route reaches users
+- **Implementation approach:** Collect privacy-limited Web Vitals by route
+- **Recommended tools:** web-vitals, OpenTelemetry
+- **Security considerations:** Exclude content and direct identifiers
+- **Verification method:** Compare percentiles by route and release
