@@ -3055,3 +3055,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed registry, policy engine
 - **Security considerations:** No implicit broad access from tool name
 - **Verification method:** Assert required scope for each schema
+
+### S275 — Tool risk tiers
+
+- **Skill ID:** S275
+- **Name:** Tool risk tiers
+- **Purpose:** Classify tools by impact so safeguards are proportional without replacing authorization
+- **When to use:** Before exposing write or sharing actions
+- **Implementation approach:** Label read, reversible-write, and consequential operations; enforce capability and approval policies separately from the tier
+- **Recommended tools:** Policy table, action taxonomy
+- **Security considerations:** Every consequential action requires explicit user approval at every tier; the server independently checks identity, ownership, permissions, bounds, and the S193 approval; calendar edits remain drafts under S369
+- **Verification method:** Test a read, reversible consequential write, calendar draft, changed payload, and missing approval; only the reviewed approved proposal may execute
