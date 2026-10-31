@@ -30,8 +30,9 @@ Meta clarification or permission; no other inference provider is allowed.
 The user has reprioritized C1 ahead of L1. Landing-page work is paused. The
 first calendar increment now includes a persisted event and preference API,
 protected sign-in/route, day/week/month/agenda views, editable events, themes,
-and a server-side conflict check before approval. Recurrence, reminders, drag
-scheduling, search, external sync, and a real database/browser walkthrough stay
+and a server-side conflict check before approval. Bounded event-title search is
+implemented in source with a date and event-kind filter. Recurrence, reminders,
+drag scheduling, external sync, and a real database/browser walkthrough stay
 open until each is implemented and verified.
 
 ## Skill library category allocation

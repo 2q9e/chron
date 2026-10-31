@@ -2,12 +2,13 @@
 
 ## Scope and evidence
 
-The source review covered the calendar implementation through the current
-reliability patch. The first independent visual pass reviewed the calendar
-views; follow-ups reviewed recovery, idempotent create, and short-event fixes.
-A separate security pass inspected create retry, stale-edit, and event
-approval paths. Lint, type checking, the 30-test API suite, 7-test time suite,
-10-test layout suite, 5-test recovery suite, and production build pass. The
+The source review covers the calendar implementation through bounded event
+search and its return-focus fix. The first independent visual pass reviewed the
+calendar views; follow-ups reviewed recovery, idempotent create, short-event
+fixes, and search. A separate security pass inspected create retry, stale-edit,
+event approval, and search ownership. Lint, type checking, the 39-test API
+suite, 7-test time suite, 17-test layout/search suite, 5-test recovery suite,
+and production build pass. The
 authenticated calendar has not been exercised in a browser because this
 runtime has no configured PostgreSQL database or disposable account. Scores
 are source-review scores, not launch approval.
@@ -129,3 +130,110 @@ are source-review scores, not launch approval.
 - **Assigned agent:** Main integration owner
 - **Verification method:** Focused recovery test covers a successful first result, failed second result, retained keys, and full successful retry; an independent source review confirmed the fix.
 - **Status:** Fixed in source; authenticated recovery remains pending.
+
+## Bounded event-search audit (2026-10-31)
+
+This review covers the new calendar title-search API and interface. The search
+request is bounded to 120 Unicode code points and a 93-day inclusive date
+window, uses a same-origin JSON POST, filters by the authenticated owner and
+optional event kind, returns an explicit overflow error, and opens selected
+results in the existing editor. It introduces no sample events, fake data,
+emoji, decorative statistics, or ornamental animation.
+
+| Category | Score | Evidence and limits |
+| --- | ---: | --- |
+| Visual originality | 8/10 | Search uses the existing Chron calendar tokens and theme states; authenticated rendering could not be inspected. |
+| Typography | 8/10 | Search title, labels, hints, and results follow the existing hierarchy; browser rendering remains unverified. |
+| Layout | 8/10 | Four desktop fields reflow to two columns at 46rem after a source review found and fixed tablet overflow; no browser `scrollWidth` measurement was available. |
+| Color | 8/10 | Existing theme tokens and selected light/dark `color-scheme` apply to controls; rendered contrast has not been measured. |
+| Animation | 9/10 | Search adds no decorative motion; reduced-motion behavior remains inherited from the calendar. |
+| Content | 9/10 | Labels state title matching, inclusive dates, the 93-day limit, event type, and actionable failure states. |
+| Interaction | 8/10 | Request aborts, stale-response guards, disabled-state clearing, and editor handoff are implemented; authenticated browser interaction is not verified. |
+| Accessibility | 8/10 | Inputs have labels and descriptions, validation focus follows the rendered error, and result states are announced; screen-reader and keyboard browser checks remain open. |
+| Functionality | 8/10 | The route and real SQL query are present, with 39 API and 17 UI/helper tests passing; PostgreSQL behavior is not exercised. |
+| Code quality | 9/10 | Typed request validation, dedicated UI component, bounded SQL, and focused tests are in place. |
+| Performance | 7/10 | Date, row-count, and 2-second query limits bound work; the leading-wildcard title query has not been profiled against real data. |
+| Security | 7/10 | Session-derived ownership, transaction-local RLS context, parameterized SQL, same-origin checks, and `no-store` are present; actual two-account isolation is unverified. |
+| Product identity | 8/10 | Specific calendar copy and existing theme language remain consistent; no new visual browser evidence was available. |
+
+Scores below 9 reflect evidence that cannot be established from this runtime;
+they are not assertions that the implementation is broken. The open database
+and authenticated-browser checks are release verification work, not a reason to
+invent successful results.
+
+### C-10 — Preserve over-limit title text and explain the limit
+
+- **Issue:** The initial search field silently truncated titles beyond the API limit.
+- **Severity:** P2
+- **Affected files:** `apps/web/features/calendar/presentation/calendar-search.tsx`, `calendar-api.ts`
+- **Why it is a problem:** Users could submit a different title from the one they typed without noticing.
+- **Recommended correction:** Preserve input, show remaining code points, and validate with a field error on submit.
+- **Assigned agent:** Calendar search UI engineer
+- **Verification method:** UI request-builder tests cover 120/121 code points; source review confirms the input value is not sliced.
+- **Status:** Fixed in source and verified by tests; browser entry behavior remains unverified.
+
+### C-11 — Focus the rendered field error
+
+- **Issue:** Validation previously focused the input before its description was committed to the DOM.
+- **Severity:** P2
+- **Affected files:** `apps/web/features/calendar/presentation/calendar-search.tsx`
+- **Why it is a problem:** Assistive technology may not announce the newly associated correction guidance.
+- **Recommended correction:** Defer focus until the error element and `aria-describedby` reference are present.
+- **Assigned agent:** Calendar search UI engineer
+- **Verification method:** Source review confirms the post-commit focus guard; screen-reader runtime confirmation is still pending.
+- **Status:** Fixed in source; assistive-technology verification remains open.
+
+### C-12 — Reflow the search form at narrow tablet widths
+
+- **Issue:** The initial four-column form could exceed the panel width around 701–723px.
+- **Severity:** P2
+- **Affected files:** `apps/web/features/calendar/presentation/calendar.module.css`
+- **Why it is a problem:** Horizontal overflow makes date and event-type controls harder to use.
+- **Recommended correction:** Start the two-column layout at 46rem and make query, guidance, and actions span the form width.
+- **Assigned agent:** Calendar search UI engineer
+- **Verification method:** Source review confirms the updated breakpoint; real viewport overflow testing remains pending.
+- **Status:** Fixed in source; browser width measurements remain open.
+
+### C-13 — Match native controls to the selected theme
+
+- **Issue:** Browser date and select popovers could follow the operating-system scheme instead of the calendar theme.
+- **Severity:** P3
+- **Affected files:** `apps/web/features/calendar/presentation/calendar.module.css`
+- **Why it is a problem:** A light calendar on a dark OS, or the reverse, could produce inconsistent control surfaces.
+- **Recommended correction:** Set `color-scheme` on the workspace for light and premium-dark themes.
+- **Assigned agent:** Calendar search UI engineer
+- **Verification method:** Source review confirms theme-specific `color-scheme`; cross-OS browser checks remain pending.
+- **Status:** Fixed in source; native picker rendering remains unverified.
+
+### C-14 — Keep network failures browser-independent
+
+- **Issue:** The initial fetch handler could display a browser-specific exception message.
+- **Severity:** P3
+- **Affected files:** `apps/web/features/calendar/presentation/calendar-api.ts`
+- **Why it is a problem:** Unhelpful or inconsistent diagnostics make recovery unclear and expose transport details.
+- **Recommended correction:** Map ordinary fetch failures to stable user guidance while preserving abort behavior.
+- **Assigned agent:** Calendar search UI engineer
+- **Verification method:** Network rejection and abort unit tests pass; a real offline browser state remains untested.
+- **Status:** Fixed in source and verified by tests.
+
+### C-15 — Verify search isolation across real accounts
+
+- **Issue:** The current cross-owner repository test filters mock rows itself, while the route test inspects source text.
+- **Severity:** P2, verification gap
+- **Affected files:** `apps/web/features/calendar/server/repository.test.mjs`, `calendar-api.test.mjs`, calendar migrations
+- **Why it is a problem:** These checks do not execute the route with two authenticated users or demonstrate PostgreSQL RLS behavior.
+- **Recommended correction:** Add a disposable-PostgreSQL integration test that searches as two accounts and proves each receives only its own matching events, including punctuation and overlap boundaries.
+- **Assigned agent:** Main integration owner with independent security review
+- **Verification method:** Requires a PostgreSQL service and disposable accounts; none is configured in this runtime.
+- **Status:** Open. The reviewed query explicitly binds `user_id` and sets transaction-local RLS context, and no isolation bypass was found by source review. Runtime isolation remains unproven.
+
+### C-16 — Return editor focus to the search context
+
+- **Issue:** Selecting a result removed its button before editor close, so focus fell back to the unrelated New event control.
+- **Severity:** P2
+- **Affected files:** `apps/web/features/calendar/presentation/calendar-search.tsx`, `calendar-workspace.tsx`
+- **Why it is a problem:** Keyboard users lose the search context they used to open the event.
+- **Recommended correction:** Pass the persistent, programmatically focusable search heading as the editor return target.
+- **Assigned agent:** Main integration owner
+- **Verification method:** Independent source re-review, calendar-layout/search suite, lint, typecheck, and production build; authenticated keyboard return-path check is still pending.
+- **Status:** Fixed in source; the stable search heading is saved as the editor return target and remains mounted when the result list clears. Browser focus behavior remains unverified.

@@ -717,7 +717,7 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
 - **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`,
   `PLAN.md`, this graph, domain types, auth/runtime boundary, SQL migrations,
   existing route/error helpers
-- **Required skills:** S018, S215, S366, S402, S405, S426
+- **Required skills:** S018, S215, S218, S366, S402, S405, S426
 - **Security permissions:** No credentials, private data, reference materials,
   external network, commit, or push. Detached worktree is a coordination
   boundary only; no runtime filesystem/network sandbox is enforced.
@@ -732,7 +732,9 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   and diff check; live Postgres behavior remains unverified.
 - **Expected deliverables:** route, repository search, validation, API tests,
   and a concise verification report; no commit/push.
-- **Status:** Running in its isolated coordination worktree.
+- **Status:** Integrated into `main`; 39 API tests, typecheck, lint, and build
+  pass. Query and error behavior are covered with repository mocks and route
+  contract checks. PostgreSQL/RLS runtime behavior remains unverified.
 
 #### C1-a2 — accessible calendar search interface
 
@@ -762,7 +764,9 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   not simulate account state.
 - **Expected deliverables:** accessible search component, real API client,
   workspace integration, and verification report; no commit/push.
-- **Status:** Running in its isolated coordination worktree.
+- **Status:** Integrated into `main`; 17 calendar-layout/search tests,
+  typecheck, lint, and build pass. The authenticated browser path is not
+  available without a database and account.
 
 #### C1-a3 — integration, independent review, and tests
 
@@ -782,11 +786,17 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
 - **Acceptance criteria:** Full contract passes, no caller trusts user ID,
   result queries remain bounded and owner-filtered, and UI states remain usable
   under errors and request races.
-- **Tests:** API, calendar-time, calendar-layout, recovery, lint, typecheck,
-  build, diff review, staged-file review, and outgoing-history/secret scans.
+- **Tests:** API (39), calendar-time (7), calendar-layout/search (17), recovery
+  (5), lint, typecheck, production build, and diff review pass. Mock coverage
+  and source assertions do not establish two-account route/RLS isolation; a
+  PostgreSQL integration test and authenticated browser walkthrough remain
+  open.
 - **Expected deliverables:** integrated source, independent findings/remedies,
   updated evidence, and separate tiny commits pushed to public `main`.
-- **Status:** Waiting on C1-a1 and C1-a2.
+- **Status:** Source integration and checks complete. Independent reviews
+  confirmed the UI return-focus correction and found no remaining query/UI
+  defect; actual cross-account database behavior is still unverified and
+  tracked under C1-a4.
 
 #### C1-a4 — authenticated search browser verification
 
@@ -804,4 +814,5 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
 - **Tests:** Actual browser walkthrough and database assertions; no product
   samples or fabricated search results.
 - **Expected deliverables:** Dated results and screenshots when supported.
-- **Status:** Blocked by missing disposable PostgreSQL service/account.
+- **Status:** Blocked by missing PostgreSQL client/server, database service,
+  database URL, and disposable account in this runtime.

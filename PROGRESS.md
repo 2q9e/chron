@@ -7,8 +7,8 @@ security are on public GitHub `main`; hosted checks and branch protection remain
 unverified. C1 — calendar — is active at the user's direction. Landing-page
 work is paused. Calendar reliability fixes and the bounded-search type
 contract are pushed to the single public `main` branch through `dfe1f07`.
-Bounded title search is underway. No code or visual material was copied from
-another folder.
+Bounded title search is implemented and pushed as API commit `afbef0e` and UI
+commit `4a092e8`. No code or visual material was copied from another folder.
 
 ## Completed
 
@@ -85,9 +85,13 @@ another folder.
   keys. Save retries are locked to the reviewed payload, sign-out and settings
   cannot race an uncertain operation, focus waits for reload or uses a stable
   fallback, and one-minute events near midnight get full-size targets.
-- Calendar API (30), time (7), layout (10), and create recovery (5) tests pass,
+- Calendar API (39), time (7), layout/search (17), and create recovery (5) tests pass,
   as do lint, typecheck, and the production build. These are source-level
   checks; authenticated persistence remains unverified.
+- Added owner-scoped event-title search with literal matching, date/type
+  filters, a 93-day range bound, a 1,000-result limit, query timeout handling,
+  an accessible result list, and event-editor handoff. API commit `afbef0e` and
+  UI commit `4a092e8` are pushed to the single public `main` branch.
 
 ## Open work
 
@@ -97,9 +101,9 @@ another folder.
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
-- Continue C1 with bounded title search, recurrence, reminders, drag scheduling,
-  and external calendar synchronization. Search API and UI work are underway in
-  separate detached worktrees against the committed shared contract.
+- Continue C1 with recurrence, reminders, drag scheduling, and external
+  calendar synchronization. Search code is integrated; PostgreSQL ownership
+  and authenticated browser verification remain open.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -130,7 +134,8 @@ another folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- Public GitHub `main` has 566 non-empty, purposeful commits as of this update;
+- Public GitHub `main` had 570 non-empty, purposeful commits after the search
+  API, UI, and focus-fix pushes and before this documentation update;
   the initial history had 533 and reviewed calendar fixes were pushed from
   local `main`. The calendar API, auth route, sign-in screen, calendar views,
   overlap review, and idempotent event creation are included. Never count
@@ -148,11 +153,23 @@ another folder.
   linked incorporated terms not available without an authenticated source.
 - Landing lint, TypeScript, and production-build checks passed after the scene
   module split and visibility-fallback fix.
-- For the current calendar increment, calendar API passed all 30 tests, time
-  all 7, layout all 10, recovery all 5, auth-config all 9, and agent-skills all
-  10. Lint, typecheck, and the production build passed.
+- For the current calendar increment, calendar API passed all 39 tests, time
+  all 7, layout/search all 17, recovery all 5, auth-config all 9, and
+  agent-skills all 10. Lint, typecheck, and the production build passed.
 - Added and typechecked the shared calendar search request/response contract at
-  `dfe1f07`; backend and UI implementation are running in separate worktrees.
+  `dfe1f07`; integrated and pushed the API and UI in `afbef0e` and `4a092e8`.
+- Search verification passed: API (39), time (7), layout/search (17), and
+  recovery (5) tests, typecheck, lint, production webpack build, and diff check.
+  Independent review found no concrete query/UI defect. The reviewer identified
+  that the in-memory owner test does not prove real PostgreSQL/RLS isolation;
+  this remains open because no PostgreSQL client, service, database URL, or
+  account is available. Authenticated calendar search has not been browser-tested.
+- A final accessibility review found that editor close focus would leave the
+  search context. The integrated change now stores and restores focus to the
+  persistent search heading; the source re-review confirmed the correction.
+  The 17-test layout/search suite, lint, typecheck, and production build pass
+  after that change. Webpack emitted cache `ENOSPC` warnings but completed the
+  build. Authenticated keyboard behavior is not runtime verified.
 - Reviewed the outgoing diff from `origin/main`, checked `git diff --check`,
   scanned staged and outgoing content for common secret patterns, and pushed to
   `origin/main`. The remote exposes only `main`; the latest calendar changes
