@@ -865,3 +865,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL, transactional outbox worker
 - **Security considerations:** Limit event payload to the minimum data required by the consumer
 - **Verification method:** Crash between commit and publish, then verify eventual single processing
+
+### S077 — Notification delivery pipeline
+
+- **Skill ID:** S077
+- **Name:** Notification delivery pipeline
+- **Purpose:** Deliver reminders through retriable channels with user controls
+- **When to use:** When an event or assignment requires email or in-app notification
+- **Implementation approach:** Separate scheduling from delivery, persist attempts, and honor per-channel preferences
+- **Recommended tools:** Queue workers, email provider SDK, notification table
+- **Security considerations:** Do not send sensitive course content in subjects or push previews by default
+- **Verification method:** Test opt-out, bounce, duplicate delivery, retry, and timezone schedule cases
