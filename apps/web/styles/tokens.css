@@ -1,0 +1,30 @@
+:root {
+  color-scheme: dark light;
+
+  --color-ground: #201e22;
+  --color-ground-raised: #29262b;
+  --color-paper: #e7e4e7;
+  --color-ink: #181619;
+  --color-muted-ink: #58545a;
+  --color-soft-ink: #c8c3c8;
+  --color-accent: #b95c76;
+  --color-accent-on-ground: #e091a6;
+  --color-rule-on-dark: rgb(231 228 231 / 20%);
+  --color-rule-on-paper: rgb(24 22 25 / 20%);
+
+  --font-sans: "Hanken Grotesk Variable", "Hanken Grotesk", sans-serif;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  --radius-control: 999px;
+  --content-width: 90rem;
+  --page-gutter: clamp(1.25rem, 5.2vw, 5.5rem);
+}
