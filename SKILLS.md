@@ -2369,3 +2369,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL isolation levels, retry helper
 - **Security considerations:** Retries must not duplicate external side effects
 - **Verification method:** Run concurrent conflicting transactions and verify deterministic result
+
+### S213 — Optimistic concurrency control
+
+- **Skill ID:** S213
+- **Name:** Optimistic concurrency control
+- **Purpose:** Prevent stale edits overwriting newer user changes
+- **When to use:** When forms can remain open while records change
+- **Implementation approach:** Use version column or ETag precondition and return conflict for stale writes
+- **Recommended tools:** PostgreSQL version field, HTTP If-Match
+- **Security considerations:** Do not let clients choose arbitrary version numbers to bypass checks
+- **Verification method:** Submit two updates from same version and confirm one conflicts
