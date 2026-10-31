@@ -1054,3 +1054,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Figma, CSS grid, semantic HTML
 - **Security considerations:** Do not hide important content in hover-only card states
 - **Verification method:** Count visual containers and validate that every boundary has a grouping purpose
+
+### S094 — Page composition
+
+- **Skill ID:** S094
+- **Name:** Page composition
+- **Purpose:** Arrange primary content, supporting context, and navigation with clear balance
+- **When to use:** When a new screen lacks a natural reading path
+- **Implementation approach:** Sketch dominant axis, focal point, negative space, and content progression before styling
+- **Recommended tools:** Figma, paper wireframes, browser screenshot review
+- **Security considerations:** Do not place destructive actions where accidental pointer travel triggers them
+- **Verification method:** Run a five-second comprehension check on a static screen
