@@ -5223,3 +5223,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** axe, contrast checker
 - **Security considerations:** Do not communicate permission state by color alone
 - **Verification method:** Automate palette checks and inspect rendered screenshots across themes; ensure permission state also has non-color cues
+
+### S471 — Non-color status cues
+
+- **Skill ID:** S471
+- **Name:** Non-color status cues
+- **Purpose:** Make status understandable without hue perception
+- **When to use:** For conflicts, errors, and selection
+- **Implementation approach:** Pair color with icon, label, pattern, or shape
+- **Recommended tools:** Semantic tokens, icon set
+- **Security considerations:** Avoid symbols that imply false approval
+- **Verification method:** Test grayscale and color-vision simulation
