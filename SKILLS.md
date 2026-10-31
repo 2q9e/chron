@@ -922,3 +922,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Figma, moodboard, design tokens, browser screenshots
 - **Security considerations:** Do not imply affiliation through another company’s distinctive visual identity
 - **Verification method:** Review a one-page direction against product purpose and existing screens
+
+### S082 — Editorial information hierarchy
+
+- **Skill ID:** S082
+- **Name:** Editorial information hierarchy
+- **Purpose:** Make the next useful action obvious through scale and placement
+- **When to use:** When a dense page has competing headings, data, and controls
+- **Implementation approach:** Rank content by user decision importance, then vary size, weight, and spacing
+- **Recommended tools:** Figma, type specimens, CSS variables
+- **Security considerations:** Do not style consent or privacy choices to steer users unfairly
+- **Verification method:** Ask first-time users to locate the primary task without explanation
