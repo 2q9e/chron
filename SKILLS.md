@@ -401,3 +401,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML5, axe-core, React Testing Library
 - **Security considerations:** Do not use hidden landmark content to expose private route names
 - **Verification method:** Inspect accessibility tree and verify skip links reach the main region
+
+### S035 — Inline error recovery
+
+- **Skill ID:** S035
+- **Name:** Inline error recovery
+- **Purpose:** Show field and request errors next to a useful recovery action
+- **When to use:** When validation or persistence fails in a form flow
+- **Implementation approach:** Preserve safe user input and associate errors with the affected control
+- **Recommended tools:** React, aria-describedby, server action results
+- **Security considerations:** Do not echo database errors, SQL text, or submitted secrets
+- **Verification method:** Force validation and server failures; confirm focus and error announcement
