@@ -1762,3 +1762,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Data-flow diagrams, typed contracts
 - **Security considerations:** Never trust internal network or model output
 - **Verification method:** Trace synthetic test data from ingress to display while identifying each trust transition
+
+### S158 — Secret inventory
+
+- **Skill ID:** S158
+- **Name:** Secret inventory
+- **Purpose:** Track credential owners and rotation path
+- **When to use:** Before adding provider or OAuth secrets
+- **Implementation approach:** Record credential class, owner, permitted purpose, approved storage, and rotation path; never inventory the value itself
+- **Recommended tools:** Secret manager, repo scanner
+- **Security considerations:** Meta credentials are excluded until written permission under S160/S236; no secret values in inventory or fixtures
+- **Verification method:** Reconcile inventory with runtime configuration
