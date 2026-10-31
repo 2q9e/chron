@@ -5245,3 +5245,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Browser zoom, CSS Grid
 - **Security considerations:** Do not hide legal or approval content when space is tight
 - **Verification method:** Test 200–400% zoom and 320px viewport
+
+### S473 — Reduced-motion support
+
+- **Skill ID:** S473
+- **Name:** Reduced-motion support
+- **Purpose:** Respect reduced-motion preferences across app-wide DOM, CSS, and scroll interactions
+- **When to use:** When transitions, scroll, or 3D movement exists
+- **Implementation approach:** Remove nonessential transitions and offer stable states; use S147 for 3D scene-specific static compositions
+- **Recommended tools:** prefers-reduced-motion, CSS
+- **Security considerations:** Do not use flashing or repeated motion for status
+- **Verification method:** Emulate preference across routes and verify 3D chapter still behavior separately under S147
