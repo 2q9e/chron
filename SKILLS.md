@@ -1241,3 +1241,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS custom properties, Storybook, test-only theme fixture page
 - **Security considerations:** Keep conflict and busy states recognizable without relying only on hue
 - **Verification method:** Render every view and interaction state under each available theme
+
+### S111 — Customization control design
+
+- **Skill ID:** S111
+- **Name:** Customization control design
+- **Purpose:** Help users tailor appearance without confusing color with behavior
+- **When to use:** When adding accent, density, or animation preferences
+- **Implementation approach:** Group settings by previewable outcome and expose reset-to-default affordance
+- **Recommended tools:** Settings panel, CSS variables, local preview state
+- **Security considerations:** Persist preferences per account and do not store private content in theme metadata
+- **Verification method:** Change each setting, reload, and verify only the intended appearance changes
