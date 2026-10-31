@@ -988,3 +988,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Design tokens, OKLCH tooling, CSS variables
 - **Security considerations:** Do not use color as the sole carrier of status or permission
 - **Verification method:** Check palette on real components in every supported theme
+
+### S088 — Semantic color mapping
+
+- **Skill ID:** S088
+- **Name:** Semantic color mapping
+- **Purpose:** Make success, warning, error, and informational states consistently readable
+- **When to use:** When components report task or integration status
+- **Implementation approach:** Map named state tokens to foreground and background pairs with contrast checks
+- **Recommended tools:** CSS variables, contrast checker, Storybook
+- **Security considerations:** Avoid red/green-only distinctions and misleading success signals
+- **Verification method:** Audit all state pairs and test grayscale comprehension
