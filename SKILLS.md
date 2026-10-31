@@ -4060,3 +4060,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Queue scheduler, Temporal
 - **Security considerations:** Avoid sensitive content in push preview; changes to calendar events remain drafts under S369 until approved
 - **Verification method:** Test timezone transition, reschedule, duplicate job
+
+### S366 — Calendar search
+
+- **Skill ID:** S366
+- **Name:** Calendar search
+- **Purpose:** Find events by title, date, type, or course
+- **When to use:** When calendar grows beyond manual browsing
+- **Implementation approach:** Combine scoped text search with date filters
+- **Recommended tools:** PostgreSQL full-text, query builder
+- **Security considerations:** Apply owner and integration scopes before search
+- **Verification method:** Test punctuation, date bounds, and cross-user denial
