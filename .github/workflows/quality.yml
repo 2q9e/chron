@@ -42,6 +42,9 @@ jobs:
       - name: Test authentication configuration
         run: npm run test:auth-config --workspace @chron/web
 
+      - name: Test calendar time semantics
+        run: npm run test:calendar-time --workspace @chron/web
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=moderate
 
