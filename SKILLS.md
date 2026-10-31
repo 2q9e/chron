@@ -5467,3 +5467,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Migration review, CODEOWNERS
 - **Security considerations:** Review impact on data access and retention
 - **Verification method:** Check all consumers against migration plan
+
+### S493 — Temporary flag cleanup
+
+- **Skill ID:** S493
+- **Name:** Temporary flag cleanup
+- **Purpose:** Remove temporary rollout flags after their approved transition window
+- **When to use:** When staging a capability
+- **Implementation approach:** Close the flag lifecycle by deleting retired config, code branches, and stale tests; use S457 for introduction, owner, and rollout policy
+- **Recommended tools:** OpenFeature, config schema
+- **Security considerations:** Removal must preserve authorization and eligibility policy; flags never grant permissions
+- **Verification method:** CI reports expired flags and both rollout states; confirm no retired flag code/config remains after cleanup
