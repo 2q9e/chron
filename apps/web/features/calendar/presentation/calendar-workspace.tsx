@@ -189,9 +189,10 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     editorGeneration.current += 1;
     setEditor({ generation: editorGeneration.current, event: null, operationKey: crypto.randomUUID(), draft: newEventDraft(day), zone: preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
-  const openEvent = useCallback((event: CalendarEvent) => {
+  const openEvent = useCallback((event: CalendarEvent, returnFocusTarget?: HTMLElement | null) => {
     if (!preferences || calendarLocked) return;
-    rememberEditorOpener();
+    if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
+    else rememberEditorOpener();
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
     setEditor({ generation: editorGeneration.current, event, operationKey: null, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
@@ -417,7 +418,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       locale={locale}
       timeZone={preferences.timeZone}
       disabled={calendarLocked || !!editor}
-      onSelect={openEvent}
+      onSelect={(event, returnFocusTarget) => openEvent(event, returnFocusTarget)}
     />}
     {preferences && <p className={styles.zone}>Times shown in {preferences.timeZone}</p>}
     <p role="status" className={styles.status}>{loading ? "Loading calendar…" : notice}</p>

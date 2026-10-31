@@ -13,7 +13,7 @@ type Props = {
   locale: string;
   timeZone: string;
   disabled: boolean;
-  onSelect: (event: CalendarEvent) => void;
+  onSelect: (event: CalendarEvent, returnFocusTarget: HTMLElement | null) => void;
 };
 
 type SearchState =
@@ -66,6 +66,7 @@ export function CalendarSearch({ initialDate, locale, timeZone, disabled, onSele
   const sequence = useRef(0);
   const activeController = useRef<AbortController | null>(null);
   const pendingFieldFocus = useRef<SearchField | null>(null);
+  const searchHeading = useRef<HTMLHeadingElement | null>(null);
   const queryInput = useRef<HTMLInputElement | null>(null);
   const fromInput = useRef<HTMLInputElement | null>(null);
   const throughInput = useRef<HTMLInputElement | null>(null);
@@ -162,7 +163,7 @@ export function CalendarSearch({ initialDate, locale, timeZone, disabled, onSele
 
   function selectEvent(event: CalendarEvent) {
     invalidateSearch();
-    onSelect(event);
+    onSelect(event, searchHeading.current);
   }
 
   const queryId = `${ids}-query`;
@@ -181,7 +182,7 @@ export function CalendarSearch({ initialDate, locale, timeZone, disabled, onSele
       <div className={styles.searchHeading}>
         <div>
           <p className={styles.searchEyebrow}>Find an event</p>
-          <h2 id={`${ids}-heading`}>Search calendar</h2>
+          <h2 ref={searchHeading} id={`${ids}-heading`} tabIndex={-1}>Search calendar</h2>
         </div>
         <p className={styles.searchHint}>Search titles within an inclusive date window.</p>
       </div>
