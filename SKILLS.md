@@ -2888,3 +2888,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed plan UI, revision endpoint
 - **Security considerations:** Revalidate tools and scopes server-side
 - **Verification method:** Edit step; stale approvals must fail
+
+### S260 — Human feedback scope
+
+- **Skill ID:** S260
+- **Name:** Human feedback scope
+- **Purpose:** Apply correction without silently creating memory
+- **When to use:** When user corrects schedule or explanation
+- **Implementation approach:** Keep correction in run; ask before durable preference
+- **Recommended tools:** Feedback schema, memory consent
+- **Security considerations:** No cross-session learning without consent
+- **Verification method:** Verify current answer changes; memory stays unchanged
