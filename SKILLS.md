@@ -5012,3 +5012,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Docker BuildKit, distroless base
 - **Security considerations:** No build secrets or package cache in final layer
 - **Verification method:** Inspect layers and run image scan
+
+### S452 — Non-root runtime containers
+
+- **Skill ID:** S452
+- **Name:** Non-root runtime containers
+- **Purpose:** Limit impact of process compromise
+- **When to use:** When deploying containerized services
+- **Implementation approach:** Set dedicated UID, read-only root, dropped capabilities
+- **Recommended tools:** Dockerfile, Kubernetes securityContext
+- **Security considerations:** Do not mount host paths or Docker socket
+- **Verification method:** Run container and confirm non-root identity
