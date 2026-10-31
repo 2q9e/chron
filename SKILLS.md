@@ -5401,3 +5401,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Zod config schema, CSS settings
 - **Security considerations:** Never put secrets in user-visible preference objects
 - **Verification method:** Test missing, invalid, and precedence cases
+
+### S487 — Dependency inversion
+
+- **Skill ID:** S487
+- **Name:** Dependency inversion
+- **Purpose:** Keep domain policies independent of provider SDKs
+- **When to use:** When logic calls databases or external services
+- **Implementation approach:** Define narrow ports and inject concrete adapters
+- **Recommended tools:** TypeScript interfaces, DI container if needed
+- **Security considerations:** Do not expose provider credentials through domain methods
+- **Verification method:** Replace adapter in tests and run domain suite
