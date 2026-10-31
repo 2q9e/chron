@@ -4504,3 +4504,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Integration tests, policy matrix
 - **Security considerations:** Never use production data
 - **Verification method:** Read, update, delete, export all deny
+
+### S406 — Migration compatibility tests
+
+- **Skill ID:** S406
+- **Name:** Migration compatibility tests
+- **Purpose:** Preserve data while schema changes
+- **When to use:** When adding a migration
+- **Implementation approach:** Apply from old and clean schemas, compare invariants
+- **Recommended tools:** Migration CLI, disposable PostgreSQL
+- **Security considerations:** Generated fixtures only
+- **Verification method:** Old schema upgrades without lost rows
