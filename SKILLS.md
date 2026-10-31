@@ -2778,3 +2778,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Error enum, policy map
 - **Security considerations:** Do not expose raw provider bodies
 - **Verification method:** Test timeout, auth, 4xx, and parse cases
+
+### S250 — Bounded retry policy
+
+- **Skill ID:** S250
+- **Name:** Bounded retry policy
+- **Purpose:** Retry durable agent steps safely after transient faults or worker redelivery
+- **When to use:** When dependencies throttle or fail briefly
+- **Implementation approach:** Persist bounded attempt state; retry only idempotent steps with a stable dedupe key, and reconcile unknown external outcomes before retrying; S060 covers request-level transport backoff
+- **Recommended tools:** p-retry, queue policy
+- **Security considerations:** Never replay a mutation blindly after a lost response; require per-user idempotency and preserve exact approval scope
+- **Verification method:** Inject 429/5xx and commit-before-timeout cases; verify capped attempts, one durable effect, and reconciliation before replay
