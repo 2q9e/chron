@@ -2501,3 +2501,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL JSONB, Zod
 - **Security considerations:** Do not use JSON as a bypass around ownership constraints
 - **Verification method:** Test malformed documents and query index needs
+
+### S225 — Full-text search indexing
+
+- **Skill ID:** S225
+- **Name:** Full-text search indexing
+- **Purpose:** Search user-owned notes with language-aware tokenization
+- **When to use:** When notebook lookup needs more than substring matching
+- **Implementation approach:** Build tsvector with supported locale and scope queries by tenant
+- **Recommended tools:** PostgreSQL text search, GIN index
+- **Security considerations:** Never run broad search without authenticated owner filter
+- **Verification method:** Test stemming, punctuation, and tenant isolation
