@@ -208,49 +208,55 @@ package manifests, lockfiles, routing integration, and final merges.
 
 ### L1-a — design system and semantic landing-page shell
 
-- **Assigned agent:** frontend specialist, GPT-6 Luna, MAX reasoning; not
-  started
-- **Dependencies:** F0 complete; shared architecture and package manifest
-  approved by the main agent
-- **Owned files:** `apps/web/app/**`, `apps/web/styles/**`, and landing-page DOM
-  components specifically assigned at task start
+- **Assigned agent:** frontend specialist, GPT-6 Luna, MAX reasoning
+  (requested setting; actual runtime identity is not independently exposed)
+- **Dependencies:** Fresh local history, audited skill library, installed
+  package baseline, and `docs/design/scroll-world-contract.md`
+- **Owned files:** `apps/web/app/**`, `apps/web/styles/**`, and
+  `apps/web/features/landing/presentation/**`
 - **Read-only files:** `AGENTS.md`, `SKILLS.md`, `PLAN.md`,
-  `docs/design/landing-brief.md`
-- **Required skills:** the exact relevant IDs for design direction, semantic
-  React, responsive layout, accessibility, forms, and frontend performance
+  `docs/design/landing-brief.md`, `docs/design/scroll-world-contract.md`, and
+  the shared package manifests
+- **Required skills:** S001, S006, S023, S029, S030, S033, S034, S081, S082,
+  S087, S089, S094–S098, S461–S463, S466, S470, S472, S473, S479
 - **Security permissions:** dedicated worktree for coordination only; no
-  credentials or user data; no shared manifest edits, commit, or push. The
-  runtime does not enforce filesystem or network restrictions.
-- **Acceptance criteria:** honest copy, real anchors, responsive semantic DOM,
-  visible focus, reduced-motion treatment, no fabricated product UI/content
-- **Tests:** build, lint, keyboard and viewport checks; final visual verification
-  occurs on the production build in a real browser
-- **Expected deliverable:** working landing-page shell and design tokens
-- **Status:** Ready to start after the package-manifest integration boundary;
-  no page implementation or browser verification exists yet.
+  credentials, user data, or network asset downloads; no manifest edits,
+  commit, or push. Worktree separation is not an OS security boundary.
+- **Acceptance criteria:** authored responsive DOM follows the brief; five
+  real section anchors emit normalized progress via the agreed event; no fake
+  signup, login, demo, data, or nonfunctional controls; 320px reflow, keyboard
+  focus, and reduced-motion behavior are covered.
+- **Tests:** lint and typecheck its owned files; main agent performs integrated
+  build and desktop/mobile browser verification after the world is connected.
+- **Expected deliverable:** semantic landing route, design tokens, and
+  lifecycle-safe native-scroll progress bridge
+- **Status:** Ready to begin in an isolated coordination worktree.
 
 ### L1-b — persistent 3D scroll world
 
-- **Assigned agent:** 3D specialist, GPT-6 Luna, MAX reasoning; not started
-- **Dependencies:** F0 complete; camera/story boundaries and DOM contract agreed
+- **Assigned agent:** 3D specialist, GPT-6 Luna, MAX reasoning (requested
+  setting; actual runtime identity is not independently exposed)
+- **Dependencies:** Fresh local history, audited skill library, installed
+  R3F/Three.js packages, landing brief, and agreed scroll-world contract
 - **Owned files:** `apps/web/features/landing/world/**` only
 - **Read-only files:** `AGENTS.md`, `SKILLS.md`, `PLAN.md`,
-  `docs/design/landing-brief.md`
-- **Required skills:** the exact relevant IDs for Three.js/R3F, scroll
-  storytelling, lifecycle cleanup, responsive animation, motion accessibility,
-  and GPU performance
+  `docs/design/landing-brief.md`, `docs/design/scroll-world-contract.md`, and
+  the shared package manifests
+- **Required skills:** S121, S126, S128, S143–S149, S151, S155, S463, S470,
+  S472, S473, S478
 - **Security permissions:** dedicated worktree for coordination only; no
-  credentials, user data, production API access, or network asset downloads;
-  no shared manifest edits, commit, or push. The runtime does not enforce
-  filesystem or network restrictions.
-- **Acceptance criteria:** one persistent scene, deterministic reversible
-  native-scroll state, meaningful chapter geometry, static/WebGL fallback,
-  no fake app interface, and no external asset dependency
-- **Tests:** scene lifecycle, forward/reverse/fast-scroll checks, responsive
-  scene evidence, reduced-motion state, WebGL failure handling, and profiling
-- **Expected deliverable:** integrated scroll-world component and scene ledger
-- **Status:** Ready to start after the scene contract is agreed; no scene
-  implementation or browser verification exists yet.
+  credentials, user data, or production API access; no network asset downloads,
+  manifest edits, commit, or push. Worktree separation is not an OS boundary.
+- **Acceptance criteria:** one persistent renderer; normalized progress maps to
+  five authored instrument states; no user data, UI labels, external assets, or
+  input interception; reduced-motion still, WebGL/context-loss CSS fallback,
+  bounded rendering, and deterministic cleanup.
+- **Tests:** typecheck and lint owned files; integrated forward/reverse/fast
+  scroll, resized/mobile viewports, reduced motion, fallback, and profiling are
+  verified by the main agent in a real browser.
+- **Expected deliverable:** `WorldLayer` with the five-state instrument and
+  an owned CSS fallback, ready for main-agent integration
+- **Status:** Ready to begin in an isolated coordination worktree.
 
 ## Integration gates
 
