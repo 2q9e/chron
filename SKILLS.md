@@ -623,3 +623,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Signed or random token flow, mail delivery service
 - **Security considerations:** Email verification proves mailbox control only; it does not satisfy age, operator/legal, or Meta eligibility gates in S015/S236
 - **Verification method:** Attempt replay, expired verification, and email-change edge cases
+
+### S055 — Streaming upload ingestion
+
+- **Skill ID:** S055
+- **Name:** Streaming upload ingestion
+- **Purpose:** Accept files without buffering unbounded payloads in process memory
+- **When to use:** When a notebook imports PDFs or other course materials
+- **Implementation approach:** Enforce byte limits while streaming to quarantined storage and record checksums
+- **Recommended tools:** Busboy or framework stream parser, object storage SDK
+- **Security considerations:** Reject path traversal names; keep uploads private until scanned
+- **Verification method:** Upload boundary-size and interrupted-stream fixtures; observe memory stays bounded
