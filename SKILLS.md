@@ -335,3 +335,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript path aliases, ESLint boundaries
 - **Security considerations:** Prevent a client feature from importing server-only modules
 - **Verification method:** Run dependency graph lint and verify forbidden imports fail
+
+### S029 — CSS module scoping
+
+- **Skill ID:** S029
+- **Name:** CSS module scoping
+- **Purpose:** Prevent feature styles from leaking into unrelated surfaces
+- **When to use:** When a component has bespoke layout or state styling
+- **Implementation approach:** Use local classes for structure and shared tokens for cross-feature values
+- **Recommended tools:** CSS Modules, PostCSS, stylelint
+- **Security considerations:** Do not rely on CSS hiding as the authorization boundary for data
+- **Verification method:** Render two feature instances together and inspect computed style collisions
