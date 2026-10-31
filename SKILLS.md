@@ -4005,3 +4005,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Pointer Events, DOMRect, date utilities
 - **Security considerations:** Do not commit a moved event before server validation and explicit approval; persist the proposed move as a draft under S369
 - **Verification method:** Test edge slots, scrolling, and varied density
+
+### S361 — Keyboard event movement
+
+- **Skill ID:** S361
+- **Name:** Keyboard event movement
+- **Purpose:** Offer a non-drag path to move calendar items
+- **When to use:** When keyboard-only users edit schedule
+- **Implementation approach:** Expose move controls with date/time selectors and live status
+- **Recommended tools:** HTML buttons, dialog form, aria-live
+- **Security considerations:** Require the same ownership check as pointer edits; calendar movement remains a draft under S369 until exact user approval
+- **Verification method:** Complete move and undo with keyboard only
