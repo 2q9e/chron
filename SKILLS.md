@@ -3917,3 +3917,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** iCalendar EXDATE, recurrence exception table
 - **Security considerations:** Ensure one user’s exception cannot alter shared series
 - **Verification method:** Edit/cancel one occurrence and preserve neighbors
+
+### S353 — Occurrence versus series edits
+
+- **Skill ID:** S353
+- **Name:** Occurrence versus series edits
+- **Purpose:** Make edit scope explicit in the event flow
+- **When to use:** When changing a recurring item
+- **Implementation approach:** Offer this occurrence, following occurrences, or whole series; show affected-count preview and persist every calendar change as a draft under S369 until approved
+- **Recommended tools:** Calendar command model, confirmation UI
+- **Security considerations:** Require explicit approval bound to exact recurrence scope/payload under S193, especially for bulk changes
+- **Verification method:** Test each scope and count affected records
