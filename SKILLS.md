@@ -2235,3 +2235,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Helmet, reverse proxy
 - **Security considerations:** Block framing by untrusted origins
 - **Verification method:** Check headers on success, error, redirect, file
+
+## Database engineering
+
+### S201 — Relational domain modeling
+
+- **Skill ID:** S201
+- **Name:** Relational domain modeling
+- **Purpose:** Represent users, calendars, notebooks, and sources without duplication
+- **When to use:** When shaping a new feature schema
+- **Implementation approach:** Separate entities by lifecycle; model many-to-many links explicitly
+- **Recommended tools:** PostgreSQL, ERD, Prisma/Drizzle
+- **Security considerations:** Do not put secrets or file contents in broad profile rows
+- **Verification method:** Review cardinality and ownership paths against modeled workflows without seeding product records
