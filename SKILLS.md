@@ -876,3 +876,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Queue workers, email provider SDK, notification table
 - **Security considerations:** Do not send sensitive course content in subjects or push previews by default
 - **Verification method:** Test opt-out, bounce, duplicate delivery, retry, and timezone schedule cases
+
+### S078 — Security audit event recording
+
+- **Skill ID:** S078
+- **Name:** Security audit event recording
+- **Purpose:** Record security-sensitive account lifecycle and permission transitions
+- **When to use:** When credentials, permissions, exports, or deletion status change
+- **Implementation approach:** Append actor/action/target metadata for credential, role, export, and deletion changes; use S197 for durable audit-table design, S268 for agent-run history, and S286 for tool-call records
+- **Recommended tools:** Database append-only table, structured logger
+- **Security considerations:** Avoid raw secrets and document contents in audit records; use only identifiers and scopes needed for the specific event
+- **Verification method:** Assert key lifecycle actions create records with no sensitive values
