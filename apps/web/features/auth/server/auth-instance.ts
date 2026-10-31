@@ -1,3 +1,4 @@
+import "server-only";
 import { betterAuth } from "better-auth";
 import { Pool } from "pg";
 import { sendAuthEmail } from "./email.ts";
@@ -9,7 +10,7 @@ type AuthGlobal = typeof globalThis & {
 
 const environment = loadAuthEnvironment();
 const authGlobal = globalThis as AuthGlobal;
-const database = authGlobal.__chronAuthPool ?? new Pool({
+export const database = authGlobal.__chronAuthPool ?? new Pool({
   connectionString: environment.databaseURL,
   ...(environment.databaseTls
     ? {
