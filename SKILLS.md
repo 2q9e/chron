@@ -2446,3 +2446,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL lock monitoring
 - **Security considerations:** Avoid waiting for remote APIs while holding database locks
 - **Verification method:** Run competing writes and inspect deadlock rate under load
+
+### S220 — Soft-delete semantics
+
+- **Skill ID:** S220
+- **Name:** Soft-delete semantics
+- **Purpose:** Retain recoverability only where product rules require it
+- **When to use:** When removing events, notebooks, or integration links
+- **Implementation approach:** Use explicit deleted_at state and filter it consistently
+- **Recommended tools:** PostgreSQL partial indexes, repository methods
+- **Security considerations:** Deleted data must not reappear in search, exports, or agent context
+- **Verification method:** Test all query paths before and after soft deletion
