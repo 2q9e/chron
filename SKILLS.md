@@ -1938,3 +1938,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React escaping, OWASP Encoder
 - **Security considerations:** Reject dangerous URL schemes
 - **Verification method:** Test HTML, attribute, URL, script payloads
+
+### S174 — Markdown sanitization
+
+- **Skill ID:** S174
+- **Name:** Markdown sanitization
+- **Purpose:** Allow formatting without active markup
+- **When to use:** When rendering user or model Markdown
+- **Implementation approach:** Parse AST; allowlist nodes and link protocols
+- **Recommended tools:** remark, rehype-sanitize
+- **Security considerations:** Reject raw HTML, javascript, untrusted embeds
+- **Verification method:** Fuzz markup; inspect DOM for active nodes
