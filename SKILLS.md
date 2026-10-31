@@ -2613,3 +2613,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Graph model, planner prompt
 - **Security considerations:** Do not silently expand scope or approval
 - **Verification method:** Compare revisions and preserve completed steps
+
+### S235 — Bounded execution loop
+
+- **Skill ID:** S235
+- **Name:** Bounded execution loop
+- **Purpose:** Prevent indefinite agent runs
+- **When to use:** Every multi-step execution
+- **Implementation approach:** Cap steps, time, tokens, and retries server-side
+- **Recommended tools:** Worker queue, run budget
+- **Security considerations:** Limits cannot depend on prompt instructions
+- **Verification method:** Exhaust each budget and inspect stop state
