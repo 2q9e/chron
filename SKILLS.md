@@ -2800,3 +2800,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL, worker queue
 - **Security considerations:** Store validated user-scoped output only
 - **Verification method:** Kill between steps and verify deterministic resume
+
+### S252 — Idempotent step execution
+
+- **Skill ID:** S252
+- **Name:** Idempotent step execution
+- **Purpose:** Make duplicate delivery harmless
+- **When to use:** For at-least-once queues
+- **Implementation approach:** Persist step key with side effect completion
+- **Recommended tools:** Unique constraints, transaction table
+- **Security considerations:** Scope key to owner and run
+- **Verification method:** Redeliver step and assert one effect
