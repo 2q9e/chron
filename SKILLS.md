@@ -1595,3 +1595,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** R3F useFrame, pointer events
 - **Security considerations:** Disable for reduced motion and coarse pointers
 - **Verification method:** Test edge travel, focus state, and absence of layout shift
+
+### S143 — Accessible scene bridge
+
+- **Skill ID:** S143
+- **Name:** Accessible scene bridge
+- **Purpose:** Expose scene controls as ordinary labelled HTML controls
+- **When to use:** WebGL objects navigate or toggle content
+- **Implementation approach:** Mirror each action in a button or link outside Canvas
+- **Recommended tools:** HTML buttons, R3F callbacks
+- **Security considerations:** Do not convey labels or status only by color
+- **Verification method:** Complete the flow with WebGL disabled and keyboard only
