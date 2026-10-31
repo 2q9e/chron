@@ -1573,3 +1573,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** InstancedBufferGeometry, seeded RNG
 - **Security considerations:** Avoid alert-like flashing and distracting motion
 - **Verification method:** Profile frame time and compare comprehension with particles removed
+
+### S141 — Raycast target design
+
+- **Skill ID:** S141
+- **Name:** Raycast target design
+- **Purpose:** Make scene hit regions predictable
+- **When to use:** Three-dimensional objects link to chapters or actions
+- **Implementation approach:** Use simplified hit meshes mapped to semantic DOM actions
+- **Recommended tools:** Raycaster, R3F events
+- **Security considerations:** Never make a canvas hit the sole path to an important feature
+- **Verification method:** Test pointer bounds plus keyboard equivalent
