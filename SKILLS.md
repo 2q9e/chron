@@ -3805,3 +3805,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ARIA patterns, KaTeX, axe
 - **Security considerations:** No sound or color-only answer signal
 - **Verification method:** Complete workflow with keyboard and screen reader
+
+### S343 — Course source annotations
+
+- **Skill ID:** S343
+- **Name:** Course source annotations
+- **Purpose:** Let learners attach notes to exact material locations
+- **When to use:** When studying a slide, page, or transcript
+- **Implementation approach:** Store anchored source offsets with editable annotation
+- **Recommended tools:** Annotation schema, range mapper
+- **Security considerations:** Keep annotations within notebook ownership
+- **Verification method:** Edit and export annotations; verify source linkage
