@@ -4183,3 +4183,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Bundlesize, source-map-explorer
 - **Security considerations:** Review third-party code and licenses
 - **Verification method:** Fail build above agreed ceiling
+
+### S377 — Tree-shaking hygiene
+
+- **Skill ID:** S377
+- **Name:** Tree-shaking hygiene
+- **Purpose:** Remove unused client exports
+- **When to use:** When importing broad utility packages
+- **Implementation approach:** Use ESM entry points, narrow imports
+- **Recommended tools:** Bundle analyzer, Rollup visualizer
+- **Security considerations:** Preserve security side effects
+- **Verification method:** Compare production chunks
