@@ -3077,3 +3077,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript registry, build-time check
 - **Security considerations:** Never dynamically load executable plugins from user content
 - **Verification method:** Unknown tool IDs fail closed
+
+### S277 — Tool schema discoverability
+
+- **Skill ID:** S277
+- **Name:** Tool schema discoverability
+- **Purpose:** Give model only relevant tool definitions
+- **When to use:** Only after S236 authorizes Meta inference, when the request supports documented tool schemas
+- **Implementation approach:** Filter schema list by intent, permission, and budget
+- **Recommended tools:** Official Meta tool schema only when documented and authorized by S236, policy filter
+- **Security considerations:** Do not reveal admin-only capabilities
+- **Verification method:** Snapshot allowed schemas for different user grants
