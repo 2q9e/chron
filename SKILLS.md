@@ -4038,3 +4038,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Interval index, database exclusion query
 - **Security considerations:** Only reveal conflict details the user may access
 - **Verification method:** Test overlapping and adjacent timed/date intervals, mixed events at calendar-day boundaries, multiple viewer zones, and 23/25-hour DST days; assert display-zone changes do not alter results or stored date-only values
+
+### S364 — Study time blocking
+
+- **Skill ID:** S364
+- **Name:** Study time blocking
+- **Purpose:** Reserve realistic study periods around obligations
+- **When to use:** For deterministic scheduling immediately; model-generated study schedules only after written permission and capability checks in S236
+- **Implementation approach:** Use availability windows, duration, buffers, and user priorities; prefer deterministic solving while inference is disabled and keep proposals as S369 drafts
+- **Recommended tools:** Scheduling solver, calendar service
+- **Security considerations:** Keep every proposed study block as a calendar draft under S369 until explicit approval; model-generated schedules require S236 and no alternate provider
+- **Verification method:** Validate no overlap and respect user constraints; confirm proposal remains a draft and no model request occurs before S236
