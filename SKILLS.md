@@ -2822,3 +2822,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** SSE, WebSocket, event store
 - **Security considerations:** Never stream keys, prompts, or private tool payloads
 - **Verification method:** Check ordering, reconnect, ownership, redaction
+
+### S254 — Durable run state
+
+- **Skill ID:** S254
+- **Name:** Durable run state
+- **Purpose:** Retain enough state for status and inspection
+- **When to use:** When work spans HTTP requests
+- **Implementation approach:** Store plan version, step outcomes, bounded summaries
+- **Recommended tools:** PostgreSQL, job queue
+- **Security considerations:** Scope every status query to owner
+- **Verification method:** Restart process and fetch run from authorized account
