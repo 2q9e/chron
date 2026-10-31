@@ -4128,3 +4128,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** web-vitals, OpenTelemetry
 - **Security considerations:** Exclude content and direct identifiers
 - **Verification method:** Compare percentiles by route and release
+
+### S372 — Largest Contentful Paint
+
+- **Skill ID:** S372
+- **Name:** Largest Contentful Paint
+- **Purpose:** Find causes of slow main content
+- **When to use:** When LCP misses target
+- **Implementation approach:** Inspect server, image, font, critical request chain
+- **Recommended tools:** Lighthouse, Chrome Performance
+- **Security considerations:** No tracking IDs in diagnostics
+- **Verification method:** Measure cold/warm throttled loads
