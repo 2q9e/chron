@@ -3596,3 +3596,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Quiz schema, objective tags
 - **Security considerations:** Do not claim coverage absent from sources or use another inference provider
 - **Verification method:** Compare blueprint to source topics and assert the model path stays disabled until S236 passes
+
+### S324 — Distractor quality
+
+- **Skill ID:** S324
+- **Name:** Distractor quality
+- **Purpose:** Make each multiple-choice distractor reflect a plausible misconception without introducing ambiguity
+- **When to use:** When authoring questions from permitted course sources; model-generated items require the S236 Meta inference gate
+- **Implementation approach:** Use one answer key and parallel plausible options grounded in the source; keep synthetic edge-case items in test-only fixtures, never in a production sample bank
+- **Recommended tools:** Item validator, test-only synthetic fixtures
+- **Security considerations:** Avoid biased or trick-wording choices; disable model generation until S236 is satisfied and do not present fixture content to users
+- **Verification method:** Review ambiguity and rationale against the answer key and source; test only with synthetic fixtures
