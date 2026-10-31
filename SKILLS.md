@@ -1551,3 +1551,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** UnrealBloomPass, postprocessing Bloom
 - **Security considerations:** Glow must not obscure focus or state indicators
 - **Verification method:** Compare text legibility and highlight clipping with bloom off
+
+### S139 — Depth haze
+
+- **Skill ID:** S139
+- **Name:** Depth haze
+- **Purpose:** Separate distant forms while preserving target visibility
+- **When to use:** A deep environment lacks atmospheric perspective
+- **Implementation approach:** Tune fog range to camera bounds and the page palette
+- **Recommended tools:** Three.js FogExp2, shader fog
+- **Security considerations:** Do not let haze conceal interactive targets
+- **Verification method:** Check far-target contrast at low brightness
