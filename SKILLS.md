@@ -4559,3 +4559,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Fake timers, AbortController
 - **Security considerations:** Test-only synthetic dependencies must not imply AbortSignal can undo a dispatched remote write; require idempotency and evidence before claiming rollback
 - **Verification method:** Check signal and local state before dispatch; after simulated commit-before-timeout, verify unknown status, deduplicated retry, and reconciliation rather than asserting that no remote side effect occurred
+
+### S411 — Retry idempotency tests
+
+- **Skill ID:** S411
+- **Name:** Retry idempotency tests
+- **Purpose:** Ensure retry does not duplicate writes
+- **When to use:** When mutations or jobs retry
+- **Implementation approach:** Replay same idempotency key after timeout
+- **Recommended tools:** Test DB, queue fixture
+- **Security considerations:** Isolated test namespace
+- **Verification method:** One record and stable response remain
