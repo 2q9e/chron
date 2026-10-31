@@ -4847,3 +4847,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Git, git-filter-repo only if needed
 - **Security considerations:** Never import reference material or private history
 - **Verification method:** Review full tree and initial commit contents
+
+### S437 — Protected branch policy
+
+- **Skill ID:** S437
+- **Name:** Protected branch policy
+- **Purpose:** Require reviewed changes before integration
+- **When to use:** When hosting shared GitHub work
+- **Implementation approach:** Protect default branch and require checks/review
+- **Recommended tools:** GitHub branch protection
+- **Security considerations:** Restrict bypass to documented admins
+- **Verification method:** Attempt unreviewed push in test repository
