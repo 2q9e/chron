@@ -1784,3 +1784,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Gitleaks, GitHub scanning
 - **Security considerations:** Rotate confirmed exposure immediately
 - **Verification method:** Synthetic canary must fail CI
+
+### S160 — Server-side key isolation
+
+- **Skill ID:** S160
+- **Name:** Server-side key isolation
+- **Purpose:** Keep API keys out of browser code
+- **When to use:** Only after written permission authorizes a user-key flow
+- **Implementation approach:** Encrypt approved keys server-side; expose presence and validation status only
+- **Recommended tools:** Secret manager, server-only modules, authenticated encryption library
+- **Security considerations:** Until permission, collect and store no Meta keys; never return, bundle, log, or URL-encode them
+- **Verification method:** Confirm intake is disabled before permission; inspect network, bundles, and logs after authorized implementation
