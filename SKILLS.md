@@ -3341,3 +3341,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Drive files.get, download worker
 - **Security considerations:** Do not generate public share links by default
 - **Verification method:** Inspect requests and ensure access ends after disconnect
+
+### S301 — Docs export workflow
+
+- **Skill ID:** S301
+- **Name:** Docs export workflow
+- **Purpose:** Create a user-requested research or study document
+- **When to use:** Only after S291, when the user explicitly requests a Docs export
+- **Implementation approach:** Show destination and content preview, bind explicit approval to the exact export under S193, then use official Docs API
+- **Recommended tools:** Google Docs API
+- **Security considerations:** Do not share a document or broaden permissions implicitly; each consequential external write requires explicit approval
+- **Verification method:** Create test doc and inspect owner and sharing ACL
