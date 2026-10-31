@@ -1738,3 +1738,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright, Chrome DevTools
 - **Security considerations:** Use synthetic content and exclude private data from captures
 - **Verification method:** Inspect rendered behavior and profile slow scroll/rapid fling; use S424 screenshots for deterministic viewport regression evidence
+
+## Security engineering
+
+### S156 — Threat modeling
+
+- **Skill ID:** S156
+- **Name:** Threat modeling
+- **Purpose:** Prioritize controls against credible attacker paths
+- **When to use:** Before exposing a feature
+- **Implementation approach:** Map actors, assets, boundaries, abuse cases, owners
+- **Recommended tools:** STRIDE, attack trees
+- **Security considerations:** Include hostile documents and tenant crossing
+- **Verification method:** Review mitigations against negative tests
