@@ -678,3 +678,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Provider SDK verifier, Node crypto timingSafeEqual
 - **Security considerations:** Reject unsigned callbacks; never trust claimed event owner fields alone
 - **Verification method:** Replay valid, altered, stale, and malformed webhook fixtures
+
+### S060 — Bounded retry policies
+
+- **Skill ID:** S060
+- **Name:** Bounded retry policies
+- **Purpose:** Set bounded retries for transient request/dependency failures
+- **When to use:** When a dependency returns retryable timeouts or throttling
+- **Implementation approach:** Use capped exponential backoff with jitter and explicit retryable status rules; retry writes only with idempotency (S045), while durable agent-step retries use S250
+- **Recommended tools:** p-retry, queue retry settings, Retry-After parser
+- **Security considerations:** Do not retry non-idempotent writes without a dedupe mechanism
+- **Verification method:** Fault-inject repeated 429/5xx and verify attempts stop at the transport cap without duplicating a write
