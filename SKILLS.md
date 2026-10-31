@@ -1397,3 +1397,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GSAP, Three.js Vector3
 - **Security considerations:** Keep core content accessible without camera motion
 - **Verification method:** Scrub slowly through waypoints and check directional continuity
+
+### S125 — Camera easing curves
+
+- **Skill ID:** S125
+- **Name:** Camera easing curves
+- **Purpose:** Remove abrupt starts and stops from camera motion
+- **When to use:** Linear scroll interpolation feels mechanical
+- **Implementation approach:** Use one documented easing curve with smooth endpoint velocity
+- **Recommended tools:** GSAP easing, MathUtils
+- **Security considerations:** Reduced-motion mode should jump to static states
+- **Verification method:** Compare velocity at chapter boundaries and test reduced motion
