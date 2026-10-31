@@ -302,3 +302,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Context, React Aria, TypeScript
 - **Security considerations:** Validate referenced IDs and keep hidden panels from exposing private content
 - **Verification method:** Test controlled and uncontrolled use plus nested instance isolation
+
+### S026 — Polymorphic component typing
+
+- **Skill ID:** S026
+- **Name:** Polymorphic component typing
+- **Purpose:** Support semantic element choice without losing prop safety
+- **When to use:** When design primitives need links, buttons, or headings as their root
+- **Implementation approach:** Use a constrained `as` API or separate semantic variants with inferred props
+- **Recommended tools:** TypeScript, React, tsd
+- **Security considerations:** Do not let a visual primitive turn a noninteractive element into a fake control
+- **Verification method:** Compile positive and negative usage examples and inspect rendered semantics
