@@ -898,3 +898,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Official Meta API documentation, server HTTP client, Zod
 - **Security considerations:** Do not collect/store Meta keys or invoke any provider before written permission; never use another provider
 - **Verification method:** Before S236 permission, verify all inference/key paths are disabled; after authorization, contract-test official host, schema, timeout, and redaction
+
+### S080 — Server-sent event streaming
+
+- **Skill ID:** S080
+- **Name:** Server-sent event streaming
+- **Purpose:** Deliver incremental server updates while preserving cancellation and ordering
+- **When to use:** Only after S236 authorizes the model capability, when output/progress is streamed to the browser
+- **Implementation approach:** Frame typed events, flush safely, support disconnect cancellation, and cap stream duration
+- **Recommended tools:** Fetch ReadableStream, SSE, AbortController
+- **Security considerations:** Authorize before opening; do not stream tool secrets or hidden reasoning
+- **Verification method:** Test reconnect, disconnect, malformed frames, and concurrent user isolation
