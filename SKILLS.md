@@ -4216,3 +4216,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next Image, sharp
 - **Security considerations:** Use trusted remote origins
 - **Verification method:** Compare bytes and visual quality
+
+### S380 — Responsive image sizing
+
+- **Skill ID:** S380
+- **Name:** Responsive image sizing
+- **Purpose:** Download only needed pixels
+- **When to use:** When assets vary by viewport
+- **Implementation approach:** Set srcset, sizes, art-directed crops
+- **Recommended tools:** HTML picture, Next Image
+- **Security considerations:** Do not expose private upload URLs
+- **Verification method:** Inspect selected mobile source
