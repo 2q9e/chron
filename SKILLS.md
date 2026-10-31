@@ -225,3 +225,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** fetch, AbortController, TanStack Query
 - **Security considerations:** Drop responses belonging to a signed-out or switched account session
 - **Verification method:** Delay responses out of order and assert only the latest query is shown
+
+### S019 — Query cache ownership
+
+- **Skill ID:** S019
+- **Name:** Query cache ownership
+- **Purpose:** Keep cached server state fresh and isolated by user identity
+- **When to use:** When several screens consume the same persisted resource
+- **Implementation approach:** Use structured query keys, explicit invalidation, and session-scoped cache clearing
+- **Recommended tools:** TanStack Query, React Query Devtools
+- **Security considerations:** Clear user-scoped cache on logout and avoid secrets in cache keys
+- **Verification method:** Switch mock accounts and verify no previous account data flashes
