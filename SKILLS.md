@@ -159,3 +159,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React useEffect, AbortController, ESLint
 - **Security considerations:** Abort requests on account changes so prior-user responses cannot render
 - **Verification method:** Unmount during an in-flight request and verify listener and request cleanup
+
+### S013 — Ref-based imperative access
+
+- **Skill ID:** S013
+- **Name:** Ref-based imperative access
+- **Purpose:** Use refs for DOM focus and imperative APIs without extra renders
+- **When to use:** When a modal, input, or media element needs direct browser control
+- **Implementation approach:** Expose a narrow imperative handle and preserve declarative state as the source of truth
+- **Recommended tools:** React useRef, forwardRef, browser DOM APIs
+- **Security considerations:** Do not store bearer tokens or long-lived personal data in DOM refs
+- **Verification method:** Test focus restoration and ref nulling across mount/unmount
