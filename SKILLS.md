@@ -4016,3 +4016,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML buttons, dialog form, aria-live
 - **Security considerations:** Require the same ownership check as pointer edits; calendar movement remains a draft under S369 until exact user approval
 - **Verification method:** Complete move and undo with keyboard only
+
+### S362 — Event resizing
+
+- **Skill ID:** S362
+- **Name:** Event resizing
+- **Purpose:** Change duration with clear start/end constraints
+- **When to use:** When users resize blocks on a calendar grid
+- **Implementation approach:** Snap to configured interval and enforce positive duration
+- **Recommended tools:** Pointer Events, interval math
+- **Security considerations:** Server rejects out-of-range or unauthorized updates; keep every resize as a draft under S369 until approved
+- **Verification method:** Test minimum duration and DST crossing
