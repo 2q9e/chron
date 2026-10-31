@@ -71,3 +71,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Suspense, Next.js, browser network panel
 - **Security considerations:** Avoid streaming protected data before session authorization finishes
 - **Verification method:** Test slow and rejected data sources; inspect first-byte and content ordering
+
+### S005 — Server actions and mutations
+
+- **Skill ID:** S005
+- **Name:** Server actions and mutations
+- **Purpose:** Connect form submissions to validated server mutations
+- **When to use:** When a user action can persist application state
+- **Implementation approach:** Parse input server-side, check session and ownership, then return typed outcomes
+- **Recommended tools:** Next.js Server Actions, Zod, TypeScript
+- **Security considerations:** Treat hidden action identifiers as public; reauthorize every request
+- **Verification method:** Submit malformed and cross-user inputs and assert no mutation occurs
