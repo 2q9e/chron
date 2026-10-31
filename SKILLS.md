@@ -4669,3 +4669,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Vitest, test adapter
 - **Security considerations:** Adapter never ships in app bundle
 - **Verification method:** Cover plan, execute, verify, cancel, fail
+
+### S421 — Calendar interaction browser tests
+
+- **Skill ID:** S421
+- **Name:** Calendar interaction browser tests
+- **Purpose:** Check real event creation and editing
+- **When to use:** When calendar UI changes
+- **Implementation approach:** Drive forms, views, and persisted reload
+- **Recommended tools:** Playwright
+- **Security considerations:** Disposable synthetic account
+- **Verification method:** Event remains after reload
