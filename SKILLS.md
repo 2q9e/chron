@@ -4823,3 +4823,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Integration DB, fake revoke endpoint
 - **Security considerations:** Test environment only
 - **Verification method:** Rows, files, tokens, sessions reach terminal state
+
+### S435 — Restore and recovery drills
+
+- **Skill ID:** S435
+- **Name:** Restore and recovery drills
+- **Purpose:** Prove application-level checkpoints and user-owned run state can resume after interruption
+- **When to use:** For persistence and run-resume work
+- **Implementation approach:** Restore run checkpoints in an isolated test environment and verify ownership, step state, and approval expiry; use S227 for database-backup restoration
+- **Recommended tools:** Backup CLI, recovery runbook
+- **Security considerations:** Use test-only synthetic runs and scrub/destroy temporary restore environments
+- **Verification method:** Record resumed checkpoint and owner access; exercise database snapshot restoration separately under S227
