@@ -5322,3 +5322,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Content design, stepper component
 - **Security considerations:** Explain consequences before requesting sensitive access
 - **Verification method:** Test task completion without coaching
+
+### S480 — Accessibility regression checks
+
+- **Skill ID:** S480
+- **Name:** Accessibility regression checks
+- **Purpose:** Catch keyboard and semantic failures continuously
+- **When to use:** For shared UI and major route changes
+- **Implementation approach:** Run automated checks plus manual keyboard review
+- **Recommended tools:** axe-core, Playwright, screen reader
+- **Security considerations:** Automation does not replace authorization testing
+- **Verification method:** CI scans and documented manual pass
