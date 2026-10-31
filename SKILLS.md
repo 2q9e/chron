@@ -966,3 +966,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS max-width in ch units, typography tokens
 - **Security considerations:** Ensure zoomed and translated text can expand without clipping
 - **Verification method:** Check longest localization and browser zoom for line wraps and overflow
+
+### S086 — Spacing rhythm
+
+- **Skill ID:** S086
+- **Name:** Spacing rhythm
+- **Purpose:** Make grouping and separation consistent through intentional whitespace
+- **When to use:** When repeated sections feel noisy or visually disconnected
+- **Implementation approach:** Use a base spacing scale and reserve larger gaps for hierarchy changes
+- **Recommended tools:** CSS custom properties, Figma tokens
+- **Security considerations:** Do not remove whitespace needed to distinguish destructive choices
+- **Verification method:** Compare page rhythm at full scroll and inspect repeated component gaps
