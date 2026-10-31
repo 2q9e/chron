@@ -1076,3 +1076,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS Grid, container queries, Figma
 - **Security considerations:** Avoid ordering content visually differently from its semantic reading order
 - **Verification method:** Compare source order and visual order at narrow and wide widths
+
+### S096 — Navigation information architecture
+
+- **Skill ID:** S096
+- **Name:** Navigation information architecture
+- **Purpose:** Make route relationships and current location understandable
+- **When to use:** When product areas grow beyond one screen
+- **Implementation approach:** Group by user task, use stable labels, and surface active location consistently
+- **Recommended tools:** Sitemap, card sorting, React Router or Next navigation
+- **Security considerations:** Do not expose admin-only destinations through client-only hiding
+- **Verification method:** Run a tree test for common academic tasks and inspect link destinations
