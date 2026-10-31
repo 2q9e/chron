@@ -4592,3 +4592,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PDF.js, Mammoth, fixture corpus
 - **Security considerations:** No copyrighted or uploaded originals
 - **Verification method:** Compare pages and metadata
+
+### S414 — Upload fuzz tests
+
+- **Skill ID:** S414
+- **Name:** Upload fuzz tests
+- **Purpose:** Reject malformed files without parser failure
+- **When to use:** At ingestion boundary
+- **Implementation approach:** Fuzz extension, magic bytes, size, container shape
+- **Recommended tools:** Property tests, isolated parser
+- **Security considerations:** Temporary quarantined storage only
+- **Verification method:** No crash, escape, or unbounded memory
