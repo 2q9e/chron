@@ -4150,3 +4150,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Chrome DevTools, PerformanceObserver
 - **Security considerations:** Do not trace form values
 - **Verification method:** Record p75 on representative workflows
+
+### S374 — Cumulative Layout Shift
+
+- **Skill ID:** S374
+- **Name:** Cumulative Layout Shift
+- **Purpose:** Prevent visible content movement
+- **When to use:** When controls jump during load
+- **Implementation approach:** Reserve image, font, async geometry
+- **Recommended tools:** Lighthouse, shift regions
+- **Security considerations:** Do not move consent or approval controls
+- **Verification method:** Capture under slow assets
