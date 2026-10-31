@@ -4570,3 +4570,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Test DB, queue fixture
 - **Security considerations:** Isolated test namespace
 - **Verification method:** One record and stable response remain
+
+### S412 — Queue redelivery tests
+
+- **Skill ID:** S412
+- **Name:** Queue redelivery tests
+- **Purpose:** Validate at-least-once worker safety
+- **When to use:** For sync and parse jobs
+- **Implementation approach:** Deliver duplicate job and restart between steps
+- **Recommended tools:** Queue test harness, DB fixture
+- **Security considerations:** Synthetic ownership IDs only
+- **Verification method:** One output and terminal status
