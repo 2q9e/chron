@@ -2723,3 +2723,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Policy engine, typed permission set
 - **Security considerations:** Planner cannot broaden its own graph
 - **Verification method:** Assert unauthorized edges fail closed
+
+### S245 — Approval queue
+
+- **Skill ID:** S245
+- **Name:** Approval queue
+- **Purpose:** Pause consequential actions for user review
+- **When to use:** When actions change or share records
+- **Implementation approach:** Persist exact proposal, owner, expiry, pending state
+- **Recommended tools:** Database, notification channel
+- **Security considerations:** Only authenticated owner may approve
+- **Verification method:** Test expiry, duplicates, and wrong-user approval
