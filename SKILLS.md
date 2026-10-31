@@ -1639,3 +1639,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** R3F dpr, PerformanceMonitor
 - **Security considerations:** Feature detection should not become device fingerprinting
 - **Verification method:** Profile several device classes and toggle quality modes
+
+### S147 — Reduced-motion scene
+
+- **Skill ID:** S147
+- **Name:** Reduced-motion scene
+- **Purpose:** Offer stable chapter stills and remove camera movement in 3D when reduced motion is preferred
+- **When to use:** User prefers reduced motion
+- **Implementation approach:** Read media preference and render fixed scene compositions; use S473 for application-wide DOM/CSS transition and scroll behavior
+- **Recommended tools:** prefers-reduced-motion, React media query
+- **Security considerations:** Never override the operating-system preference
+- **Verification method:** Emulate reduced motion and confirm the scene is static; verify broader route interactions under S473
