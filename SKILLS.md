@@ -4658,3 +4658,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Integration test, hash helper
 - **Security considerations:** Use synthetic test-only actions; approval must be server-validated against authenticated user and exact proposal
 - **Verification method:** No write executes after payload/version/scope mismatch, expiry, or wrong-user replay
+
+### S420 — Agent loop deterministic tests
+
+- **Skill ID:** S420
+- **Name:** Agent loop deterministic tests
+- **Purpose:** Test orchestration without live inference
+- **When to use:** When run state machine changes
+- **Implementation approach:** Inject controlled test adapter responses
+- **Recommended tools:** Vitest, test adapter
+- **Security considerations:** Adapter never ships in app bundle
+- **Verification method:** Cover plan, execute, verify, cancel, fail
