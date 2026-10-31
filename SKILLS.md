@@ -5357,3 +5357,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ESLint boundaries, dependency graph
 - **Security considerations:** Server-only modules cannot enter browser graph
 - **Verification method:** Run import-boundary lint and inspect bundle graph
+
+### S483 — Modular monolith design
+
+- **Skill ID:** S483
+- **Name:** Modular monolith design
+- **Purpose:** Keep deployment simple while preserving module ownership
+- **When to use:** When several services seem premature
+- **Implementation approach:** Separate modules by domain inside one deployable
+- **Recommended tools:** TypeScript packages, Nx or simple workspace
+- **Security considerations:** Shared process does not imply shared trust
+- **Verification method:** Test module API and ownership boundaries
