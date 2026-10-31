@@ -14,6 +14,7 @@ Meta clarification or permission; no other inference provider is allowed.
 | ID | Objective | Dependencies | Acceptance evidence |
 | --- | --- | --- | --- |
 | F0 | Clean repository, operating rules, 500-skill library, repository security and handoff | None | Fresh Git history; secret scan; 500 complete entries in the agreed categories; final independent skill audit; functional CI as soon as app code exists |
+| R0 | Build the in-product agent skill catalog and source-selection policy | F0 | Distinct, versioned skill contracts with explicit triggers, exclusions, source strategy, freshness, citation, uncertainty, and stop rules; deterministic policy tests; no fabricated retrieval or inference |
 | F0-c | Independently audit the skill library | F0-a | Luna MAX and Terra HIGH reviews; findings corrected, structurally validated, and re-audited |
 | L1 | Premium responsive landing page and design tokens | F0 | Scroll narrative, reduced-motion/static fallback, real browser screenshots at desktop/mobile |
 | L2 | Sign-in and signup surfaces connected to real auth | F0, L1 | Server-backed flow, policy/version gates, no fake account state |
@@ -27,6 +28,12 @@ Meta clarification or permission; no other inference provider is allowed.
 | Q1 | Independent audits and full user journey | L2, S1, M1, C1, A1, E1, R1, G1 | Security, visual, accessibility, performance, browser and data deletion evidence |
 
 ## Skill library category allocation
+
+`SKILLS.md` is the development team's 500-entry engineering reference. It is
+not the product agent's runtime skill set. Runtime competencies live with the
+agent feature and contain executable routing metadata and user-task
+instructions; source names alone are not a substitute for deciding whether,
+when, and how to retrieve evidence.
 
 The suggested allocation in the brief totals 520. To satisfy the required
 exact total of 500, use this adjusted distribution:
