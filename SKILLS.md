@@ -25,3 +25,16 @@ This index contains 500 practical development skills for Chron. Entries are grou
 Each record includes Skill ID, Name, Purpose, When to use, Implementation approach, Recommended tools, Security considerations, and Verification method.
 
 This is development guidance, not user-facing product content. Do not ship samples, placeholders, stubs, fake demos, or seeded product records. Synthetic fixtures are test-only and must never be bundled into the application.
+
+## Frontend engineering
+
+### S001 — Server/client component boundaries
+
+- **Skill ID:** S001
+- **Name:** Server/client component boundaries
+- **Purpose:** Keep browser-only state out of server-rendered modules
+- **When to use:** When a route mixes private data loading and interactive controls
+- **Implementation approach:** Fetch protected data in server components; isolate event handlers in small client leaves
+- **Recommended tools:** Next.js App Router, React, TypeScript
+- **Security considerations:** Never serialize credentials or authorization decisions into client props
+- **Verification method:** Build route fixtures and assert private fields are absent from rendered payloads
