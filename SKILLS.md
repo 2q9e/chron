@@ -2015,3 +2015,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Repository layer, policy tests
 - **Security considerations:** Never accept owner ID from request body
 - **Verification method:** Try cross-account read/write/delete/export
+
+### S181 — Tenant isolation
+
+- **Skill ID:** S181
+- **Name:** Tenant isolation
+- **Purpose:** Make ownership unavoidable in data access
+- **When to use:** Per-user calendar and study records
+- **Implementation approach:** Apply tenant predicates in repos and DB policies
+- **Recommended tools:** PostgreSQL RLS, repositories
+- **Security considerations:** UI filtering is not authorization
+- **Verification method:** Run cross-tenant tests through service entry points
