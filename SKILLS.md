@@ -5157,3 +5157,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Aria Dialog, focus manager
 - **Security considerations:** Do not trap focus in nonmodal status messages
 - **Verification method:** Test initial focus, accessible name, close return target, and nonmodal behavior; verify containment separately under S039
+
+### S465 — Keyboard interaction patterns
+
+- **Skill ID:** S465
+- **Name:** Keyboard interaction patterns
+- **Purpose:** Review keyboard operability consistently across interactive patterns and routes
+- **When to use:** For tabs, menus, listboxes, grids
+- **Implementation approach:** Apply WAI-ARIA APG key models and native controls; use S023 for defining a widget’s exact key-to-action behavior
+- **Recommended tools:** WAI-ARIA APG, Testing Library
+- **Security considerations:** Do not capture global shortcuts inside text entry
+- **Verification method:** Test arrows, Enter, Escape, Home, and End across representative controls; check widget-specific transitions under S023
