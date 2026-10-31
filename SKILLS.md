@@ -1839,3 +1839,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Pino, OpenTelemetry
 - **Security considerations:** Sanitize before event queues
 - **Verification method:** Inject sentinels into telemetry envelopes and vendor errors; inspect emitted events, not just console logs
+
+### S165 — Authentication assurance
+
+- **Skill ID:** S165
+- **Name:** Authentication assurance
+- **Purpose:** Gate protected routes on verified identity
+- **When to use:** Account and credential flows
+- **Implementation approach:** Use maintained auth; reauthenticate sensitive changes
+- **Recommended tools:** OIDC/session library
+- **Security considerations:** Do not invent password or token schemes
+- **Verification method:** Test missing, expired, revoked, stale sessions
