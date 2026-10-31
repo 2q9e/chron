@@ -5300,3 +5300,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** SVG title/desc, accessible data table
 - **Security considerations:** Do not expose another user’s aggregate data
 - **Verification method:** Compare text summary values to chart dataset
+
+### S478 — 3D fallback accessibility
+
+- **Skill ID:** S478
+- **Name:** 3D fallback accessibility
+- **Purpose:** Preserve content and actions without WebGL
+- **When to use:** When a 3D scene conveys product information
+- **Implementation approach:** Mirror controls in DOM and provide static scene alternative
+- **Recommended tools:** HTML controls, static image, aria labels
+- **Security considerations:** Never make canvas the only access path
+- **Verification method:** Disable WebGL and complete the journey
