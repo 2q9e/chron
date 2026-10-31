@@ -8,7 +8,9 @@ unverified. C1 — calendar — is active at the user's direction. Landing-page
 work is paused. Calendar reliability fixes and the bounded-search type
 contract are pushed to the single public `main` branch through `dfe1f07`.
 Bounded title search is implemented and pushed as API commit `afbef0e` and UI
-commit `4a092e8`. No code or visual material was copied from another folder.
+commit `4a092e8`. Full-series request validation is pushed as `521990b` and
+`8cda070`; persisted series proposals and approvals remain unfinished. No code
+or visual material was copied from another folder.
 
 ## Completed
 
@@ -92,6 +94,11 @@ commit `4a092e8`. No code or visual material was copied from another folder.
   filters, a 93-day range bound, a 1,000-result limit, query timeout handling,
   an accessible result list, and event-editor handoff. API commit `afbef0e` and
   UI commit `4a092e8` are pushed to the single public `main` branch.
+- Added strict create/update/delete full-series request parsing with finite
+  recurrence rules, target revisions, duration bounds, full-series expansion
+  validation, and rejection of unexpected fields. Commits `521990b` and
+  `8cda070` are on the single public `main` branch. The production build, lint,
+  typecheck, and calendar API suite (42 tests) pass.
 
 ## Open work
 
@@ -104,6 +111,10 @@ commit `4a092e8`. No code or visual material was copied from another folder.
 - Continue C1 with recurrence, reminders, drag scheduling, and external
   calendar synchronization. Search code is integrated; PostgreSQL ownership
   and authenticated browser verification remain open.
+- Deploy each verified iteration to `https://testing.uwu.markets` using only
+  the user-authorized Chron-specific VPS and Cloudflare resources. DNS and the
+  tunnel route are not configured yet; the staging VPS timed out over SSH, and
+  no remote change was made. Require HTTPS for all public access.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator

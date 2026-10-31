@@ -4,12 +4,13 @@
 
 Chron is a standalone repository on one published branch, public GitHub
 `main`. Remote and local `main` matched at the last checked code push; public
-`main` had 570 purposeful commits before this documentation update.
+`main` had 577 purposeful commits before this documentation update.
 The calendar API, protected route, sign-in, views, preferences, and conflict
 review are pushed. Idempotent event creation, safe recovery, reload-safe focus,
 and accessible short-event targets were pushed as `f304c19` and `ec93688`;
 the calendar search contract was pushed as `dfe1f07`; search API and UI were
-pushed as `afbef0e` and `4a092e8`.
+pushed as `afbef0e` and `4a092e8`. The latest recurrence parser changes were
+pushed as `521990b` and `8cda070`.
 Secret scanning, push protection, Dependabot alerts and
 security updates, and private vulnerability reporting are enabled. Continue
 reviewing staged paths and scans before every push. Do not commit root
@@ -78,6 +79,15 @@ and database-backed verification remains pending.
 - The runtime has no configured PostgreSQL/auth environment and no test
   account. Do not simulate a session or claim authenticated persistence is
   verified.
+- The recurrence request parser validates exact full-series create, update,
+  and delete scopes, finite bounded rules, dates, durations, and revisions.
+  Persisted series draft creation, conflict review, and approval routes are not
+  implemented yet.
+- The user requested staging at `https://testing.uwu.markets` through the
+  supplied VPS and Cloudflare setup, without changing other VPS services.
+  The target DNS record and tunnel route are absent. A deployment attempt could
+  not reach the VPS over SSH, so no DNS, tunnel, VPS, or service changes were
+  made. Keep the public origin HTTPS and retry when SSH connectivity returns.
 - Event create/update require an explicit user review. The server recalculates
   overlaps and compares the submitted `(id, revision)` snapshot inside the same
   owner-serialized transaction as the write. The configured time zone is also
