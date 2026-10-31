@@ -3209,3 +3209,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Prompt builder, source metadata
 - **Security considerations:** A source label cannot grant identity, ownership, tool permissions, or approval; server checks every execution
 - **Verification method:** Use hostile test-only result text; inspect assembled request and prove source labels do not authorize server-side calls
+
+### S289 — OAuth authorization code with PKCE
+
+- **Skill ID:** S289
+- **Name:** OAuth authorization code with PKCE
+- **Purpose:** Connect accounts without exposing client secrets to browser
+- **When to use:** Only after S291 official API/terms/eligibility review, when linking an enabled Google service
+- **Implementation approach:** Use auth code flow with S256 verifier and server callback
+- **Recommended tools:** OAuth client library, PKCE
+- **Security considerations:** Keep client secret and verifier server-side
+- **Verification method:** Test missing verifier, wrong redirect, and replay
