@@ -214,3 +214,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TanStack Query, React, server action
 - **Security considerations:** Do not optimistically claim destructive or permission-sensitive actions succeeded
 - **Verification method:** Simulate conflict and network failure; verify rollback and retry affordance
+
+### S018 — Race-safe data fetching
+
+- **Skill ID:** S018
+- **Name:** Race-safe data fetching
+- **Purpose:** Prevent outdated requests from replacing newer search results
+- **When to use:** When typeahead or filters can issue overlapping requests
+- **Implementation approach:** Cancel obsolete requests and tag responses with the initiating query key
+- **Recommended tools:** fetch, AbortController, TanStack Query
+- **Security considerations:** Drop responses belonging to a signed-out or switched account session
+- **Verification method:** Delay responses out of order and assert only the latest query is shown
