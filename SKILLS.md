@@ -1705,3 +1705,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** KTX2Loader, glTF Transform
 - **Security considerations:** Strip metadata and verify asset provenance
 - **Verification method:** Compare visual quality and decoded memory at camera distance
+
+### S153 — 3D timeline ownership
+
+- **Skill ID:** S153
+- **Name:** 3D timeline ownership
+- **Purpose:** Prevent scroll and hover animations competing
+- **When to use:** Several controls animate the same transform
+- **Implementation approach:** Separate authored chapter state from transient interaction state
+- **Recommended tools:** GSAP context, R3F refs
+- **Security considerations:** Cancel tweens on route or session changes
+- **Verification method:** Rapidly enter/exit and scrub; check for stale writes
