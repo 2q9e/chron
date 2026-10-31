@@ -3385,3 +3385,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Gmail API, OAuth scopes
 - **Security considerations:** Require explicit user approval for each send or delete action; read consent never authorizes writes
 - **Verification method:** Check consent scopes and prove no write call occurs
+
+### S305 — Google Tasks synchronization
+
+- **Skill ID:** S305
+- **Name:** Google Tasks synchronization
+- **Purpose:** Synchronize approved Google Tasks items using documented list and change-filter behavior
+- **When to use:** Only after S291, when the user enables an approved Google Tasks workflow
+- **Implementation approach:** Map list/task IDs, completion state, and due date; for `tasks.list`, paginate with documented `pageToken`/`nextPageToken` and use `updatedMin` only as its documented change filter. Do not assume `syncToken`, a durable change feed, or complete deletion detection. Make sync direction explicit and require S193 approval for consequential outbound writes
+- **Recommended tools:** [Google Tasks `tasks.list` reference](https://developers.google.com/workspace/tasks/reference/rest/v1/tasks/list) after S291, service-specific sync adapter
+- **Security considerations:** Keep lists scoped to connected account; every consequential external write requires explicit exact-action approval under S193
+- **Verification method:** Under S291, verify current official `tasks.list` pagination and `updatedMin` semantics; test page traversal, overlapping updates, deduplication, and reconciliation without claiming a change-feed, deletion-detection, or convergence guarantee unsupported by the API
