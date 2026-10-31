@@ -766,3 +766,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Pino redact paths, custom error mapper
 - **Security considerations:** Redact authorization, cookies, API keys, OAuth tokens, and document text
 - **Verification method:** Inject sentinel secrets into app-log errors and inspect captured output; separately test telemetry sinks under S164
+
+### S068 — Runtime configuration validation
+
+- **Skill ID:** S068
+- **Name:** Runtime configuration validation
+- **Purpose:** Fail early when required deployment settings are missing or malformed
+- **When to use:** When starting a service with environment-driven configuration
+- **Implementation approach:** Parse variables once into a typed immutable config and reject unknown modes
+- **Recommended tools:** Zod, envalid, dotenv only for local development
+- **Security considerations:** Never print raw environment values in startup errors
+- **Verification method:** Boot with missing, malformed, and valid synthetic configuration cases
