@@ -2,19 +2,23 @@
 
 ## Current state
 
-Chron is a standalone repository with 533 non-empty, distinct commits on public
-GitHub `main`; the local and remote branch heads match. Secret scanning, push
-protection, Dependabot alerts and security updates, and private vulnerability
-reporting are enabled. Continue reviewing staged paths and scans before every
-push.
+Chron is a standalone repository on one published branch, public GitHub
+`main`. Remote and local `main` match at `bdf89fd` with 555 purposeful commits.
+The calendar API, protected route, sign-in, views, preferences, and conflict
+review are pushed. Secret scanning, push protection, Dependabot alerts and
+security updates, and private vulnerability reporting are enabled. Continue
+reviewing staged paths and scans before every push. Do not commit root
+`AGENTS.md` or any old reference material.
 
 ## Current milestone
 
-F0 — project foundation and repository security — is published. Hosted CI and
-branch protection remain to be verified. L1 — landing page and design system —
-is in progress. The scroll-linked Three.js/R3F world is integrated and visually
-reviewed at one desktop viewport. Do not mark L1 complete until the remaining
-viewport, motion, accessibility, fallback, and performance checks are done.
+C1 — calendar — is active; landing-page work is paused at the user's direction.
+The current increment includes owner-scoped event and preference persistence,
+existing-account sign-in, protected routing, four calendar views, event
+create/edit/delete, theme and display preferences, and a server-side overlap
+check shown before manual approval. Recurrence, reminders, drag scheduling,
+search, external sync, database-backed runtime verification, and real
+authenticated browser walkthrough remain open.
 
 ## Product and security gates
 
@@ -38,8 +42,8 @@ viewport, motion, accessibility, fallback, and performance checks are done.
 - `.github/workflows/quality.yml` defines read-only CI for lint, typecheck,
   production dependency audit, and build. It uses full-SHA pins for official
   checkout/setup-node actions. The YAML parses locally; GitHub currently reports
-  no workflow run, so hosted CI is unverified. No unit or integration suite
-  exists yet.
+  no workflow run, so hosted CI is unverified. Calendar time and API suites now
+  exist and pass locally; live PostgreSQL integration remains unverified.
 - Do not add samples, placeholders, stubs, fake demos, or nonfunctional
   controls to the product.
 - This runtime does not enforce per-agent filesystem or network sandboxes.
@@ -49,7 +53,28 @@ viewport, motion, accessibility, fallback, and performance checks are done.
 
 ## Implementation checkpoint
 
-- Landing route: `apps/web/app/page.tsx`.
+- Calendar API: `apps/web/app/api/calendar/`, including the conflict check at
+  `apps/web/app/api/calendar/events/conflicts/route.ts`.
+- Calendar database schema: `apps/web/db/migrations/0002_calendar.sql`.
+- Calendar server validation and storage: `apps/web/features/calendar/server/`.
+- Calendar interface: `apps/web/features/calendar/presentation/`.
+- Authenticated calendar route and existing-account sign-in:
+  `apps/web/app/calendar/`, `apps/web/app/sign-in/`.
+- The runtime has no configured PostgreSQL/auth environment and no test
+  account. Do not simulate a session or claim authenticated persistence is
+  verified.
+- Event create/update require an explicit user review. The server recalculates
+  overlaps and compares the submitted `(id, revision)` snapshot inside the same
+  owner-serialized transaction as the write. The configured time zone is also
+  checked inside that transaction. Conflict-set or time-zone changes return 409
+  for a fresh review. Every calendar writer must continue through this
+  repository path. Agent/bulk writes do not exist; persisted draft approval is
+  required before they are added.
+
+## Prior landing checkpoint
+
+- Landing source: `apps/web/features/landing/presentation/landing-story.tsx`;
+  `/` currently redirects to `/calendar` while C1 is active.
 - Story and anchors: `apps/web/features/landing/presentation/landing-story.tsx`.
 - Story layout: `apps/web/features/landing/presentation/landing-story.module.css`.
 - Scroll progress: `apps/web/features/landing/presentation/story-progress-bridge.tsx`.
@@ -73,8 +98,10 @@ awaits narrow and zoom browser checks.
 
 - `npm run lint --workspace @chron/web` — passed.
 - `npm run typecheck --workspace @chron/web` — passed.
-- `npm run build --workspace @chron/web` — passed after the latest landing
-  module split and visibility-fallback fix.
+- `npm run test:calendar-api --workspace @chron/web` — all 17 tests passed.
+- `npm run test:calendar-time --workspace @chron/web` — all 6 tests passed.
+- `npm run build --workspace @chron/web` — passed with the calendar API,
+  conflict route, protected route, and sign-in route included.
 - Production route inspected in Chrome at 1230×480. Opening, Week, Study,
   Research, and closing chapters were viewed; in-page navigation, `#week`
   reload, and reverse navigation were tried. The scene was visible through
@@ -84,6 +111,11 @@ awaits narrow and zoom browser checks.
   zoom, reduced motion, keyboard-only input, WebGL loss, or performance metrics.
   The independent landing audit was source-only; its configured model identity
   could not be independently confirmed.
+- The sign-in UI was rendered at 1280px desktop and 390px mobile; mobile had no
+  horizontal overflow and the form remained scroll-reachable. `/calendar` was
+  opened with a synthetic local auth configuration and unreachable PostgreSQL;
+  it displayed the account-service-unavailable state and did not load events.
+  No login attempt, real session, or authenticated calendar behavior was tested.
 - `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
   dependency vulnerabilities. The full dependency audit has 11 moderate
   development-only `minimatch` denial-of-service advisories and no high or
@@ -91,16 +123,13 @@ awaits narrow and zoom browser checks.
 
 ## Next actions
 
-1. Verify 320px, 390px, tablet, and 400% zoom layout in a real browser; resolve
-   any clipping, overlap, or horizontal overflow.
-2. Inspect forward, reverse, and fast scroll; keyboard navigation and focus;
-   reduced motion; and WebGL fallback/context loss. Record evidence in the
-   landing audit and close findings only after verification.
-3. Measure animation and page performance on representative conditions.
-4. Re-run lint, typecheck, and production build after any implementation fix.
-5. Continue with backend security only after the L1 acceptance work is
-   sufficiently verified; keep signup and credential intake gated.
-6. Check why the hosted Actions run has not appeared; after a check exists,
-   configure and verify safe `main` branch rules.
-7. Before every push, inspect staged paths and rescan staged content and the
-   commit history for secrets and excluded material.
+1. Configure a disposable PostgreSQL test database/account, apply both
+   migrations, and run authenticated persistence, isolation, and browser
+   walkthroughs.
+2. Continue C1 with recurrence, reminders, drag scheduling, and search, while
+   keeping landing work paused.
+3. Retain persisted, payload-bound draft approval before agent or bulk
+   integration can write calendar records.
+4. Resume remaining landing browser checks only when the user reprioritizes it.
+5. Before every push, inspect staged paths and rescan staged content and commit
+   history for secrets and excluded material.

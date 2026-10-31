@@ -27,10 +27,11 @@ Meta clarification or permission; no other inference provider is allowed.
 | G1 | Official Google integrations, prioritized by academic value | S1, A1 | Minimal-scope OAuth, disconnect/revoke, real import and approval flows |
 | Q1 | Independent audits and full user journey | L2, S1, M1, C1, A1, E1, R1, G1 | Security, visual, accessibility, performance, browser and data deletion evidence |
 
-The user has reprioritized C1 ahead of L1. Landing-page work is paused. C1 is
-being delivered in small increments: a persisted event and preference API, the
-calendar views and controls, then protected route and browser verification.
-Recurrence, reminders, drag scheduling, conflict review, and external sync stay
+The user has reprioritized C1 ahead of L1. Landing-page work is paused. The
+first calendar increment now includes a persisted event and preference API,
+protected sign-in/route, day/week/month/agenda views, editable events, themes,
+and a server-side conflict check before approval. Recurrence, reminders, drag
+scheduling, search, external sync, and a real database/browser walkthrough stay
 open until each is implemented and verified.
 
 ## Skill library category allocation

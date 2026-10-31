@@ -385,13 +385,19 @@ receives credentials or user data.
   `to` exclusive, plus an IANA `timeZone` for projecting timed bounds. It
   returns `{ "events": CalendarEvent[] }` and includes only the signed-in
   owner's events overlapping the requested range.
-- `POST` accepts one `CalendarEventMutation`, resolves timed wall times in the
-  submitted zone, and returns `{ "event": CalendarEvent }` with status 201
-  and an ETag containing the event revision.
-- `PUT /api/calendar/events/{id}` replaces the submitted event fields and
+- `POST` accepts `{ event, calendarTimeZone, reviewedConflicts }`, resolves
+  timed wall times in the submitted zone, and returns
+  `{ "event": CalendarEvent }` with status 201 and an ETag containing the
+  event revision. `PUT /api/calendar/events/{id}` accepts the same body and
   requires `If-Match` for the revision the user reviewed. `DELETE` requires the
-  same precondition. A stale revision returns 412; an absent precondition
-  returns 428; an unknown or foreign event returns 404.
+  same precondition. A changed conflict snapshot returns 409; a stale event
+  revision returns 412; an absent precondition returns 428; an unknown or
+  foreign event returns 404.
+- `POST /api/calendar/events/conflicts` accepts a validated event proposal,
+  the configured calendar time zone, and an optional event ID to exclude when
+  editing. It returns only the overlapping event title and time/date fields
+  owned by the signed-in user. Timed and all-day bounds use half-open interval
+  rules; mixed comparisons use the configured calendar zone.
 - `GET` and `PUT /api/calendar/preferences` read or update the signed-in
   owner's theme, density, week start, and IANA display time zone.
 - Responses use `Cache-Control: private, no-store`. Errors use
@@ -401,9 +407,15 @@ receives credentials or user data.
   explicit earlier/later choice for an ambiguous fall-back time. Nonexistent
   spring-forward times are rejected. All-day events use date-only,
   end-exclusive bounds and never pass through UTC midnight.
-- The form's explicit save action approves that exact manual event mutation.
-  Agent-produced or bulk changes remain a later, persisted draft-and-approval
-  feature under S369.
+- The form checks for overlaps before showing a preview. Its explicit save
+  submits the reviewed overlap IDs and revisions. Create/update serialize
+  through an owner-scoped PostgreSQL transaction lock, compare the conflict
+  snapshot again inside the write transaction, and reject a changed time zone
+  or overlap set with 409. A changed overlap set requires a fresh review.
+  Calendar delete and preference writes use the same lock. This guarantee
+  assumes all future calendar writers use this repository path. Agent-produced
+  or bulk changes remain a later, persisted draft-and-approval feature under
+  S369.
 
 ### C1-a — persisted calendar service and API
 
@@ -441,6 +453,11 @@ receives credentials or user data.
 - **Expected deliverables:** migration, scoped repository, route handlers,
   tests, and a concise review summary; commit locally under the configured
   `2q9e` author, but do not push or create a remote branch.
+- **Current status:** implemented in the integration worktree. All 17 focused
+  calendar API tests pass; migration application and authenticated PostgreSQL
+  behavior remain unverified because no disposable test database is available.
+  The integrated source was pushed to the single public `main` branch at
+  `bdf89fd`.
 
 ### C1-b — calendar views and interactions
 
@@ -474,6 +491,10 @@ receives credentials or user data.
 - **Expected deliverables:** calendar presentation components/CSS, focused
   tests, and review summary; commit locally under the configured `2q9e`
   author, but do not push or create a remote branch.
+- **Current status:** four views and event/preference controls are integrated.
+  The sign-in shell has been inspected at desktop and mobile widths, but the
+  authenticated calendar screen cannot yet be browser-tested without a real
+  test database and account.
 
 ### C1-c — protected route and end-to-end integration
 
@@ -503,3 +524,8 @@ receives credentials or user data.
   claimed if a disposable test account and database are actually configured.
 - **Expected deliverables:** integrated calendar route, auth UI, updated
   progress/handoff, audit findings and fixes, and reviewed commits on `main`.
+- **Current status:** root redirects to `/calendar`; the protected route and
+  Better Auth sign-in page compile and the sign-in layout was inspected in a
+  real browser. With an isolated synthetic auth configuration and no database,
+  `/calendar` correctly displayed the account-service-unavailable state. No
+  sign-in submission or authenticated persistence is claimed.

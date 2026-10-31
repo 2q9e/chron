@@ -4,8 +4,10 @@
 
 F0 — foundation documentation, the scrubbed fresh history, and repository
 security are on public GitHub `main`; hosted checks and branch protection remain
-unverified. L1 — landing page and design system — is in progress. No code or
-visual material was copied from another folder.
+unverified. C1 — calendar — is active at the user's direction. Landing-page
+work is paused. The first calendar implementation is verified and pushed to
+the single public `main` branch at `bdf89fd`. No code or visual material was
+copied from another folder.
 
 ## Completed
 
@@ -64,18 +66,28 @@ visual material was copied from another folder.
   @chron/web`, and `npm run build --workspace @chron/web` after integrating the
   scene and latest layout changes; all passed. Next.js generated
   `apps/web/AGENTS.md` and updates `next-env.d.ts` during build/dev runs.
-- The local and remote `main` heads match at 533 non-empty, distinct commits.
-  Before publication, the full `main` history was rewritten to remove the two
-  user-local path mentions. Reachable-history scans report zero remaining path
-  matches and zero private-key, AWS-key, GitHub-token, or quoted credential
-  assignment patterns. These regex checks are useful but not comprehensive.
+- Initial publication reached 533 non-empty, distinct commits after the full
+  `main` history was rewritten to remove the two user-local path mentions.
+  Reachable-history scans at publication reported zero remaining path matches
+  and zero private-key, AWS-key, GitHub-token, or quoted credential assignment
+  patterns. These regex checks are useful but not comprehensive.
+- Implemented the first persisted calendar increment: owner-scoped event and
+  preference APIs, Better Auth protected access, day/week/month/agenda views,
+  event create/edit/delete, and saved display preferences. Event approval now
+  includes a server-computed overlap review. Create/update recheck the reviewed
+  overlap IDs and revisions under a per-owner PostgreSQL transaction lock and
+  reject stale time-zone or conflict state. No real database or test account is
+  configured, so persisted authenticated behavior is not yet runtime verified.
 
-## In progress
+## Open work
 
-- Complete the landing visual review at narrow, tablet, and zoomed viewports;
-  test reduced motion, keyboard-only navigation, fast/reverse scroll, and
-  WebGL context loss/fallback. The available desktop browser review was at
-  1230×480 only.
+- Continue making small reviewed commits on the single public `main` branch;
+  inspect staged paths and scan outgoing history before each push.
+- Configure a disposable PostgreSQL test database/account, apply the auth and
+  calendar migrations, then verify real persistence, ownership isolation, and
+  authenticated calendar interactions in a browser.
+- Continue C1 with recurring events, reminders, drag scheduling, search, and
+  external calendar synchronization.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -83,11 +95,15 @@ visual material was copied from another folder.
 - Obtain qualified review of the integrated Meta report; inspect the
   incorporated processor/security terms through an authorized source before
   launch.
+- Landing work remains paused at the user's direction. Resume its narrow,
+  tablet, zoom, keyboard, reduced-motion, WebGL fallback, and performance review
+  only when reprioritized.
 
 ## Known constraints
 
 - This runtime cannot enforce per-agent filesystem or network sandboxes; task
-  worktrees are coordination boundaries only.
+  worktrees are coordination boundaries only. Remote GitHub currently exposes
+  only `main`; do not publish task worktree branches.
 - The active root session model is fixed by the runtime. Spawnable development
   agents can use the requested Luna MAX and Terra HIGH settings.
 - Meta's current terms require integrated-product end users to be 18+, prohibit
@@ -102,8 +118,10 @@ visual material was copied from another folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- Public GitHub `main` has 533 non-empty, purposeful commits, exceeding the
-  requested 500. Never count empty or duplicate commits toward the target.
+- Public GitHub `main` now has 555 non-empty, purposeful commits. Four reviewed
+  commits were pushed from local `main`; the initial calendar API, auth route,
+  sign-in screen, calendar views, and overlap review are included. Never count
+  empty or duplicate commits toward the requested total.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
   reduced motion, keyboard, fallback, and performance review remain.
 
@@ -117,6 +135,19 @@ visual material was copied from another folder.
   linked incorporated terms not available without an authenticated source.
 - Landing lint, TypeScript, and production-build checks passed after the scene
   module split and visibility-fallback fix.
+- For the calendar increment, `npm run test:calendar-api --workspace @chron/web`
+  passed all 17 tests; `npm run test:calendar-time --workspace @chron/web`
+  passed all 6 tests; lint, typecheck, and the production build passed.
+- Reviewed the outgoing diff from `origin/main`, checked `git diff --check`,
+  scanned staged and outgoing content for common secret patterns, and pushed to
+  `origin/main`. `git ls-remote --heads origin` reports only `main`, now at
+  `bdf89fd` with 555 commits.
+- Inspected the real sign-in route in the browser at desktop and 390px mobile
+  widths. The form remained usable with no horizontal overflow. With only a
+  synthetic local auth configuration and an unreachable local PostgreSQL
+  endpoint, `/calendar` rendered its account-service-unavailable state without
+  loading calendar data. No sign-in submission or authenticated persistence is
+  claimed.
 - `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
   dependency vulnerabilities.
 - The GitHub Actions workflow YAML parses successfully. GitHub currently shows
