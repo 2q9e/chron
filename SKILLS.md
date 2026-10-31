@@ -247,3 +247,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TanStack Query, IntersectionObserver
 - **Security considerations:** Authorize every cursor request and avoid leaking total counts across tenants
 - **Verification method:** Insert records between pages and verify cursor traversal remains stable
+
+### S021 — Virtualized long lists
+
+- **Skill ID:** S021
+- **Name:** Virtualized long lists
+- **Purpose:** Render only visible rows when record counts exceed practical DOM size
+- **When to use:** When profiling shows list rendering harms scrolling or input latency
+- **Implementation approach:** Use fixed or measured row geometry and preserve focus when rows recycle
+- **Recommended tools:** TanStack Virtual, React Profiler
+- **Security considerations:** Keep offscreen sensitive content out of reused DOM nodes
+- **Verification method:** Profile a large synthetic test fixture and keyboard-navigate recycled rows; keep fixtures out of the product bundle
