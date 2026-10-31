@@ -1927,3 +1927,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSP headers, violation reports
 - **Security considerations:** Avoid unsafe-inline and broad wildcards
 - **Verification method:** Enforce policy in browser; review violations
+
+### S173 — Contextual output encoding
+
+- **Skill ID:** S173
+- **Name:** Contextual output encoding
+- **Purpose:** Keep untrusted text from becoming executable
+- **When to use:** When rendering notes and search results
+- **Implementation approach:** Prefer text nodes; encode by output context
+- **Recommended tools:** React escaping, OWASP Encoder
+- **Security considerations:** Reject dangerous URL schemes
+- **Verification method:** Test HTML, attribute, URL, script payloads
