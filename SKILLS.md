@@ -3519,3 +3519,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Parser diagnostics, OCR metrics
 - **Security considerations:** Never invent missing source text
 - **Verification method:** Test partial and corrupted documents
+
+### S317 — Grounded citation schema
+
+- **Skill ID:** S317
+- **Name:** Grounded citation schema
+- **Purpose:** Attach claims to exact evidence
+- **When to use:** When answers cite user material
+- **Implementation approach:** Store source ID, page, offset, quoted span
+- **Recommended tools:** Citation DTO, source index
+- **Security considerations:** Validate source belongs to current user
+- **Verification method:** Resolve citation and reject cross-notebook IDs
