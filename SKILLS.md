@@ -5511,3 +5511,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Markdown ADR, PR template
 - **Security considerations:** Exclude secrets and private reference material
 - **Verification method:** Ensure code and current decision agree
+
+### S497 — Backward compatibility planning
+
+- **Skill ID:** S497
+- **Name:** Backward compatibility planning
+- **Purpose:** Change contracts without breaking active clients or data
+- **When to use:** When public APIs or persisted formats evolve
+- **Implementation approach:** Prefer additive transition, version parsing, measured removal
+- **Recommended tools:** OpenAPI diff, migration tests
+- **Security considerations:** Do not preserve insecure legacy access
+- **Verification method:** Run old/new contract and migration compatibility tests
