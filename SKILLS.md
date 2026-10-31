@@ -2545,3 +2545,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL replicas, routing layer
 - **Security considerations:** Replica routing must preserve tenant and session authorization
 - **Verification method:** Write then immediately read; verify promised consistency behavior
+
+### S229 — Partitioning strategy
+
+- **Skill ID:** S229
+- **Name:** Partitioning strategy
+- **Purpose:** Keep very large time-based tables manageable
+- **When to use:** When event or audit volume makes maintenance costly
+- **Implementation approach:** Partition on stable time scope and automate future partition creation
+- **Recommended tools:** PostgreSQL declarative partitioning
+- **Security considerations:** Partition keys must not become a cross-tenant access shortcut
+- **Verification method:** Test pruning, retention deletion, and query plans across partitions
