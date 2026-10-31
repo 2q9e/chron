@@ -656,3 +656,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** BullMQ, PostgreSQL queue, Cloud task service
 - **Security considerations:** Scope job payloads to user IDs and avoid embedding credentials
 - **Verification method:** Restart workers mid-job and verify retry, status, and ownership behavior
+
+### S058 — Idempotent job handlers
+
+- **Skill ID:** S058
+- **Name:** Idempotent job handlers
+- **Purpose:** Make queue redelivery safe after crashes or lease expiry
+- **When to use:** When a worker may process a message more than once
+- **Implementation approach:** Use a durable deduplication key and commit side effects with completion state
+- **Recommended tools:** BullMQ job IDs, transaction table, unique constraints
+- **Security considerations:** Bind dedupe records to tenant and operation type
+- **Verification method:** Redeliver identical job payloads and assert one output record
