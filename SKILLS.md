@@ -2965,3 +2965,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Citation schema, answer renderer
 - **Security considerations:** Do not present confidence as evidence or call an alternate provider; keep inference disabled until S236 passes
 - **Verification method:** Remove a source and verify dependent claim status; assert no generation request occurs before S236
+
+### S267 — Side-effect separation
+
+- **Skill ID:** S267
+- **Name:** Side-effect separation
+- **Purpose:** Keep plan generation separate from mutation
+- **When to use:** When tasks propose edits or sharing
+- **Implementation approach:** Use read-only planning then approved write tools
+- **Recommended tools:** Capability split, action preview
+- **Security considerations:** Model output never commits consequential changes
+- **Verification method:** Plan-only run produces zero writes
