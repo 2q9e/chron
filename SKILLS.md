@@ -5111,3 +5111,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Runbook, on-call checklist
 - **Security considerations:** Do not put active secrets in incident notes
 - **Verification method:** Tabletop a synthetic key-exposure scenario
+
+## Accessibility
+
+### S461 — Semantic heading structure
+
+- **Skill ID:** S461
+- **Name:** Semantic heading structure
+- **Purpose:** Make page hierarchy navigable by assistive tech
+- **When to use:** When authoring route content
+- **Implementation approach:** Use one descriptive h1 and ordered nested headings
+- **Recommended tools:** HTML landmarks, axe
+- **Security considerations:** Do not hide sensitive headings as a visual-only workaround
+- **Verification method:** Inspect heading tree and skip by heading
