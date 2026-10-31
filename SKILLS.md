@@ -4724,3 +4724,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright, screenshot service
 - **Security considerations:** Never commit private user screenshots
 - **Verification method:** Review diffs and update intentionally
+
+### S426 — API error-state tests
+
+- **Skill ID:** S426
+- **Name:** API error-state tests
+- **Purpose:** Ensure recovery works after failed requests
+- **When to use:** For forms and integrations
+- **Implementation approach:** Inject validation, network, quota, and scope failures
+- **Recommended tools:** MSW, Testing Library
+- **Security considerations:** No raw provider bodies in fixtures
+- **Verification method:** Assert message, retry, preserved input, focus
