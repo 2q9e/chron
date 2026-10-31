@@ -1164,3 +1164,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Content design, error taxonomy, support runbooks
 - **Security considerations:** Avoid exposing provider internals or blaming users for system faults
 - **Verification method:** Review copy against injected errors and confirm each message has a recovery path
+
+### S104 — Loading-state choreography
+
+- **Skill ID:** S104
+- **Name:** Loading-state choreography
+- **Purpose:** Communicate delay without implying progress the system cannot measure
+- **When to use:** When a request takes long enough to interrupt user confidence
+- **Implementation approach:** Use a spinner only for indeterminate waits; show stages only from real job state
+- **Recommended tools:** Progress component, queue status endpoint, reduced-motion CSS
+- **Security considerations:** Never fabricate percentages or label a request complete before confirmation
+- **Verification method:** Throttle the network and compare the indicator with real backend state
