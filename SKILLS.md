@@ -3530,3 +3530,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Citation DTO, source index
 - **Security considerations:** Validate source belongs to current user
 - **Verification method:** Resolve citation and reject cross-notebook IDs
+
+### S318 — Source-grounded answer generation
+
+- **Skill ID:** S318
+- **Name:** Source-grounded answer generation
+- **Purpose:** Answer course questions from retrieved evidence
+- **When to use:** After written permission, when a learner asks for model-based answers from uploaded content
+- **Implementation approach:** Only after S236 permission/capability checks, retrieve relevant permitted chunks, call official Meta inference, and label general knowledge separately; keep the model path disabled beforehand
+- **Recommended tools:** Meta API only after written permission, retrieval layer
+- **Security considerations:** No inference before S236; say when no source supports an answer and never fall back to another provider
+- **Verification method:** Before S236, assert zero model requests; afterward test supported and unanswerable questions using synthetic test-only materials
