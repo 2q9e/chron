@@ -2512,3 +2512,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL text search, GIN index
 - **Security considerations:** Never run broad search without authenticated owner filter
 - **Verification method:** Test stemming, punctuation, and tenant isolation
+
+### S226 — Embedding index lifecycle
+
+- **Skill ID:** S226
+- **Name:** Embedding index lifecycle
+- **Purpose:** Keep semantic search data aligned with source-document lifecycle
+- **When to use:** Only after verifying an officially documented and authorized embedding capability
+- **Implementation approach:** Version model metadata and delete vectors with source records
+- **Recommended tools:** pgvector, migration job, confirmed official API client
+- **Security considerations:** Require written permission before Meta credentials or inference; never substitute another embedding provider
+- **Verification method:** Check source deletion removes every vector and stale index reference
