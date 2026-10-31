@@ -4425,3 +4425,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Isolated parser service under S285, bounded queue, PDF.js, heap profiler
 - **Security considerations:** Quarantine input and enforce size ceilings; a worker thread/process without the S285 OS restrictions is not a security sandbox
 - **Verification method:** Measure peak memory, cancellation, and configured caps with test-only large and malformed files; verify server parsing uses S285 isolation
+
+### S399 — Performance regression budgets
+
+- **Skill ID:** S399
+- **Name:** Performance regression budgets
+- **Purpose:** Catch slowdowns before release
+- **When to use:** When CI builds important routes
+- **Implementation approach:** Set Lighthouse and bundle thresholds
+- **Recommended tools:** Lighthouse CI, bundle analyzer
+- **Security considerations:** Benchmark synthetic content only
+- **Verification method:** Fail CI on agreed regression threshold
