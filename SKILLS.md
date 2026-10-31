@@ -2567,3 +2567,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Faker, SQL fixtures, migration tests
 - **Security considerations:** Never export production snapshots into developer worktrees
 - **Verification method:** Scan fixtures for emails, tokens, and real document text
+
+## Agent orchestration
+
+### S231 — Agent run state machine
+
+- **Skill ID:** S231
+- **Name:** Agent run state machine
+- **Purpose:** Make task lifecycle explicit and restartable
+- **When to use:** For deterministic run-state handling immediately; execute model-dependent states only after the S236 Meta permission and capability gate
+- **Implementation approach:** Define queued, planning, approval, running, verifying, terminal states
+- **Recommended tools:** Typed unions, state table
+- **Security considerations:** Validate transitions against run owner; do not enter inference states while S236 is closed
+- **Verification method:** Test legal and illegal transitions
