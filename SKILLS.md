@@ -5368,3 +5368,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript packages, Nx or simple workspace
 - **Security considerations:** Shared process does not imply shared trust
 - **Verification method:** Test module API and ownership boundaries
+
+### S484 — API ownership map
+
+- **Skill ID:** S484
+- **Name:** API ownership map
+- **Purpose:** Clarify which module owns each endpoint and data shape
+- **When to use:** When routes cross product capabilities
+- **Implementation approach:** Assign one owner and publish narrow typed contract
+- **Recommended tools:** OpenAPI, route registry
+- **Security considerations:** Avoid duplicate paths with inconsistent auth
+- **Verification method:** Detect route collisions and review ownership list
