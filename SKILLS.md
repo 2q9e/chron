@@ -2248,3 +2248,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL, ERD, Prisma/Drizzle
 - **Security considerations:** Do not put secrets or file contents in broad profile rows
 - **Verification method:** Review cardinality and ownership paths against modeled workflows without seeding product records
+
+### S202 — Migration sequencing
+
+- **Skill ID:** S202
+- **Name:** Migration sequencing
+- **Purpose:** Evolve production schema with recoverable steps
+- **When to use:** When changing persisted fields or indexes
+- **Implementation approach:** Keep migrations ordered, reversible where practical, and data-aware
+- **Recommended tools:** Prisma Migrate, Drizzle Kit, SQL migration tool
+- **Security considerations:** Never put real user data into migration fixtures
+- **Verification method:** Apply migrations from clean and previous-version schemas
