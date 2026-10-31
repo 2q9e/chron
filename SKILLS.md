@@ -1463,3 +1463,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** gltf-transform, Meshopt
 - **Security considerations:** Review third-party asset provenance and license
 - **Verification method:** Measure draw calls and bytes before and after optimization
+
+### S131 — Instanced geometry
+
+- **Skill ID:** S131
+- **Name:** Instanced geometry
+- **Purpose:** Render repeated forms with fewer GPU submissions
+- **When to use:** Many objects share one mesh and material
+- **Implementation approach:** Use InstancedMesh and update transforms in typed buffers
+- **Recommended tools:** Three.js InstancedMesh, BufferAttribute
+- **Security considerations:** Do not encode private record counts visibly
+- **Verification method:** Compare draw calls and inspect every instance boundary
