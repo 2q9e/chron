@@ -148,3 +148,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Hooks, ESLint hooks plugin, TypeScript
 - **Security considerations:** Do not let hooks bypass server authorization or expose secret-bearing responses
 - **Verification method:** Use hook tests for setup, rerender, cleanup, and error transitions
+
+### S012 — Effect lifecycle management
+
+- **Skill ID:** S012
+- **Name:** Effect lifecycle management
+- **Purpose:** Synchronize with external systems without stale closures or leaks
+- **When to use:** When a component subscribes to an API, timer, or browser event
+- **Implementation approach:** Make effects idempotent, depend on actual inputs, and return complete cleanup
+- **Recommended tools:** React useEffect, AbortController, ESLint
+- **Security considerations:** Abort requests on account changes so prior-user responses cannot render
+- **Verification method:** Unmount during an in-flight request and verify listener and request cleanup
