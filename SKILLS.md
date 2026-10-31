@@ -3552,3 +3552,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Answer rubric, citation UI
 - **Security considerations:** Do not fabricate certainty
 - **Verification method:** Test conflicting and absent-source cases
+
+### S320 — Socratic tutoring turns
+
+- **Skill ID:** S320
+- **Name:** Socratic tutoring turns
+- **Purpose:** Develop reasoning before giving explanation
+- **When to use:** After written permission, when a user requests model-based guided learning
+- **Implementation approach:** Only after S236 permits official Meta inference, ask one targeted question and adapt to the response; keep authored tutoring material available without inference
+- **Recommended tools:** Tutor state machine, Meta API only after written permission
+- **Security considerations:** Disable model inference until S236 passes; avoid shame and sensitive-trait inference; do not use another provider
+- **Verification method:** Test varied synthetic responses and branch logic; assert the model path is disabled before authorization
