@@ -568,3 +568,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CASL or small typed policy module, repository layer
 - **Security considerations:** Prevent IDOR by checking ownership on every server path
 - **Verification method:** Attempt cross-user read and write using guessed valid identifiers
+
+### S050 — Session lifecycle management
+
+- **Skill ID:** S050
+- **Name:** Session lifecycle management
+- **Purpose:** Issue and invalidate browser sessions safely
+- **When to use:** When implementing sign-in, logout, password change, or deletion
+- **Implementation approach:** Rotate session IDs at authentication and revoke all relevant sessions on account events
+- **Recommended tools:** Secure cookie sessions, Redis or database session store
+- **Security considerations:** Use HttpOnly, Secure, SameSite cookies and defend against fixation
+- **Verification method:** Verify cookie flags, rotation, logout, expiry, and revoked-session denial
