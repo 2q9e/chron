@@ -733,3 +733,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenAPI 3.1, Redocly CLI, openapi-typescript
 - **Security considerations:** Do not publish internal routes or schemas containing sensitive examples
 - **Verification method:** Generate a client in CI and fail on unreviewed contract changes
+
+### S065 — Structured application logging
+
+- **Skill ID:** S065
+- **Name:** Structured application logging
+- **Purpose:** Make service behavior searchable without embedding whole request bodies
+- **When to use:** When diagnosing production failures across routes and workers
+- **Implementation approach:** Emit bounded JSON events with stable event names and correlation IDs
+- **Recommended tools:** Pino, OpenTelemetry log bridge
+- **Security considerations:** Whitelist fields and exclude credentials, prompt contents, and uploaded text
+- **Verification method:** Run log-capture tests with seeded secrets and scan output for matches
