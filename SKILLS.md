@@ -4471,3 +4471,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Vitest, OpenAPI diff
 - **Security considerations:** Exclude tokens from fixtures
 - **Verification method:** Fail on unreviewed breaking change
+
+### S403 — Database integration isolation
+
+- **Skill ID:** S403
+- **Name:** Database integration isolation
+- **Purpose:** Verify queries against real DB behavior
+- **When to use:** For repositories and transactions
+- **Implementation approach:** Run disposable database with migrations per suite
+- **Recommended tools:** Testcontainers, PostgreSQL
+- **Security considerations:** Synthetic accounts only
+- **Verification method:** Parallel suites do not share mutable rows
