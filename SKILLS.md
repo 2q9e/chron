@@ -2976,3 +2976,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Capability split, action preview
 - **Security considerations:** Model output never commits consequential changes
 - **Verification method:** Plan-only run produces zero writes
+
+### S268 — Run audit history
+
+- **Skill ID:** S268
+- **Name:** Run audit history
+- **Purpose:** Present a user-facing history of agent run steps and verified outcomes, not the security audit schema
+- **When to use:** When a run reads or changes data
+- **Implementation approach:** Record user-visible agent run steps, scope, approval state, and verified outcomes; use S078/S197 for security audit events and S286 for per-tool operation metadata
+- **Recommended tools:** Audit table, history UI
+- **Security considerations:** Exclude hidden prompts, keys, unrelated private data, and unverified claims; show unknown remote outcomes until reconciled
+- **Verification method:** Compare timeline to server event log
