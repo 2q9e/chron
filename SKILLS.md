@@ -1296,3 +1296,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Pointer Events, CSS min-size tokens, mobile browser testing
 - **Security considerations:** Do not require gesture-only access to event editing or cancellation
 - **Verification method:** Use touch emulation and verify adjacent actions are not activated together
+
+### S116 — Trust cues for AI actions
+
+- **Skill ID:** S116
+- **Name:** Trust cues for AI actions
+- **Purpose:** Make provenance and user control legible around generated suggestions
+- **When to use:** When presenting user-authored, deterministic, or—after S236 authorization—model-generated suggestions
+- **Implementation approach:** Label provenance, link source context, and separate every suggestion from execution; keep model generation unavailable while S236 is closed
+- **Recommended tools:** Design system labels, source chip, preview panel
+- **Security considerations:** Never make model content appear verified or executed without evidence; do not imply Meta endorsement
+- **Verification method:** Review proposal provenance after reload and verify the model route is blocked before S236
