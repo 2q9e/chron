@@ -2624,3 +2624,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Worker queue, run budget
 - **Security considerations:** Limits cannot depend on prompt instructions
 - **Verification method:** Exhaust each budget and inspect stop state
+
+### S236 — Meta inference adapter
+
+- **Skill ID:** S236
+- **Name:** Meta inference adapter
+- **Purpose:** Enforce the product-wide gate for all end-user Meta inference
+- **When to use:** Before enabling any model-generated answer, plan, tutoring, quiz, research, or study workflow
+- **Implementation approach:** Keep inference disabled by default; enable only after written Meta permission, operator/legal approval, adult 18+ eligibility, and official capability/terms verification, then route every call through the documented Meta adapter
+- **Recommended tools:** Official Meta documentation, server HTTP client
+- **Security considerations:** No Meta key intake/storage before written permission; no targeting minors; no alternate provider or fallback; deterministic and user-authored features remain distinct from inference
+- **Verification method:** Assert every generation route is blocked until all gates pass; after authorization, verify the official endpoint/capability, server-side credential handling, and redacted errors
