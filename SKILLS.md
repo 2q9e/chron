@@ -854,3 +854,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTTP ETag, framework conditional helpers
 - **Security considerations:** Do not allow validators to reveal cross-user equality for private content
 - **Verification method:** Verify 304 responses and ensure changed records produce fresh validators
+
+### S076 — Transactional outbox publishing
+
+- **Skill ID:** S076
+- **Name:** Transactional outbox publishing
+- **Purpose:** Avoid losing domain events between database commit and queue publish
+- **When to use:** When a committed write must trigger asynchronous work
+- **Implementation approach:** Insert outbox row in the same transaction and publish with a deduplicating worker
+- **Recommended tools:** PostgreSQL, transactional outbox worker
+- **Security considerations:** Limit event payload to the minimum data required by the consumer
+- **Verification method:** Crash between commit and publish, then verify eventual single processing
