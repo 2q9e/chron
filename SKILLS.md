@@ -2910,3 +2910,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenTelemetry, trace IDs
 - **Security considerations:** Do not attach prompts or keys to traces
 - **Verification method:** Follow IDs across a synthetic execution
+
+### S262 — Per-user run isolation
+
+- **Skill ID:** S262
+- **Name:** Per-user run isolation
+- **Purpose:** Keep parallel users’ context and events separate
+- **When to use:** When workers handle concurrent accounts
+- **Implementation approach:** Partition caches, queries, and events by owner
+- **Recommended tools:** Tenant repository, queue metadata
+- **Security considerations:** Derive owner from trusted session record
+- **Verification method:** Interleave two synthetic users and assert separation
