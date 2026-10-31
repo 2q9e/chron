@@ -4713,3 +4713,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright screenshots
 - **Security considerations:** Synthetic content only
 - **Verification method:** Review automated diffs for overflow/clipping, then manually inspect scene transitions and frame behavior under S155
+
+### S425 — Visual regression baselines
+
+- **Skill ID:** S425
+- **Name:** Visual regression baselines
+- **Purpose:** Spot unintended shared component changes
+- **When to use:** When tokens or primitives change
+- **Implementation approach:** Capture deterministic states with fixed fonts/data
+- **Recommended tools:** Playwright, screenshot service
+- **Security considerations:** Never commit private user screenshots
+- **Verification method:** Review diffs and update intentionally
