@@ -832,3 +832,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Framework body limits, streaming parser
 - **Security considerations:** Use lower limits for control endpoints and isolate file limits by type
 - **Verification method:** Send boundary and oversized bodies; confirm early rejection and stable memory
+
+### S074 — Content negotiation
+
+- **Skill ID:** S074
+- **Name:** Content negotiation
+- **Purpose:** Return formats clients actually request without ambiguous fallbacks
+- **When to use:** When an endpoint serves JSON, downloadable files, or text exports
+- **Implementation approach:** Parse Accept explicitly and return 406 for unsupported representations
+- **Recommended tools:** Framework negotiation middleware, MIME database
+- **Security considerations:** Set safe content types and attachment disposition for downloads
+- **Verification method:** Test supported, unsupported, and wildcard Accept headers
