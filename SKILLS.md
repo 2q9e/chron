@@ -3574,3 +3574,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Hint schema, interactive UI
 - **Security considerations:** Respect solution-release mode; keep model inference disabled until S236 and never use another provider
 - **Verification method:** Test reveal sequence with synthetic questions; verify no model request occurs while S236 is closed
+
+### S322 — Concept map generation
+
+- **Skill ID:** S322
+- **Name:** Concept map generation
+- **Purpose:** Show relationships among source concepts
+- **When to use:** For user-authored or deterministic maps without inference; model-generated maps only after the S236 gate
+- **Implementation approach:** Produce typed nodes and edges from permitted sources, cite each relation, and keep model generation disabled until written permission and capability checks in S236 pass
+- **Recommended tools:** React Flow, D3; official Meta inference only after S236 if generation is model-based
+- **Security considerations:** Reject unsupported edges and active links; no alternate provider or inference before S236
+- **Verification method:** Check every edge has evidence and keyboard access; verify model calls are blocked before authorization
