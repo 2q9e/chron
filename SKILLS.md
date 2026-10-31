@@ -2224,3 +2224,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Dependabot, OSV Scanner
 - **Security considerations:** Do not run scripts from unreviewed packages
 - **Verification method:** Rebuild lockfile and verify vulnerable path gone
+
+### S200 — Security header baseline
+
+- **Skill ID:** S200
+- **Name:** Security header baseline
+- **Purpose:** Apply browser policies across responses
+- **When to use:** Pages, errors, redirects, downloads
+- **Implementation approach:** Set HSTS, frame, nosniff, referrer, permissions
+- **Recommended tools:** Helmet, reverse proxy
+- **Security considerations:** Block framing by untrusted origins
+- **Verification method:** Check headers on success, error, redirect, file
