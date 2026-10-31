@@ -3695,3 +3695,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** FSRS library, typed settings
 - **Security considerations:** Do not silently reset learning history
 - **Verification method:** Replay card history across app versions
+
+### S333 — Recall rating calibration
+
+- **Skill ID:** S333
+- **Name:** Recall rating calibration
+- **Purpose:** Make difficulty ratings understandable
+- **When to use:** After card reveal
+- **Implementation approach:** Use stable Again/Hard/Good/Easy labels and definitions
+- **Recommended tools:** Button group, rating enum
+- **Security considerations:** Avoid shame-based rewards
+- **Verification method:** Verify each rating produces correct interval
