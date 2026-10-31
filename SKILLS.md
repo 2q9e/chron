@@ -1219,3 +1219,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Observable Plot, D3, chart accessibility review
 - **Security considerations:** Never invent product/demo metrics or calculate claims from incomplete records; synthetic chart fixtures belong only in tests
 - **Verification method:** Recompute labels from fixture data and compare chart scale to underlying values
+
+### S109 — Information density tuning
+
+- **Skill ID:** S109
+- **Name:** Information density tuning
+- **Purpose:** Fit more useful content without turning each view into visual noise
+- **When to use:** When a calendar or research page has competing detail levels
+- **Implementation approach:** Set density modes with explicit row heights and preserve target sizes
+- **Recommended tools:** CSS variables, responsive tables, user preference settings
+- **Security considerations:** Do not compress privacy or approval copy to fit a preferred density
+- **Verification method:** Test each density with realistic long titles and touch targets
