@@ -2037,3 +2037,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Policy engine, permission matrix
 - **Security considerations:** Ignore role claims from model output
 - **Verification method:** Test self-promotion and delegation boundaries
+
+### S183 — Abuse-resistant rate limits
+
+- **Skill ID:** S183
+- **Name:** Abuse-resistant rate limits
+- **Purpose:** Bound brute force and expensive operations
+- **When to use:** Auth, upload, generation endpoints
+- **Implementation approach:** Use distributed per-user, risk-aware buckets
+- **Recommended tools:** Redis, gateway limits
+- **Security considerations:** Avoid attacker-triggered permanent lockout
+- **Verification method:** Test bursts, proxy behavior, recovery
