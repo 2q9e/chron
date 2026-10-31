@@ -126,3 +126,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React useReducer, TypeScript discriminated unions
 - **Security considerations:** Reject impossible states before they reach privileged mutation controls
 - **Verification method:** Unit-test every allowed transition and representative invalid action
+
+### S010 — Context provider boundaries
+
+- **Skill ID:** S010
+- **Name:** Context provider boundaries
+- **Purpose:** Share stable dependencies without rerendering unrelated subtrees
+- **When to use:** When several descendants need the same theme, session view, or command bus
+- **Implementation approach:** Split contexts by update frequency and memoize provider values
+- **Recommended tools:** React Context, useMemo, Profiler
+- **Security considerations:** Never use context as a shortcut for delivering raw API credentials
+- **Verification method:** Profile a provider update and assert only intended consumers rerender
