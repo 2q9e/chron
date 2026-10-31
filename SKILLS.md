@@ -1773,3 +1773,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Secret manager, repo scanner
 - **Security considerations:** Meta credentials are excluded until written permission under S160/S236; no secret values in inventory or fixtures
 - **Verification method:** Reconcile inventory with runtime configuration
+
+### S159 — Secret scanning
+
+- **Skill ID:** S159
+- **Name:** Secret scanning
+- **Purpose:** Block credentials before publication
+- **When to use:** Every branch and public push
+- **Implementation approach:** Scan staged diff and full repository
+- **Recommended tools:** Gitleaks, GitHub scanning
+- **Security considerations:** Rotate confirmed exposure immediately
+- **Verification method:** Synthetic canary must fail CI
