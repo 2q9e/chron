@@ -3231,3 +3231,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OAuth SDK, secure session store
 - **Security considerations:** Consume state once; reject unbound callbacks
 - **Verification method:** Replay callback and attempt cross-session state swap
+
+### S291 — Google integration activation gate
+
+- **Skill ID:** S291
+- **Name:** Google integration activation gate
+- **Purpose:** Block Google integration activation until its official API, current terms, eligibility, scopes, and disconnect path are verified
+- **When to use:** Before exposing OAuth consent, API calls, imports, or writes for any Google service
+- **Implementation approach:** For each service, verify the official API supports the requested workflow and current terms/eligibility permit it; request minimum scopes and prove disconnect plus revocation where supported before enabling the flow
+- **Recommended tools:** Official Google API documentation and current terms, OAuth scope catalog, disconnect/revocation tests
+- **Security considerations:** No capability is active without a reviewed API/terms decision, minimum-scope consent, and working credential removal; S289–S309 are subordinate recipes, not independent approval
+- **Verification method:** Require dated review evidence and per-service scope/disconnect tests; missing or stale evidence keeps OAuth and API paths disabled
