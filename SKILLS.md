@@ -4139,3 +4139,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Lighthouse, Chrome Performance
 - **Security considerations:** No tracking IDs in diagnostics
 - **Verification method:** Measure cold/warm throttled loads
+
+### S373 — Interaction to Next Paint
+
+- **Skill ID:** S373
+- **Name:** Interaction to Next Paint
+- **Purpose:** Reduce delay after user input
+- **When to use:** When clicks or typing lag
+- **Implementation approach:** Trace long tasks near handlers
+- **Recommended tools:** Chrome DevTools, PerformanceObserver
+- **Security considerations:** Do not trace form values
+- **Verification method:** Record p75 on representative workflows
