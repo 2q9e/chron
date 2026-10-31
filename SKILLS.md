@@ -2270,3 +2270,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** SQL migrations, background backfill job
 - **Security considerations:** Keep authorization consistent during dual-read period
 - **Verification method:** Test old and new app versions against each migration stage
+
+### S204 — Primary-key strategy
+
+- **Skill ID:** S204
+- **Name:** Primary-key strategy
+- **Purpose:** Choose stable identifiers for joins and external references
+- **When to use:** When creating a durable entity
+- **Implementation approach:** Use generated opaque IDs with suitable database index locality
+- **Recommended tools:** UUIDv7, ULID, PostgreSQL identity
+- **Security considerations:** Do not expose sequential IDs when enumeration creates risk
+- **Verification method:** Load-test inserts and verify IDs are not client-controlled
