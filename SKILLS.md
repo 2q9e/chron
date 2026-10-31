@@ -2303,3 +2303,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL CHECK constraints
 - **Security considerations:** Do not store credentials in constraint error text
 - **Verification method:** Insert invalid states directly and confirm database rejects them
+
+### S207 — Composite uniqueness
+
+- **Skill ID:** S207
+- **Name:** Composite uniqueness
+- **Purpose:** Prevent duplicate records within a natural owner scope
+- **When to use:** When names, external IDs, or recurrence keys must be unique
+- **Implementation approach:** Create unique indexes over tenant plus business key
+- **Recommended tools:** PostgreSQL unique index
+- **Security considerations:** Include tenant scope to avoid cross-user collisions
+- **Verification method:** Race concurrent duplicate creates and verify one is rejected
