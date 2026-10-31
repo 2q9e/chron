@@ -1285,3 +1285,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS Grid, container queries, Figma variants
 - **Security considerations:** Keep all primary actions available without hover on touch devices
 - **Verification method:** Inspect 320px, tablet, and wide viewport screenshots for task parity
+
+### S115 — Touch target and gesture design
+
+- **Skill ID:** S115
+- **Name:** Touch target and gesture design
+- **Purpose:** Make common interactions reliable on small touchscreens
+- **When to use:** When calendar cells, menus, or draggable items are used on phones
+- **Implementation approach:** Provide adequate hit areas and a non-drag alternative for precision actions
+- **Recommended tools:** Pointer Events, CSS min-size tokens, mobile browser testing
+- **Security considerations:** Do not require gesture-only access to event editing or cancellation
+- **Verification method:** Use touch emulation and verify adjacent actions are not activated together
