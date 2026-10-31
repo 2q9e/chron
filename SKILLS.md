@@ -4902,3 +4902,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Gitleaks, GitHub secret scanning
 - **Security considerations:** Fail closed on confirmed high-confidence secret
 - **Verification method:** Seed canary and confirm job failure
+
+### S442 — Dependency update discipline
+
+- **Skill ID:** S442
+- **Name:** Dependency update discipline
+- **Purpose:** Keep libraries patched with reviewable changes
+- **When to use:** When automated update PRs arrive
+- **Implementation approach:** Group minor updates cautiously; isolate major changes
+- **Recommended tools:** Dependabot, Renovate
+- **Security considerations:** Review package ownership and install scripts
+- **Verification method:** Run lockfile, tests, typecheck after update
