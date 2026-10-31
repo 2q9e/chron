@@ -744,3 +744,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Pino, OpenTelemetry log bridge
 - **Security considerations:** Whitelist fields and exclude credentials, prompt contents, and uploaded text
 - **Verification method:** Run log-capture tests with seeded secrets and scan output for matches
+
+### S066 — Distributed request tracing
+
+- **Skill ID:** S066
+- **Name:** Distributed request tracing
+- **Purpose:** Follow a request across API, queue, and provider boundaries
+- **When to use:** When latency or failures span multiple services
+- **Implementation approach:** Propagate trace context and add spans around expensive boundary calls
+- **Recommended tools:** OpenTelemetry, W3C Trace Context
+- **Security considerations:** Do not attach user content or identifiers beyond approved pseudonymous tags
+- **Verification method:** Trace a test request end-to-end and confirm spans link without sensitive attributes
