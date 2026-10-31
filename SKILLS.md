@@ -379,3 +379,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next.js Image, srcset, AVIF/WebP
 - **Security considerations:** Use trusted origins and avoid exposing private upload URLs in public markup
 - **Verification method:** Throttle mobile network and verify selected source, layout stability, and alt text
+
+### S033 — Web font loading strategy
+
+- **Skill ID:** S033
+- **Name:** Web font loading strategy
+- **Purpose:** Keep typography stable while downloading intended font files
+- **When to use:** When a custom family improves product identity or legibility
+- **Implementation approach:** Subset needed weights, preload only critical faces, and choose a compatible fallback
+- **Recommended tools:** Fontsource, CSS font-display, Lighthouse
+- **Security considerations:** Use licensed font files and avoid third-party font requests that leak page visits
+- **Verification method:** Throttle network and compare fallback shift and glyph coverage
