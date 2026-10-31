@@ -1562,3 +1562,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Three.js FogExp2, shader fog
 - **Security considerations:** Do not let haze conceal interactive targets
 - **Verification method:** Check far-target contrast at low brightness
+
+### S140 — Purposeful particles
+
+- **Skill ID:** S140
+- **Name:** Purposeful particles
+- **Purpose:** Use particle motion only to depict an actual process or material
+- **When to use:** Dust, rain, or signal flow helps explain a scene
+- **Implementation approach:** Seed motion, cap count, and expose reduced-density mode
+- **Recommended tools:** InstancedBufferGeometry, seeded RNG
+- **Security considerations:** Avoid alert-like flashing and distracting motion
+- **Verification method:** Profile frame time and compare comprehension with particles removed
