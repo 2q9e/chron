@@ -324,3 +324,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript, React types, ESLint
 - **Security considerations:** Do not trust event payloads as validated server input
 - **Verification method:** Run strict type checking and exercise the event with a realistic DOM target
+
+### S028 — Feature module boundaries
+
+- **Skill ID:** S028
+- **Name:** Feature module boundaries
+- **Purpose:** Keep UI, data access, and presentation ownership coherent
+- **When to use:** When adding a new route or a feature shared by multiple pages
+- **Implementation approach:** Group components and hooks by product capability; export narrow entry points
+- **Recommended tools:** TypeScript path aliases, ESLint boundaries
+- **Security considerations:** Prevent a client feature from importing server-only modules
+- **Verification method:** Run dependency graph lint and verify forbidden imports fail
