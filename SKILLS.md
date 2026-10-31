@@ -170,3 +170,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React useRef, forwardRef, browser DOM APIs
 - **Security considerations:** Do not store bearer tokens or long-lived personal data in DOM refs
 - **Verification method:** Test focus restoration and ref nulling across mount/unmount
+
+### S014 — Controlled form design
+
+- **Skill ID:** S014
+- **Name:** Controlled form design
+- **Purpose:** Keep form values and validation feedback synchronized
+- **When to use:** When fields need live validation or dependent controls
+- **Implementation approach:** Use typed form state, touched tracking, and server-confirmed submission results
+- **Recommended tools:** React, React Hook Form, Zod
+- **Security considerations:** Avoid logging field contents; mask passwords and key inputs
+- **Verification method:** Keyboard-submit valid, invalid, and corrected forms; assert error association
