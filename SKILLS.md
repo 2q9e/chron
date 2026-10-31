@@ -4227,3 +4227,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML picture, Next Image
 - **Security considerations:** Do not expose private upload URLs
 - **Verification method:** Inspect selected mobile source
+
+### S381 — Font loading optimization
+
+- **Skill ID:** S381
+- **Name:** Font loading optimization
+- **Purpose:** Reduce font delay and layout shift
+- **When to use:** When custom type defines identity
+- **Implementation approach:** Subset scripts and preload critical faces
+- **Recommended tools:** Fontsource, Lighthouse
+- **Security considerations:** Check license and limit external requests
+- **Verification method:** Measure under throttled network
