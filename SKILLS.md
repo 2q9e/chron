@@ -1628,3 +1628,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** R3F useFrame, frameloop demand
 - **Security considerations:** Stop animation loops when route is hidden or unmounted
 - **Verification method:** Check idle CPU and render counts after motion ends
+
+### S146 — Adaptive render quality
+
+- **Skill ID:** S146
+- **Name:** Adaptive render quality
+- **Purpose:** Reduce GPU work on constrained devices
+- **When to use:** Measured frame time misses the target
+- **Implementation approach:** Adjust DPR, shadows, detail, and postprocessing from capability
+- **Recommended tools:** R3F dpr, PerformanceMonitor
+- **Security considerations:** Feature detection should not become device fingerprinting
+- **Verification method:** Profile several device classes and toggle quality modes
