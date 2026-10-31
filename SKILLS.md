@@ -2591,3 +2591,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed plan schema, Zod; documented Meta structured output only after S236 authorization
 - **Security considerations:** A plan is never authority; no model inference or alternate provider while the S236 gate is closed
 - **Verification method:** Reject cycles and missing dependencies; verify the model path is disabled before authorization and deterministic plans still validate
+
+### S233 — Plan schema
+
+- **Skill ID:** S233
+- **Name:** Plan schema
+- **Purpose:** Make orchestration data inspectable
+- **When to use:** When planner output controls execution
+- **Implementation approach:** Use typed IDs, tool names, arguments, completion criteria
+- **Recommended tools:** JSON Schema, TypeScript
+- **Security considerations:** Reject unknown tools and privilege fields
+- **Verification method:** Fuzz missing and extra plan fields
