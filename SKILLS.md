@@ -5067,3 +5067,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Migration CLI, release workflow
 - **Security considerations:** Use least-privilege migration identity
 - **Verification method:** Deploy old/new app versions through migration sequence
+
+### S457 — Feature flag lifecycle
+
+- **Skill ID:** S457
+- **Name:** Feature flag lifecycle
+- **Purpose:** Manage a temporary feature flag from approved introduction through active rollout
+- **When to use:** When a capability needs a controlled rollout; never use a flag to bypass the product or provider gates
+- **Implementation approach:** Record justification, owner, rollout rule, permissions, and removal date; use S493 for expiry reporting and cleanup verification
+- **Recommended tools:** OpenFeature, config service
+- **Security considerations:** A flag may hide capability but can never bypass authorization, user eligibility, Meta permission, or Google activation gates
+- **Verification method:** Test on/off authorization parity and owner/expiry metadata; verify expired flags are removed under S493
