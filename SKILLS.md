@@ -2347,3 +2347,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** EXPLAIN ANALYZE, auto_explain
 - **Security considerations:** Use synthetic or scrubbed data in shared query plans
 - **Verification method:** Re-run with representative cardinality and verify planner choice
+
+### S211 — Transaction boundary design
+
+- **Skill ID:** S211
+- **Name:** Transaction boundary design
+- **Purpose:** Keep related writes atomic without holding locks too long
+- **When to use:** When one user action updates multiple records
+- **Implementation approach:** Place only consistency-critical operations in a transaction
+- **Recommended tools:** PostgreSQL transactions, ORM transaction API
+- **Security considerations:** Perform authorization reads inside the same consistency boundary where needed
+- **Verification method:** Inject failure between writes and verify full rollback
