@@ -4647,3 +4647,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Policy matrix, integration test
 - **Security considerations:** No real account tokens in fixtures
 - **Verification method:** Denied path makes zero dependency calls
+
+### S419 — Approval binding tests
+
+- **Skill ID:** S419
+- **Name:** Approval binding tests
+- **Purpose:** Reject changed proposals after approval
+- **When to use:** When preview or action flow changes
+- **Implementation approach:** Mutate one reviewed payload/version/scope field and attempt execution as another user
+- **Recommended tools:** Integration test, hash helper
+- **Security considerations:** Use synthetic test-only actions; approval must be server-validated against authenticated user and exact proposal
+- **Verification method:** No write executes after payload/version/scope mismatch, expiry, or wrong-user replay
