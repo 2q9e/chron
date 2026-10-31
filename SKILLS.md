@@ -788,3 +788,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Kubernetes probes, health endpoint middleware
 - **Security considerations:** Do not reveal dependency hostnames or configuration details publicly
 - **Verification method:** Simulate dependency outage and confirm readiness drops while liveness stays true
+
+### S070 — Graceful process shutdown
+
+- **Skill ID:** S070
+- **Name:** Graceful process shutdown
+- **Purpose:** Finish or safely cancel active work during deployment restarts
+- **When to use:** When a process handles HTTP requests or queued jobs
+- **Implementation approach:** Stop accepting traffic, drain in-flight work, close clients, then exit on deadline
+- **Recommended tools:** Node SIGTERM hooks, server close, queue drain APIs
+- **Security considerations:** Bound drain time and avoid leaving partially committed sensitive operations
+- **Verification method:** Send SIGTERM during requests and verify completion or safe retry semantics
