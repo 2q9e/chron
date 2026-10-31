@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { timedEventSegmentsForDate } from "./calendar-model.ts";
+import { allDayEventsForDate, timedEventSegmentsForDate } from "./calendar-model.ts";
 
 function timedEvent(id, startLocal, endLocal, timeZone, startsAt, endsAt) {
   return {
@@ -42,18 +42,79 @@ test("adjacent five-minute events occupy separate rendered lanes", () => {
   assert.equal(second.event.id, "second");
   assert.ok(Math.abs(first.heightRem - 1.8) < 1e-9);
   assert.ok(Math.abs(second.heightRem - 1.8) < 1e-9);
+  assert.equal(timeline.belowTrackEvents.length, 0);
   assert.ok(first.leftPercent + first.widthPercent <= second.leftPercent);
 });
 
-test("a short event near midnight is clipped to the day's elapsed-time track", () => {
+test("a one-minute event ending at midnight gets a below-track target", () => {
+  const lateEvent = timedEvent(
+    "late",
+    "2026-06-15T23:59",
+    "2026-06-16T00:00",
+    "UTC",
+    "2026-06-15T23:59:00Z",
+    "2026-06-16T00:00:00Z",
+  );
   const timeline = timedEventSegmentsForDate([
-    utcEvent("late", "23:58", "23:59"),
+    utcEvent("normal", "09:00", "10:00"),
+    lateEvent,
   ], "2026-06-15", "UTC", "en-US");
-  const [late] = timeline.events;
+  const [normal] = timeline.events;
+  const [late] = timeline.belowTrackEvents;
 
   assert.equal(timeline.trackHeightRem, 24 * 2.75);
-  assert.ok(late.topRem + late.heightRem <= timeline.trackHeightRem + 1e-9);
+  assert.deepEqual(timeline.events.map((segment) => segment.event.id), ["normal"]);
+  assert.equal(normal.heightRem, 2.75);
+  assert.equal(late.event.id, "late");
+  assert.ok(Math.abs(late.heightRem - (2.75 / 60)) < 1e-9);
   assert.ok(late.heightRem < 1.8);
+  assert.equal(late.endsAtMidnight, true);
+  assert.ok(late.topRem + late.heightRem <= timeline.trackHeightRem + 1e-9);
+  assert.ok(Math.abs(late.topRem + late.heightRem - timeline.trackHeightRem) < 1e-9);
+});
+
+test("a continued segment ending at midnight remains a full-height track event", () => {
+  const continued = timedEvent(
+    "continued",
+    "2026-06-14T23:30",
+    "2026-06-16T00:00",
+    "UTC",
+    "2026-06-14T23:30:00Z",
+    "2026-06-16T00:00:00Z",
+  );
+  const timeline = timedEventSegmentsForDate([
+    continued,
+  ], "2026-06-15", "UTC", "en-US");
+  const [segment] = timeline.events;
+
+  assert.equal(segment.event.id, "continued");
+  assert.equal(segment.startsOnDate, false);
+  assert.equal(segment.endsOnDate, true);
+  assert.equal(segment.endsAtMidnight, true);
+  assert.equal(segment.heightRem, timeline.trackHeightRem);
+  assert.equal(timeline.belowTrackEvents.length, 0);
+});
+
+test("all-day events stay in the all-day event list", () => {
+  const allDay = {
+    id: "all-day",
+    kind: "all-day",
+    title: "All-day event",
+    details: null,
+    revision: 1,
+    startDate: "2026-06-15",
+    endDate: "2026-06-16",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+  const timeline = timedEventSegmentsForDate([
+    allDay,
+    utcEvent("normal", "09:00", "10:00"),
+  ], "2026-06-15", "UTC", "en-US");
+
+  assert.deepEqual(allDayEventsForDate([allDay], "2026-06-15").map((event) => event.id), ["all-day"]);
+  assert.deepEqual(timeline.events.map((segment) => segment.event.id), ["normal"]);
+  assert.equal(timeline.belowTrackEvents.length, 0);
 });
 
 test("the spring-forward day keeps event positions mapped to elapsed time", () => {

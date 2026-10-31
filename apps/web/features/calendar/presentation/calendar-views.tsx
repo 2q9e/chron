@@ -19,6 +19,7 @@ type EventButtonProps = Readonly<{
   locale: string;
   onSelect: (event: CalendarEvent) => void;
   compact?: boolean;
+  timeLabelOverride?: string;
 }>;
 
 type TimedEventDaySegment = Readonly<{
@@ -70,7 +71,33 @@ function timedEventDayLabel(
   locale: string,
 ): string {
   const segment = timedEventDaySegment(event, selectedDate, timeZone);
-  if (segment.startsOnDate) return formatInstant(event.startsAt, timeZone, locale);
+  if (segment.startsOnDate) {
+    const start = formatInstant(event.startsAt, timeZone, locale);
+    return segment.endsAtMidnight
+      ? `${start}–midnight`
+      : start;
+  }
+  if (segment.endsOnDate) {
+    return `Until ${timedEventEndLabel(event, selectedDate, timeZone, locale)}`;
+  }
+  return "Continues";
+}
+
+function shortTimedEventLabel(
+  event: Extract<CalendarEvent, { kind: "timed" }>,
+  selectedDate: string,
+  timeZone: string,
+  locale: string,
+): string {
+  const segment = timedEventDaySegment(event, selectedDate, timeZone);
+  if (segment.startsOnDate) {
+    const start = formatInstant(event.startsAt, timeZone, locale);
+    if (segment.endsAtMidnight) return `${start}–midnight`;
+    if (segment.endsOnDate) {
+      return `${start}–${timedEventEndLabel(event, selectedDate, timeZone, locale)}`;
+    }
+    return `${start} – continues`;
+  }
   if (segment.endsOnDate) {
     return `Until ${timedEventEndLabel(event, selectedDate, timeZone, locale)}`;
   }
@@ -108,9 +135,10 @@ export function CalendarEventButton({
   locale,
   onSelect,
   compact = false,
+  timeLabelOverride,
 }: EventButtonProps) {
   const timeLabel = event.kind === "timed"
-    ? timedEventDayLabel(event, date, timeZone, locale)
+    ? timeLabelOverride ?? timedEventDayLabel(event, date, timeZone, locale)
     : "All day";
   return (
     <button
@@ -255,7 +283,9 @@ function DayColumn({
         <div className={styles.eventLayer}>
           {timeline.events.map((segment) => {
             const time = segment.startsOnDate
-              ? `${segment.localStartLabel} ${segment.timeZoneLabel}`
+              ? segment.endsAtMidnight
+                ? `${segment.localStartLabel}–midnight ${segment.timeZoneLabel}`
+                : `${segment.localStartLabel} ${segment.timeZoneLabel}`
             : segment.endsOnDate
               ? `Until ${timedEventEndLabel(segment.event, date, timeZone, locale, true)}`
               : "Continues";
@@ -284,6 +314,22 @@ function DayColumn({
           })}
         </div>
       </div>
+      {timeline.belowTrackEvents.length > 0 && (
+        <ul className={styles.shortTimedEvents} aria-label={`Short events for ${dateTitle}`}>
+          {timeline.belowTrackEvents.map((segment) => (
+            <li key={segment.event.id}>
+              <CalendarEventButton
+                date={date}
+                event={segment.event}
+                locale={locale}
+                onSelect={onSelectEvent}
+                timeLabelOverride={shortTimedEventLabel(segment.event, date, timeZone, locale)}
+                timeZone={timeZone}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
       <div className={styles.mobileTimedEvents}>
         {dayEvents.filter((event) => event.kind === "timed").map((event) => (
           <CalendarEventButton date={date} event={event} key={event.id} locale={locale} onSelect={onSelectEvent} timeZone={timeZone} />

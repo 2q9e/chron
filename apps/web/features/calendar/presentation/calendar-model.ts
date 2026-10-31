@@ -370,6 +370,7 @@ export type TimedEventSegment = Readonly<{
   widthPercent: number;
   startsOnDate: boolean;
   endsOnDate: boolean;
+  endsAtMidnight: boolean;
   localStartLabel: string;
   timeZoneLabel: string;
 }>;
@@ -382,6 +383,8 @@ type PositionedSegment = {
   heightRem: number;
   startsOnDate: boolean;
   endsOnDate: boolean;
+  endsAtMidnight: boolean;
+  needsAccessibleFallback: boolean;
   localStartLabel: string;
   timeZoneLabel: string;
   lane: number;
@@ -393,7 +396,12 @@ export function timedEventSegmentsForDate(
   selectedDate: string,
   timeZone: string,
   locale: string,
-): Readonly<{ trackHeightRem: number; hourLabels: readonly string[]; events: readonly TimedEventSegment[] }> {
+): Readonly<{
+  trackHeightRem: number;
+  hourLabels: readonly string[];
+  events: readonly TimedEventSegment[];
+  belowTrackEvents: readonly TimedEventSegment[];
+}> {
   const selected = date(selectedDate);
   const startOfDay = selected.toZonedDateTime(timeZone).toInstant();
   const startOfNextDay = selected.add({ days: 1 }).toZonedDateTime(timeZone).toInstant();
@@ -419,15 +427,19 @@ export function timedEventSegmentsForDate(
     const endMs = Math.min(eventEndMs, dayEndMs);
     if (endMs <= startMs) continue;
     const layoutEndMs = Math.min(dayEndMs, Math.max(endMs, startMs + minimumTimedEventDurationMs));
+    const topRem = ((startMs - dayStartMs) / millisecondsPerHour) * rowHeightRem;
+    const heightRem = ((layoutEndMs - startMs) / millisecondsPerHour) * rowHeightRem;
     const startZoned = Temporal.Instant.from(event.startsAt).toZonedDateTimeISO(timeZone);
     positioned.push({
       event,
       startMs,
       layoutEndMs,
-      topRem: ((startMs - dayStartMs) / millisecondsPerHour) * rowHeightRem,
-      heightRem: ((layoutEndMs - startMs) / millisecondsPerHour) * rowHeightRem,
+      topRem,
+      heightRem,
       startsOnDate: eventStartMs >= dayStartMs,
       endsOnDate: eventEndMs <= dayEndMs,
+      endsAtMidnight: eventEndMs === dayEndMs,
+      needsAccessibleFallback: heightRem < minimumTimedEventHeightRem,
       localStartLabel: startZoned.toPlainTime().toLocaleString(locale, { hour: "numeric", minute: "2-digit" }),
       timeZoneLabel: new Intl.DateTimeFormat(locale, { timeZone, timeZoneName: "short" })
         .format(new Date(startMs)),
@@ -460,26 +472,31 @@ export function timedEventSegmentsForDate(
   };
 
   for (const segment of positioned) {
+    if (segment.needsAccessibleFallback) continue;
     if (cluster.length > 0 && segment.startMs >= clusterEnd) assignCluster();
     cluster.push(segment);
     clusterEnd = Math.max(clusterEnd, segment.layoutEndMs);
   }
   if (cluster.length > 0) assignCluster();
 
+  const segments = positioned.map((segment) => ({
+    event: segment.event,
+    topRem: segment.topRem,
+    heightRem: segment.heightRem,
+    leftPercent: (segment.lane / segment.lanes) * 100,
+    widthPercent: 100 / segment.lanes,
+    startsOnDate: segment.startsOnDate,
+    endsOnDate: segment.endsOnDate,
+    endsAtMidnight: segment.endsAtMidnight,
+    localStartLabel: segment.localStartLabel,
+    timeZoneLabel: segment.timeZoneLabel,
+  }));
+
   return {
     trackHeightRem,
     hourLabels,
-    events: positioned.map((segment) => ({
-      event: segment.event,
-      topRem: segment.topRem,
-      heightRem: segment.heightRem,
-      leftPercent: (segment.lane / segment.lanes) * 100,
-      widthPercent: 100 / segment.lanes,
-      startsOnDate: segment.startsOnDate,
-      endsOnDate: segment.endsOnDate,
-      localStartLabel: segment.localStartLabel,
-      timeZoneLabel: segment.timeZoneLabel,
-    })),
+    events: segments.filter((segment) => segment.heightRem >= minimumTimedEventHeightRem),
+    belowTrackEvents: segments.filter((segment) => segment.heightRem < minimumTimedEventHeightRem),
   };
 }
 

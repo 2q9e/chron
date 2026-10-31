@@ -293,6 +293,16 @@
   min-height: 0;
   z-index: 1;
 }
+.shortTimedEvents {
+  display: grid;
+  gap: .35rem;
+  list-style: none;
+  margin: .5rem .75rem 0;
+  padding: 0;
+}
+.shortTimedEvents li {
+  min-width: 0;
+}
 .mobileTimedEvents {
   display: none;
 }
@@ -434,6 +444,9 @@
     display: grid;
     gap: .25rem;
     padding: .5rem .75rem;
+  }
+  .weekCalendar .shortTimedEvents {
+    display: none;
   }
 }
 @media(prefers-reduced-motion:reduce) {
