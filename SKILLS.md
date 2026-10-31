@@ -2679,3 +2679,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Database schema, memory service
 - **Security considerations:** Never retain secrets or raw documents as general memory
 - **Verification method:** Test export, deletion, and consent revocation
+
+### S241 — Source-linked memory
+
+- **Skill ID:** S241
+- **Name:** Source-linked memory
+- **Purpose:** Trace remembered facts to original evidence
+- **When to use:** When prior facts affect new responses
+- **Implementation approach:** Store source ID, owner, timestamp, and confidence
+- **Recommended tools:** Typed records, retrieval store
+- **Security considerations:** Only retrieve current user’s memories
+- **Verification method:** Delete source and confirm dependent fact is excluded
