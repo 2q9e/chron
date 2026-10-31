@@ -4691,3 +4691,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright pointer API
 - **Security considerations:** Do not mutate real calendars
 - **Verification method:** Read saved start/end and zone
+
+### S423 — Keyboard workflow tests
+
+- **Skill ID:** S423
+- **Name:** Keyboard workflow tests
+- **Purpose:** Confirm key journeys do not require pointer
+- **When to use:** For dialog, calendar, quiz, menus
+- **Implementation approach:** Navigate by Tab, arrows, Enter, Escape
+- **Recommended tools:** Playwright, Testing Library
+- **Security considerations:** Preserve focus security behavior
+- **Verification method:** Assert focus sequence and visibility
