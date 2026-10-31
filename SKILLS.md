@@ -3651,3 +3651,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Database transaction, form state
 - **Security considerations:** Authorize attempt by notebook owner
 - **Verification method:** Reload mid-attempt and compare saved state
+
+### S329 — Mastery estimation
+
+- **Skill ID:** S329
+- **Name:** Mastery estimation
+- **Purpose:** Track topic understanding across attempts
+- **When to use:** When recommending next study topics
+- **Implementation approach:** Combine recent accuracy, recency, and item difficulty
+- **Recommended tools:** Mastery model, event ledger
+- **Security considerations:** Label estimates as informal, not grades
+- **Verification method:** Compare calculation with seeded history
