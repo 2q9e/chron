@@ -3308,3 +3308,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Calendar API, idempotency ledger
 - **Security considerations:** Every consequential external write requires approval; never mutate from model output alone and never enable before S291
 - **Verification method:** Before S291, verify writes are unavailable; afterward confirm approved event ID and before/after state, and deny changed or unapproved payloads
+
+### S298 — Google Classroom assignment sync
+
+- **Skill ID:** S298
+- **Name:** Google Classroom assignment sync
+- **Purpose:** Import courses and due dates from Classroom
+- **When to use:** Only after S291 review and confirmation the account/service is eligible, when importing Classroom work
+- **Implementation approach:** Use official Classroom coursework list with minimal scopes
+- **Recommended tools:** Google Classroom API, OAuth client
+- **Security considerations:** Respect course membership and service eligibility
+- **Verification method:** Compare imported assignments to controlled test course
