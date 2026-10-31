@@ -4093,3 +4093,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Provider ETag, sync service
 - **Security considerations:** Never overwrite user changes silently; approval must match exact imported diff and target
 - **Verification method:** Make a local edit, then import a changed provider record; verify conflict state and an approval-bound local draft, with no outbound provider write
+
+### S369 — Draft and approved edits
+
+- **Skill ID:** S369
+- **Name:** Draft and approved edits
+- **Purpose:** Keep every proposed calendar change pending until the user approves the exact draft
+- **When to use:** For event creation, editing, movement, resizing, recurrence changes, bulk updates, and agent-generated schedule proposals
+- **Implementation approach:** Persist proposed changes as versioned drafts; preview affected events and execute only after explicit owner approval bound to the exact payload under S193
+- **Recommended tools:** Action proposal, approval record
+- **Security considerations:** No calendar edit reaches committed local or external state before approval; recheck ownership, scope, versions, and provider permission on execution
+- **Verification method:** Verify create/edit/drag/resize/sync all remain drafts; mutate an approved draft and assert execution is denied
