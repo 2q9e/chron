@@ -955,3 +955,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS clamp, design tokens, type-scale calculator
 - **Security considerations:** Preserve zoom and user font-size settings; do not lock text to pixels
 - **Verification method:** Inspect heading hierarchy at mobile, tablet, desktop, and 200% zoom
+
+### S085 — Readable measure
+
+- **Skill ID:** S085
+- **Name:** Readable measure
+- **Purpose:** Keep paragraphs and data labels within comfortable line lengths
+- **When to use:** When prose spans wide screens or dense cards
+- **Implementation approach:** Constrain text measure independently from surrounding layout width
+- **Recommended tools:** CSS max-width in ch units, typography tokens
+- **Security considerations:** Ensure zoomed and translated text can expand without clipping
+- **Verification method:** Check longest localization and browser zoom for line wraps and overflow
