@@ -4460,3 +4460,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Vitest, table fixtures
 - **Security considerations:** Use synthetic values only
 - **Verification method:** Cover boundaries and invalid input
+
+### S402 — API contract tests
+
+- **Skill ID:** S402
+- **Name:** API contract tests
+- **Purpose:** Keep request and response shapes stable
+- **When to use:** When routes evolve
+- **Implementation approach:** Validate schemas and status codes against specification
+- **Recommended tools:** Vitest, OpenAPI diff
+- **Security considerations:** Exclude tokens from fixtures
+- **Verification method:** Fail on unreviewed breaking change
