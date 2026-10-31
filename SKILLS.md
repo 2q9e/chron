@@ -1010,3 +1010,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** axe, WCAG contrast calculator, browser devtools
 - **Security considerations:** Do not use low-contrast opacity as a proxy for disabled security
 - **Verification method:** Automate design-token contrast checks and inspect screenshots; use S470 for runtime state coverage
+
+### S090 — Radius and shadow hierarchy
+
+- **Skill ID:** S090
+- **Name:** Radius and shadow hierarchy
+- **Purpose:** Use edge softness and elevation to clarify real grouping
+- **When to use:** When panels and overlays need differentiated depth
+- **Implementation approach:** Assign a few radii and shadow roles; reserve elevation for floating layers
+- **Recommended tools:** CSS tokens, Figma effects
+- **Security considerations:** Avoid shadows that obscure focus rings or imply false clickability
+- **Verification method:** Compare layered surfaces on both light and dark backgrounds
