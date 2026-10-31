@@ -4326,3 +4326,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CDN, Cache-Control
 - **Security considerations:** Do not publish private uploads
 - **Verification method:** Check headers and version rollover
+
+### S390 — API payload shaping
+
+- **Skill ID:** S390
+- **Name:** API payload shaping
+- **Purpose:** Reduce transfer and parse time
+- **When to use:** When endpoints return oversized objects
+- **Implementation approach:** Return narrow DTOs and bounded pages
+- **Recommended tools:** OpenAPI, Zod
+- **Security considerations:** Exclude secrets and irrelevant private fields
+- **Verification method:** Compare bytes and UI requirements
