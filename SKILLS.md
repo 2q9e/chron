@@ -4205,3 +4205,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Next dynamic import, analyzer
 - **Security considerations:** Keep server code out of browser chunks
 - **Verification method:** Inspect cold bundle graph
+
+### S379 — Image format selection
+
+- **Skill ID:** S379
+- **Name:** Image format selection
+- **Purpose:** Reduce bytes while preserving detail
+- **When to use:** For product and lesson imagery
+- **Implementation approach:** Serve AVIF/WebP with intrinsic size
+- **Recommended tools:** Next Image, sharp
+- **Security considerations:** Use trusted remote origins
+- **Verification method:** Compare bytes and visual quality
