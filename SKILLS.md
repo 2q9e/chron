@@ -5212,3 +5212,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** aria-describedby, aria-invalid
 - **Security considerations:** Do not return backend stack traces as error text
 - **Verification method:** Submit invalid values and hear associated messages
+
+### S470 — Text contrast verification
+
+- **Skill ID:** S470
+- **Name:** Text contrast verification
+- **Purpose:** Verify rendered text contrast across actual component states and themes
+- **When to use:** When selecting any foreground/background pair
+- **Implementation approach:** Measure runtime foreground/background pairs, including hover, disabled, and focus; use S089 when establishing palette tokens
+- **Recommended tools:** axe, contrast checker
+- **Security considerations:** Do not communicate permission state by color alone
+- **Verification method:** Automate palette checks and inspect rendered screenshots across themes; ensure permission state also has non-color cues
