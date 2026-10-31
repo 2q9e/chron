@@ -1441,3 +1441,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** R3F, GSAP timeline
 - **Security considerations:** Dispose chapter-specific user data when leaving a state
 - **Verification method:** Compare chapter endpoints for stray or duplicated objects
+
+### S129 — GLTF asset loading
+
+- **Skill ID:** S129
+- **Name:** GLTF asset loading
+- **Purpose:** Load custom models with visible failure handling
+- **When to use:** A scene uses a designed 3D asset
+- **Implementation approach:** Compress GLB, preload near use, and render a fallback on error
+- **Recommended tools:** GLTFLoader, drei useGLTF
+- **Security considerations:** Pin trusted asset origins and review redistribution licenses
+- **Verification method:** Test cold cache, offline mode, and decoder failure
