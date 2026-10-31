@@ -2580,3 +2580,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed unions, state table
 - **Security considerations:** Validate transitions against run owner; do not enter inference states while S236 is closed
 - **Verification method:** Test legal and illegal transitions
+
+### S232 — Plan decomposition
+
+- **Skill ID:** S232
+- **Name:** Plan decomposition
+- **Purpose:** Turn broad requests into checkable steps
+- **When to use:** For deterministic or user-authored decomposition immediately; for model-generated plans only after the written-permission and capability gates in S236
+- **Implementation approach:** Represent steps, dependencies, outputs, and risk in a validated DAG; keep deterministic/user-authored planning available while inference is disabled, and use only officially supported Meta inference after S236
+- **Recommended tools:** Typed plan schema, Zod; documented Meta structured output only after S236 authorization
+- **Security considerations:** A plan is never authority; no model inference or alternate provider while the S236 gate is closed
+- **Verification method:** Reject cycles and missing dependencies; verify the model path is disabled before authorization and deterministic plans still validate
