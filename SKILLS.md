@@ -5445,3 +5445,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Result types, error enum
 - **Security considerations:** Sanitize before telemetry and client response
 - **Verification method:** Test mapping for permission, conflict, and dependency faults
+
+### S491 — Resource lifecycle ownership
+
+- **Skill ID:** S491
+- **Name:** Resource lifecycle ownership
+- **Purpose:** Make cleanup responsibility explicit for files and workers
+- **When to use:** When code allocates streams, timers, or GPU resources
+- **Implementation approach:** Tie dispose/close/abort to owning request or component lifecycle
+- **Recommended tools:** AbortController, React cleanup, `using` where supported
+- **Security considerations:** Cleanup must run when account or route changes
+- **Verification method:** Unmount, cancel, and failure-path leak tests
