@@ -3750,3 +3750,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** SQL aggregates, chart library
 - **Security considerations:** Never fabricate streaks or completion
 - **Verification method:** Recompute view from known event fixture
+
+### S338 — Study visualization semantics
+
+- **Skill ID:** S338
+- **Name:** Study visualization semantics
+- **Purpose:** Choose marks suited to learning data
+- **When to use:** When charting time, accuracy, or due load
+- **Implementation approach:** Label units, date range, and missing values
+- **Recommended tools:** Observable Plot, D3
+- **Security considerations:** Avoid causal claims from simple correlation
+- **Verification method:** Compare plotted points with query output
