@@ -3684,3 +3684,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Card editor, citation component
 - **Security considerations:** Avoid copying whole copyrighted chapters; use only official Meta inference after S236, never another provider
 - **Verification method:** Check one-concept focus and source excerpt; confirm model generation is unavailable before S236
+
+### S332 — FSRS parameter versioning
+
+- **Skill ID:** S332
+- **Name:** FSRS parameter versioning
+- **Purpose:** Apply review algorithm updates consistently
+- **When to use:** When scheduling behavior changes
+- **Implementation approach:** Store algorithm version and user-specific parameters
+- **Recommended tools:** FSRS library, typed settings
+- **Security considerations:** Do not silently reset learning history
+- **Verification method:** Replay card history across app versions
