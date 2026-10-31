@@ -4172,3 +4172,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Server Timing, OpenTelemetry
 - **Security considerations:** Avoid sensitive query parameters
 - **Verification method:** Compare regional and cache traces
+
+### S376 — JavaScript budget
+
+- **Skill ID:** S376
+- **Name:** JavaScript budget
+- **Purpose:** Stop route bundles growing unchecked
+- **When to use:** When adding dependencies
+- **Implementation approach:** Set initial and per-route chunk ceilings
+- **Recommended tools:** Bundlesize, source-map-explorer
+- **Security considerations:** Review third-party code and licenses
+- **Verification method:** Fail build above agreed ceiling
