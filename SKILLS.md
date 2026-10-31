@@ -1683,3 +1683,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** useGLTF preload, IntersectionObserver
 - **Security considerations:** Do not fetch private uploads before authorization
 - **Verification method:** Record network waterfall and verify below-fold deferral
+
+### S151 — GPU resource disposal
+
+- **Skill ID:** S151
+- **Name:** GPU resource disposal
+- **Purpose:** Release textures, materials, and buffers on teardown
+- **When to use:** Scene assets or themes are replaced
+- **Implementation approach:** Track ownership and dispose unshared GPU resources
+- **Recommended tools:** Three.js dispose, browser memory tools
+- **Security considerations:** Remove user-derived textures when identity changes
+- **Verification method:** Navigate repeatedly and check memory/object counts stabilize
