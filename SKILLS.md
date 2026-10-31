@@ -2646,3 +2646,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Officially documented Meta structured-output capability only after S236; JSON Schema
 - **Security considerations:** No key intake or model call before written permission; no alternate provider; output remains untrusted
 - **Verification method:** Assert requests are blocked before S236; afterward run valid, malformed, and adversarial test-only response fixtures
+
+### S238 — Tool selection policy
+
+- **Skill ID:** S238
+- **Name:** Tool selection policy
+- **Purpose:** Choose actions allowed for current user
+- **When to use:** For deterministic policy filtering always; use model-selected tools only after S236 authorizes inference
+- **Implementation approach:** Filter candidates by authenticated scopes, consent, and risk before exposing schemas; server authorization remains authoritative under S192
+- **Recommended tools:** Tool registry, policy engine
+- **Security considerations:** Hide unauthorized schemas, but never treat schema visibility as permission or approval
+- **Verification method:** Probe forbidden names and scopes
