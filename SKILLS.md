@@ -3662,3 +3662,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Mastery model, event ledger
 - **Security considerations:** Label estimates as informal, not grades
 - **Verification method:** Compare calculation with seeded history
+
+### S330 — Spaced repetition scheduling
+
+- **Skill ID:** S330
+- **Name:** Spaced repetition scheduling
+- **Purpose:** Schedule reviews from recall and lapse history
+- **When to use:** When cards need long-term practice
+- **Implementation approach:** Use documented algorithm and store ratings
+- **Recommended tools:** FSRS library, review event table
+- **Security considerations:** Keep review history private and exportable
+- **Verification method:** Replay known ratings and verify due dates
