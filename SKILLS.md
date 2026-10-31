@@ -3418,3 +3418,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ETag/version fields, sync ledger
 - **Security considerations:** Never overwrite user edits silently; external consequential writes still require exact approval
 - **Verification method:** Change the same item on both writable sides and verify explicit conflict state; separately verify inbound-only import handling under S368 makes no provider write
+
+### S308 — External ID mapping
+
+- **Skill ID:** S308
+- **Name:** External ID mapping
+- **Purpose:** Keep provider records linked without trusting display names
+- **When to use:** Only after S291, when syncing records from an enabled Google service
+- **Implementation approach:** Store provider, account, object ID, and mapping status
+- **Recommended tools:** Unique DB key, integration repository
+- **Security considerations:** Namespace IDs by provider and account
+- **Verification method:** Test duplicate names and reconnect to same account
