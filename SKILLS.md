@@ -3629,3 +3629,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Rubric engine, typed feedback
 - **Security considerations:** Mark AI-assisted scoring as guidance; no model call before permission/capability approval and no alternate provider
 - **Verification method:** Test anchor answers for rubric consistency and confirm model feedback is disabled before S236
+
+### S327 — Adaptive difficulty
+
+- **Skill ID:** S327
+- **Name:** Adaptive difficulty
+- **Purpose:** Adjust challenge based on demonstrated performance
+- **When to use:** Across repeated practice rounds
+- **Implementation approach:** Use explicit mastery thresholds and bounded deterministic increments; if any inference-based adaptation is added, gate it through S236
+- **Recommended tools:** Quiz state, rule engine
+- **Security considerations:** Do not infer fixed ability from one session; no model-based adaptation before S236
+- **Verification method:** Replay seeded attempts and inspect changes
