@@ -9,6 +9,7 @@ export default defineConfig([
   reactHooks.configs.flat.recommended,
   {
     rules: {
+      // This rule's pages-directory lookup is for the Pages Router; Chron uses the App Router.
       '@next/next/no-html-link-for-pages': 'off',
     },
   },

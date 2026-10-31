@@ -2,13 +2,14 @@
   "name": "chron-platform",
   "private": true,
   "engines": {
-    "node": ">=20.9.0"
+    "node": "^22.13.0 || >=24"
   },
   "workspaces": [
     "apps/web"
   ],
   "devDependencies": {
     "@next/eslint-plugin-next": "16.4.3",
+    "eslint": "10.14.0",
     "eslint-plugin-react-hooks": "7.1.0",
     "typescript-eslint": "8.56.0"
   },
