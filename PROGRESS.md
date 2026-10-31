@@ -2,24 +2,27 @@
 
 ## Current milestone
 
-F0 — foundation documentation and repository security are complete locally;
-the first reviewed push is pending. L1 — landing page and design system — is
-in progress. No code or visual material was copied from any other folder.
+F0 — foundation documentation, the scrubbed fresh history, and repository
+security are on public GitHub `main`; hosted checks and branch protection remain
+unverified. L1 — landing page and design system — is in progress. No code or
+visual material was copied from another folder.
 
 ## Completed
 
 - Created Chron as a separate project with its own Git history. No application
   code was copied in.
-- Created the empty public GitHub repository `2q9e/chron`. No files or commit
-  history have been pushed; first push is pending staged-path and history review.
+- Published the scrubbed fresh history to public GitHub `2q9e/chron`. The
+  GitHub compare API confirms exactly 533 commits from root through `main`;
+  no other local branches were published.
 - Enabled GitHub secret scanning and push protection, Dependabot alerts and
   security updates, and private vulnerability reporting. Verified these settings
-  through the repository API; branch protection waits for the first clean push.
+  through the repository API; branch protection remains to be checked after CI
+  reports a hosted check name.
 - Added `.github/workflows/quality.yml` with read-only permissions and
   SHA-pinned official checkout/setup-node actions. It runs install, lint,
   typecheck, production dependency audit, and build on pushes and pull requests.
-  The YAML parses locally; the hosted workflow has not run because the public
-  repository is still empty.
+  The YAML parses locally. GitHub currently reports no workflow runs, so hosted
+  CI remains unverified.
 - Added `AGENTS.md`, the view-only source license, project roadmap, and initial
   continuation records.
 - Integrated the 500-entry `SKILLS.md`. Independent root validation and final
@@ -61,10 +64,11 @@ in progress. No code or visual material was copied from any other folder.
   @chron/web`, and `npm run build --workspace @chron/web` after integrating the
   scene and latest layout changes; all passed. Next.js generated
   `apps/web/AGENTS.md` and updates `next-env.d.ts` during build/dev runs.
-- The fresh local `main` history currently has 533 non-empty, distinct commits.
-  No code or history has been pushed. Continue only with useful, reviewed
-  changes; the public repository needs a staged-path/history/privacy review
-  before its first push.
+- The local and remote `main` heads match at 533 non-empty, distinct commits.
+  Before publication, the full `main` history was rewritten to remove the two
+  user-local path mentions. Reachable-history scans report zero remaining path
+  matches and zero private-key, AWS-key, GitHub-token, or quoted credential
+  assignment patterns. These regex checks are useful but not comprehensive.
 
 ## In progress
 
@@ -72,8 +76,8 @@ in progress. No code or visual material was copied from any other folder.
   test reduced motion, keyboard-only navigation, fast/reverse scroll, and
   WebGL context loss/fallback. The available desktop browser review was at
   1230×480 only.
-- Keep each reviewed change small and commit it; inspect staged files and
-  history before the first push to the public repository.
+- Keep each reviewed change small, commit it, and push it to public `main` only
+  after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
   gates are cleared and the flows are real.
 - Obtain qualified review of the integrated Meta report; inspect the
@@ -98,9 +102,8 @@ in progress. No code or visual material was copied from any other folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- The public GitHub repository is still empty; local `main` has 533 non-empty,
-  purposeful commits, exceeding the requested 500. Never count empty or
-  duplicate commits toward the target.
+- Public GitHub `main` has 533 non-empty, purposeful commits, exceeding the
+  requested 500. Never count empty or duplicate commits toward the target.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
   reduced motion, keyboard, fallback, and performance review remain.
 
@@ -116,8 +119,8 @@ in progress. No code or visual material was copied from any other folder.
   module split and visibility-fallback fix.
 - `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
   dependency vulnerabilities.
-- The GitHub Actions workflow YAML parses successfully. It has not yet run in
-  GitHub Actions; the first push will trigger the `quality / verify` check.
+- The GitHub Actions workflow YAML parses successfully. GitHub currently shows
+  no Actions run, so the hosted `quality / verify` result is pending.
 - Rendered the production build in Chrome at an available 1230×480 desktop
   viewport. Inspected opening, Week, Study, Research, and closing sections;
   tested chapter navigation, `#week` reload, and reverse navigation. The scene

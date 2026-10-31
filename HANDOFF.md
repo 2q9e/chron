@@ -2,19 +2,19 @@
 
 ## Current state
 
-Chron is a standalone repository on local `main` with 533 non-empty, distinct
-commits. The public GitHub repository exists but is still empty; no code or
-history has been pushed. Secret scanning, push protection, Dependabot alerts
-and security updates, and private vulnerability reporting are enabled. Review
-staged paths, history, privacy, and secrets before the first push.
+Chron is a standalone repository with 533 non-empty, distinct commits on public
+GitHub `main`; the local and remote branch heads match. Secret scanning, push
+protection, Dependabot alerts and security updates, and private vulnerability
+reporting are enabled. Continue reviewing staged paths and scans before every
+push.
 
 ## Current milestone
 
-F0 — local project foundation and security setup — is complete. L1 — landing
-page and design system — is in progress. The scroll-linked Three.js/R3F world
-is integrated and visually reviewed at one desktop viewport. Do not mark L1
-complete until its remaining viewport, motion, accessibility, fallback, and
-performance checks are done.
+F0 — project foundation and repository security — is published. Hosted CI and
+branch protection remain to be verified. L1 — landing page and design system —
+is in progress. The scroll-linked Three.js/R3F world is integrated and visually
+reviewed at one desktop viewport. Do not mark L1 complete until the remaining
+viewport, motion, accessibility, fallback, and performance checks are done.
 
 ## Product and security gates
 
@@ -32,11 +32,14 @@ performance checks are done.
   see `docs/research/meta-api.md`. The linked processor/security terms remain
   unverified behind an authenticated source.
 - The repo’s source-available license permits viewing and prohibits copying.
-  No reference material was inspected or copied.
+  No prohibited local calendar reference was inspected or copied. The user
+  supplied Pear and Shore pages for visual review; no site assets, copy, or
+  layouts were copied.
 - `.github/workflows/quality.yml` defines read-only CI for lint, typecheck,
   production dependency audit, and build. It uses full-SHA pins for official
-  checkout/setup-node actions. The YAML parses locally; GitHub has not run it
-  because no history has been pushed. No unit or integration suite exists yet.
+  checkout/setup-node actions. The YAML parses locally; GitHub currently reports
+  no workflow run, so hosted CI is unverified. No unit or integration suite
+  exists yet.
 - Do not add samples, placeholders, stubs, fake demos, or nonfunctional
   controls to the product.
 - This runtime does not enforce per-agent filesystem or network sandboxes.
@@ -97,6 +100,7 @@ awaits narrow and zoom browser checks.
 4. Re-run lint, typecheck, and production build after any implementation fix.
 5. Continue with backend security only after the L1 acceptance work is
    sufficiently verified; keep signup and credential intake gated.
-6. Before first push, inspect the complete commit history and staged file list,
-   scan for secrets, confirm no user-specific paths or excluded material, and
-   verify repository privacy settings.
+6. Check why the hosted Actions run has not appeared; after a check exists,
+   configure and verify safe `main` branch rules.
+7. Before every push, inspect staged paths and rescan staged content and the
+   commit history for secrets and excluded material.
