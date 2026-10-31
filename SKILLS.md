@@ -1098,3 +1098,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Figma prototypes, CSS states, usability notes
 - **Security considerations:** Do not imply a control is safe when it triggers a consequential change
 - **Verification method:** Observe task completion without teaching; record misclicks and hesitation
+
+### S098 — Action hierarchy
+
+- **Skill ID:** S098
+- **Name:** Action hierarchy
+- **Purpose:** Separate primary, secondary, and destructive actions clearly
+- **When to use:** When a dialog or toolbar offers several operations
+- **Implementation approach:** Use one dominant action, quiet supporting actions, and explicit destructive styling
+- **Recommended tools:** Button variants, design tokens, Figma
+- **Security considerations:** Never make irreversible actions the largest or default focused control
+- **Verification method:** Keyboard-test initial focus and ask users to identify the action outcome
