@@ -4271,3 +4271,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React Profiler, React hooks
 - **Security considerations:** Never cache authorization decisions
 - **Verification method:** Benchmark task before/after
+
+### S385 — Hydration cost control
+
+- **Skill ID:** S385
+- **Name:** Hydration cost control
+- **Purpose:** Reduce client work after server HTML
+- **When to use:** When content can render server-side
+- **Implementation approach:** Keep static regions server rendered
+- **Recommended tools:** Next analyzer, React Profiler
+- **Security considerations:** Do not serialize private server data
+- **Verification method:** Measure hydration tasks and payload
