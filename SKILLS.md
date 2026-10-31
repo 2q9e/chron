@@ -1727,3 +1727,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Three.js Box3, CameraHelper
 - **Security considerations:** Clipping is a rendering/composition control, not authorization; private geometry/assets must never be sent to the client
 - **Verification method:** Sweep path keyframes for clipping/depth artifacts and inspect client bundles/network payloads to confirm no private assets are delivered
+
+### S155 — Scroll scene browser audit
+
+- **Skill ID:** S155
+- **Name:** Scroll scene browser audit
+- **Purpose:** Manually inspect scroll-driven 3D behavior in a rendered browser
+- **When to use:** After changing any scroll-driven 3D section
+- **Implementation approach:** Review chapter transitions, motion continuity, and frame pacing in real desktop/mobile browsers; use S424 for repeatable responsive screenshot capture
+- **Recommended tools:** Playwright, Chrome DevTools
+- **Security considerations:** Use synthetic content and exclude private data from captures
+- **Verification method:** Inspect rendered behavior and profile slow scroll/rapid fling; use S424 screenshots for deterministic viewport regression evidence
