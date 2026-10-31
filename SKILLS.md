@@ -3563,3 +3563,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Tutor state machine, Meta API only after written permission
 - **Security considerations:** Disable model inference until S236 passes; avoid shame and sensitive-trait inference; do not use another provider
 - **Verification method:** Test varied synthetic responses and branch logic; assert the model path is disabled before authorization
+
+### S321 — Progressive hint ladder
+
+- **Skill ID:** S321
+- **Name:** Progressive hint ladder
+- **Purpose:** Reveal help in graduated steps
+- **When to use:** When a learner is stuck; model-written hints require the S236 gate, while user-authored or deterministic ladders may work without inference
+- **Implementation approach:** Offer concept cue, partial step, then worked solution; keep model generation disabled until S236 permits official Meta inference
+- **Recommended tools:** Hint schema, interactive UI
+- **Security considerations:** Respect solution-release mode; keep model inference disabled until S236 and never use another provider
+- **Verification method:** Test reveal sequence with synthetic questions; verify no model request occurs while S236 is closed
