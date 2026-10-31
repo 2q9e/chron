@@ -4790,3 +4790,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Mock DNS, egress harness
 - **Security considerations:** Do not probe real internal services
 - **Verification method:** Blocked target opens no connection
+
+### S432 — Rate-limit concurrency tests
+
+- **Skill ID:** S432
+- **Name:** Rate-limit concurrency tests
+- **Purpose:** Verify limits span all workers
+- **When to use:** For auth and generation routes
+- **Implementation approach:** Issue concurrent bursts through shared limiter
+- **Recommended tools:** k6, Redis test instance
+- **Security considerations:** Synthetic accounts and test keys only
+- **Verification method:** Check cap, metadata, tenant fairness
