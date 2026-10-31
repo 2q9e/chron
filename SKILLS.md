@@ -1340,3 +1340,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Storybook, visual snapshots, token lint
 - **Security considerations:** Do not create hidden variants that change permission or consent cues
 - **Verification method:** Run visual comparison across shared states and theme variants
+
+### S120 — Anti-slop interface audit
+
+- **Skill ID:** S120
+- **Name:** Anti-slop interface audit
+- **Purpose:** Remove empty decoration and generic patterns that obscure real tasks
+- **When to use:** After a major interface milestone or visual redesign
+- **Implementation approach:** Identify each decorative element’s user purpose and remove unsupported claims
+- **Recommended tools:** Screenshot audit, heuristic rubric, content inventory
+- **Security considerations:** Flag fake metrics, testimonials, integrations, and product previews for correction
+- **Verification method:** Score originality, hierarchy, function, responsiveness, and verify each fix
