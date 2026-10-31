@@ -4968,3 +4968,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GitHub Actions YAML
 - **Security considerations:** Use read-only token unless write is required
 - **Verification method:** Audit token permissions in workflow file
+
+### S448 — OIDC deployment identity
+
+- **Skill ID:** S448
+- **Name:** OIDC deployment identity
+- **Purpose:** Avoid long-lived cloud deploy secrets
+- **When to use:** When CI needs cloud access
+- **Implementation approach:** Use short-lived workload identity federation
+- **Recommended tools:** GitHub OIDC, cloud IAM
+- **Security considerations:** Bind trust to repo, branch, and environment
+- **Verification method:** Verify unauthorized branch cannot assume role
