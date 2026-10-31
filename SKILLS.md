@@ -2314,3 +2314,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** PostgreSQL unique index
 - **Security considerations:** Include tenant scope to avoid cross-user collisions
 - **Verification method:** Race concurrent duplicate creates and verify one is rejected
+
+### S208 — Index selection
+
+- **Skill ID:** S208
+- **Name:** Index selection
+- **Purpose:** Speed high-value queries without over-indexing writes
+- **When to use:** When query traces show slow filters or joins
+- **Implementation approach:** Index actual predicates and ordering; measure write overhead
+- **Recommended tools:** EXPLAIN ANALYZE, pg_stat_statements
+- **Security considerations:** Restrict query-plan, database-log, and monitoring access; redact bound values where instrumentation captures them. Indexes themselves are not the usual value-disclosure surface
+- **Verification method:** Benchmark representative reads/writes and inspect least-privilege plan/log access plus bind-value redaction in monitoring
