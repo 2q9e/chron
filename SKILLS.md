@@ -2987,3 +2987,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Audit table, history UI
 - **Security considerations:** Exclude hidden prompts, keys, unrelated private data, and unverified claims; show unknown remote outcomes until reconciled
 - **Verification method:** Compare timeline to server event log
+
+### S269 — Agent evaluation harness
+
+- **Skill ID:** S269
+- **Name:** Agent evaluation harness
+- **Purpose:** Measure success and safety regressions
+- **When to use:** Before planner or tool changes
+- **Implementation approach:** Run fixed synthetic scenarios with expected outcomes
+- **Recommended tools:** Vitest, fixture runner
+- **Security considerations:** Fixtures contain no real student data or credentials
+- **Verification method:** Report regression pass and refusal failures
