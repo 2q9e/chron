@@ -45,6 +45,15 @@ jobs:
       - name: Test calendar time semantics
         run: npm run test:calendar-time --workspace @chron/web
 
+      - name: Test calendar API contracts
+        run: npm run test:calendar-api --workspace @chron/web
+
+      - name: Test calendar layout
+        run: npm run test:calendar-layout --workspace @chron/web
+
+      - name: Test calendar create recovery
+        run: npm run test:calendar-recovery --workspace @chron/web
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=moderate
 
