@@ -5311,3 +5311,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML controls, static image, aria labels
 - **Security considerations:** Never make canvas the only access path
 - **Verification method:** Disable WebGL and complete the journey
+
+### S479 — Cognitive clarity
+
+- **Skill ID:** S479
+- **Name:** Cognitive clarity
+- **Purpose:** Reduce memory burden in multi-step tasks
+- **When to use:** When workflows include several decisions
+- **Implementation approach:** Use plain labels, visible progress, and preserve entered data
+- **Recommended tools:** Content design, stepper component
+- **Security considerations:** Explain consequences before requesting sensitive access
+- **Verification method:** Test task completion without coaching
