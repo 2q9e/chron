@@ -1507,3 +1507,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** MeshStandardMaterial, MeshPhysicalMaterial
 - **Security considerations:** Use original materials and respect asset branding rights
 - **Verification method:** Render swatches in neutral and accent light; inspect highlights
+
+### S135 — Shadow cost control
+
+- **Skill ID:** S135
+- **Name:** Shadow cost control
+- **Purpose:** Use shadows only to clarify contact and overlap
+- **When to use:** Objects appear to float without grounding
+- **Implementation approach:** Bake static shadows or limit real-time casters to focal objects
+- **Recommended tools:** Shadow maps, baked textures
+- **Security considerations:** Avoid retaining user-derived textures in shared shadow caches
+- **Verification method:** Profile GPU time with shadowing enabled and disabled
