@@ -5135,3 +5135,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML5, accessibility tree
 - **Security considerations:** Do not expose restricted routes through hidden landmarks
 - **Verification method:** Check landmark list has clear names and no duplicates
+
+### S463 — Visible focus indicators
+
+- **Skill ID:** S463
+- **Name:** Visible focus indicators
+- **Purpose:** Show keyboard location at all times
+- **When to use:** For links, buttons, inputs, custom widgets
+- **Implementation approach:** Use high-contrast outline with offset and non-color cue
+- **Recommended tools:** CSS :focus-visible, design tokens
+- **Security considerations:** Never remove outline without a measured replacement
+- **Verification method:** Tab through page in every theme
