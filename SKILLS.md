@@ -3143,3 +3143,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Stream limiter, schema maxLength
 - **Security considerations:** Do not truncate in a way that removes citation provenance
 - **Verification method:** Send oversized result and verify bounded valid output
+
+### S283 — Resource concurrency bounds
+
+- **Skill ID:** S283
+- **Name:** Resource concurrency bounds
+- **Purpose:** Limit shared agent-tool worker capacity fairly across users and tool classes
+- **When to use:** When users can launch multi-step runs
+- **Implementation approach:** Use per-user and global semaphores/queues around tool execution; use S072 for endpoint ingress limits rather than worker fairness
+- **Recommended tools:** p-limit, Redis semaphore
+- **Security considerations:** One tenant cannot consume all worker slots
+- **Verification method:** Burst parallel tool calls across synthetic tenants and inspect global cap plus per-user fairness; test route caps separately under S072
