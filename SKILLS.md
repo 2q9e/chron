@@ -5201,3 +5201,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML labels, React Hook Form
 - **Security considerations:** Do not expose saved credential values in field defaults
 - **Verification method:** Inspect accessibility tree and click label to focus
+
+### S469 — Accessible error association
+
+- **Skill ID:** S469
+- **Name:** Accessible error association
+- **Purpose:** Connect validation feedback to its field
+- **When to use:** When form input fails validation
+- **Implementation approach:** Set aria-describedby and invalid state; focus summary when needed
+- **Recommended tools:** aria-describedby, aria-invalid
+- **Security considerations:** Do not return backend stack traces as error text
+- **Verification method:** Submit invalid values and hear associated messages
