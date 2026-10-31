@@ -423,3 +423,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** React, product copy system
 - **Security considerations:** Only user-provided or otherwise authorized content belongs in product views; synthetic fixtures are test-only and never bundled
 - **Verification method:** Use an empty test account, confirm no records are fabricated, and activate the CTA to verify a real create/import flow
+
+### S037 — Skeleton geometry
+
+- **Skill ID:** S037
+- **Name:** Skeleton geometry
+- **Purpose:** Reserve space for delayed content without implying false data
+- **When to use:** When a stable region has a predictable loading shape
+- **Implementation approach:** Match skeleton blocks to final text and remove them when data settles
+- **Recommended tools:** CSS animations, React Suspense
+- **Security considerations:** Do not make a skeleton look like a completed private record
+- **Verification method:** Capture loading and loaded states; check layout shift and reduced-motion mode
