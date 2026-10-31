@@ -4,7 +4,7 @@ Chron uses Better Auth 1.7.14 with PostgreSQL-backed accounts, sessions, verific
 
 ## Database
 
-Apply `apps/web/db/migrations/0001_better_auth.sql` to a new PostgreSQL database before starting the service. The application does not run DDL at request time. Give the runtime database role only the table permissions required by Better Auth; apply schema changes with a separate migration role.
+Apply `apps/web/db/migrations/0001_better_auth.sql` and then `apps/web/db/migrations/0002_calendar.sql` to a new PostgreSQL database before starting the service. The application does not run DDL at request time. Give the runtime database role only the table permissions required by Better Auth and `SELECT`, `INSERT`, `UPDATE`, and `DELETE` on the calendar tables; apply schema changes with a separate migration role. The runtime role must not be a superuser or have `BYPASSRLS` so PostgreSQL's forced row policies remain an additional owner-isolation boundary.
 
 ## Required settings
 

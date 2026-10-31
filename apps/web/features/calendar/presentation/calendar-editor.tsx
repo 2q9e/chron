@@ -1,14 +1,17 @@
 import type { FormEvent } from "react";
-import type { CalendarEvent, CalendarEventMutation } from "../domain/types";
+import type { CalendarConflict, CalendarEvent, CalendarEventMutation } from "../domain/types";
 import type { EventDraft, EventDraftField } from "./calendar-model";
 import styles from "./calendar.module.css";
 
 export type Editor = {
+  generation: number;
   event: CalendarEvent | null;
   draft: EventDraft;
   zone: string;
   errors: Partial<Record<EventDraftField, string>>;
   review: CalendarEventMutation | null;
+  conflicts: readonly CalendarConflict[];
+  reviewTimeZone: string | null;
   deleting: boolean;
 };
 
@@ -34,18 +37,18 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
       <form onSubmit={onReview} className={styles.form}>
         <label>
           Title
-          <input autoFocus required maxLength={160} value={editor.draft.title}
+          <input autoFocus disabled={busy} required maxLength={160} value={editor.draft.title}
             onChange={(e) => onChange("title", e.target.value)}
             aria-invalid={!!editor.errors.title} aria-describedby={editor.errors.title ? "title-error" : undefined} />
         </label>
         {editor.errors.title && <p id="title-error" className={styles.fieldError}>{editor.errors.title}</p>}
         <label>
           Details
-          <textarea maxLength={4000} value={editor.draft.details} onChange={(e) => onChange("details", e.target.value)} />
+          <textarea disabled={busy} maxLength={4000} value={editor.draft.details} onChange={(e) => onChange("details", e.target.value)} />
         </label>
         <label>
           Event type
-          <select value={editor.draft.kind} onChange={(e) => onChange("kind", e.target.value)}>
+          <select disabled={busy} value={editor.draft.kind} onChange={(e) => onChange("kind", e.target.value)}>
             <option value="timed">Timed</option>
             <option value="all-day">All day</option>
           </select>
@@ -59,7 +62,7 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
                 <div key={field}>
                   <label>
                     {field === "startLocal" ? "Start" : "End"}
-                    <input type="datetime-local" required value={editor.draft[field]}
+                    <input disabled={busy} type="datetime-local" required value={editor.draft[field]}
                       onChange={(e) => onChange(field, e.target.value)} aria-invalid={!!editor.errors[field]}
                       aria-describedby={editor.errors[field] ? `${field}-error` : undefined} />
                   </label>
@@ -67,7 +70,7 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
                   {editor.errors[disambiguation] && (
                     <label>
                       This time occurs twice. Choose an occurrence
-                      <select required value={editor.draft[disambiguation]} onChange={(e) => onChange(disambiguation, e.target.value)}>
+                      <select disabled={busy} required value={editor.draft[disambiguation]} onChange={(e) => onChange(disambiguation, e.target.value)}>
                         <option value="">Choose</option>
                         <option value="earlier">Earlier</option>
                         <option value="later">Later</option>
@@ -84,7 +87,7 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
               <div key={field}>
                 <label>
                   {field === "startDate" ? "First day" : "End date (exclusive)"}
-                  <input type="date" required value={editor.draft[field]} onChange={(e) => onChange(field, e.target.value)}
+                  <input disabled={busy} type="date" required value={editor.draft[field]} onChange={(e) => onChange(field, e.target.value)}
                     aria-invalid={!!editor.errors[field]} aria-describedby={editor.errors[field] ? `${field}-error` : undefined} />
                 </label>
                 {editor.errors[field] && <p id={`${field}-error`} className={styles.fieldError}>{editor.errors[field]}</p>}
@@ -94,11 +97,11 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
           </>
         )}
         <div className={styles.actions}>
-          <button type="submit" disabled={busy}>Review changes</button>
+          <button type="submit" disabled={busy}>{busy ? "Checking calendar…" : "Review changes"}</button>
           {editor.event && <button type="button" disabled={busy} onClick={onDeleteReview}>Delete event</button>}
         </div>
       </form>
-      {editor.review && <EventReview event={editor.review} busy={busy} onSave={onSave} />}
+      {editor.review && <EventReview event={editor.review} conflicts={editor.conflicts} busy={busy} onSave={onSave} />}
       {editor.deleting && (
         <div className={styles.review}>
           <h3>Delete this event?</h3>
@@ -111,7 +114,7 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
   );
 }
 
-function EventReview({ event, busy, onSave }: { event: CalendarEventMutation; busy: boolean; onSave: () => void }) {
+function EventReview({ event, conflicts, busy, onSave }: { event: CalendarEventMutation; conflicts: readonly CalendarConflict[]; busy: boolean; onSave: () => void }) {
   const occurrence = (value: "earlier" | "later" | undefined) => value ? ` (${value} occurrence)` : "";
   return (
     <div className={styles.review}>
@@ -121,7 +124,31 @@ function EventReview({ event, busy, onSave }: { event: CalendarEventMutation; bu
         ? `${event.startLocal}${occurrence(event.startDisambiguation)} to ${event.endLocal}${occurrence(event.endDisambiguation)} · ${event.timeZone}`
         : `${event.startDate} through the day before ${event.endDate} · All day`}</p>
       {event.details && <p className={styles.details}>{event.details}</p>}
+      <ConflictSummary conflicts={conflicts} />
       <button type="button" disabled={busy} onClick={onSave}>{busy ? "Saving…" : "Approve and save"}</button>
+    </div>
+  );
+}
+
+function ConflictSummary({ conflicts }: { conflicts: readonly CalendarConflict[] }) {
+  if (conflicts.length === 0) {
+    return <p className={styles.conflictStatus}>No overlapping events were found.</p>;
+  }
+
+  return (
+    <div className={styles.conflictList}>
+      <h4>{conflicts.length === 1 ? "Overlapping event" : `${conflicts.length} overlapping events`}</h4>
+      <ul>
+        {conflicts.map((conflict) => (
+          <li key={conflict.id}>
+            <strong>{conflict.title}</strong>
+            <span>{conflict.kind === "all-day"
+              ? `${conflict.startDate} through the day before ${conflict.endDate} · All day`
+              : `${conflict.startLocal} to ${conflict.endLocal} · ${conflict.timeZone}`}</span>
+          </li>
+        ))}
+      </ul>
+      <p className={styles.conflictStatus}>Review the overlaps before approving this event.</p>
     </div>
   );
 }

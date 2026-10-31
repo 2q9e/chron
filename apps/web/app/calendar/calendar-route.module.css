@@ -1,0 +1,63 @@
+.statePage {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: clamp(1.5rem, 6vw, 6rem);
+  background: #201e22;
+  color: #f1edf0;
+}
+
+.state {
+  width: min(100%, 38rem);
+}
+
+.wordmark {
+  color: #f3e8ed;
+  font-size: 1.15rem;
+  font-weight: 750;
+  letter-spacing: -0.055em;
+  text-decoration: none;
+}
+
+.eyebrow {
+  margin: 4rem 0 1rem;
+  color: #dc9bae;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.state h1 {
+  max-width: 10ch;
+  margin: 0;
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 570;
+  letter-spacing: -0.075em;
+  line-height: 0.98;
+}
+
+.state p:not(.eyebrow) {
+  max-width: 35rem;
+  margin: 1.5rem 0 0;
+  color: #b8b1ba;
+  line-height: 1.7;
+}
+
+.action {
+  display: inline-flex;
+  min-height: 3rem;
+  align-items: center;
+  margin-top: 2rem;
+  padding: 0.7rem 1.15rem;
+  border-radius: 0.25rem;
+  background: #e091a6;
+  color: #181619;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.action:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}

@@ -1,11 +1,5 @@
-import { LandingStory } from "../features/landing/presentation/landing-story";
-import { WorldSceneLoader } from "../features/landing/world/WorldSceneLoader";
+import { redirect } from "next/navigation";
 
 export default function HomePage() {
-  return (
-    <>
-      <WorldSceneLoader />
-      <LandingStory />
-    </>
-  );
+  redirect("/calendar");
 }

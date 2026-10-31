@@ -3,10 +3,10 @@ import { calendarThemes, type CalendarPreferences } from "../domain/types";
 import styles from "./calendar.module.css";
 
 const themeNames: Record<(typeof calendarThemes)[number], string> = {
-  "pink-liquid-glass": "Pink",
-  "minimal-light": "Light",
-  "premium-dark": "Dark",
-  "soft-pastel": "Pastel",
+  "pink-liquid-glass": "Pink Liquid Glass",
+  "minimal-light": "Minimal Light",
+  "premium-dark": "Premium Dark",
+  "soft-pastel": "Soft Pastel",
   "high-contrast": "High contrast",
 };
 

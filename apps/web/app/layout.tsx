@@ -4,9 +4,8 @@ import "@fontsource-variable/hanken-grotesk";
 import "../styles/globals.css";
 
 export const metadata: Metadata = {
-  title: "Chron — Make room for learning.",
-  description:
-    "Chron is being built as an academic workspace for planning, study materials, and research.",
+  title: "Chron — Academic calendar",
+  description: "Plan study time, deadlines, and personal commitments in Chron.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

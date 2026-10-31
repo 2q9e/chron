@@ -1,0 +1,198 @@
+.page {
+  min-height: 100svh;
+  display: grid;
+  align-items: center;
+  padding: clamp(1.5rem, 5vw, 5rem);
+  background:
+    radial-gradient(ellipse at 9% 92%, rgb(185 92 118 / 13%), transparent 43%),
+    #201e22;
+  color: #f1edf0;
+}
+
+.shell {
+  width: min(100%, 70rem);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 27rem);
+  align-items: center;
+  gap: clamp(3rem, 8vw, 9rem);
+}
+
+.intro {
+  max-width: 34rem;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  color: #f3e8ed;
+  font-size: 1.15rem;
+  font-weight: 750;
+  letter-spacing: -0.055em;
+  text-decoration: none;
+}
+
+.eyebrow,
+.formIndex {
+  color: #dc9bae;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  margin: clamp(4rem, 11vh, 8rem) 0 1rem;
+}
+
+.intro h1,
+.unavailable h1 {
+  max-width: 9ch;
+  margin: 0;
+  font-size: clamp(3.2rem, 6vw, 5.7rem);
+  font-weight: 570;
+  letter-spacing: -0.075em;
+  line-height: 0.96;
+}
+
+.description {
+  max-width: 28rem;
+  margin: 1.5rem 0 0;
+  color: #b8b1ba;
+  font-size: 1.02rem;
+  line-height: 1.65;
+}
+
+.accountNote {
+  margin: 2.5rem 0 0;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgb(241 237 240 / 16%);
+  color: #a39ca5;
+  font-size: 0.82rem;
+}
+
+.formPanel {
+  padding: clamp(1.5rem, 4vw, 2.5rem);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 0.4rem;
+  background: #f0ecef;
+  color: #272228;
+  box-shadow: 0 2rem 6rem rgb(0 0 0 / 18%);
+}
+
+.formHeading h2 {
+  margin: 1.7rem 0 0.55rem;
+  font-size: 1.8rem;
+  font-weight: 620;
+  letter-spacing: -0.05em;
+}
+
+.formHeading p {
+  margin: 0;
+  color: #655d64;
+  font-size: 0.88rem;
+}
+
+.form {
+  display: grid;
+  gap: 1.1rem;
+  margin-top: 2rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.45rem;
+  color: #514950;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.field input {
+  width: 100%;
+  min-height: 3.1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #cbc1c8;
+  border-radius: 0.25rem;
+  background: #fff;
+  color: #272228;
+  font: inherit;
+  font-size: 1rem;
+}
+
+.field input:focus-visible {
+  outline: 2px solid #a54563;
+  outline-offset: 2px;
+}
+
+.error {
+  margin: 0;
+  color: #8c2946;
+  font-size: 0.84rem;
+}
+
+.submit {
+  min-height: 3.2rem;
+  margin-top: 0.25rem;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: #392d35;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.submit:focus-visible {
+  outline: 2px solid #a54563;
+  outline-offset: 3px;
+}
+
+.submit:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.unavailable {
+  width: min(100%, 38rem);
+  margin: 0 auto;
+}
+
+.unavailable .eyebrow {
+  margin-top: 4rem;
+}
+
+@media (max-width: 760px) {
+  .page {
+    align-items: start;
+    padding: 1.5rem;
+  }
+
+  .shell {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+
+  .eyebrow {
+    margin-top: 3.5rem;
+  }
+
+  .intro h1 {
+    max-width: 11ch;
+    font-size: clamp(3rem, 14vw, 4.5rem);
+  }
+
+  .accountNote {
+    margin-top: 1.25rem;
+  }
+
+  .formPanel {
+    margin-bottom: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page * {
+    scroll-behavior: auto;
+  }
+}

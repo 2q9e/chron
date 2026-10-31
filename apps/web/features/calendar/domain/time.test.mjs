@@ -13,6 +13,9 @@ test("rejects invalid calendar dates and fixed-offset timezone values", () => {
   assert.throws(() => parseCalendarDate("2026-02-30"), {
     code: "INVALID_DATE",
   });
+  assert.throws(() => parseCalendarDate("0000-01-01"), {
+    code: "INVALID_DATE",
+  });
   assert.throws(() => resolveCalendarRange(
     "2026-10-01",
     "2026-10-08",

@@ -45,7 +45,9 @@ export function parseCalendarDate(value: unknown): Temporal.PlainDate {
 
   try {
     const date = Temporal.PlainDate.from(value, { overflow: "reject" });
-    if (date.toString() !== value) throw new RangeError("Non-canonical date");
+    if (date.year < 1 || date.year > 9999 || date.toString() !== value) {
+      throw new RangeError("Unsupported calendar date");
+    }
     return date;
   } catch {
     throw new CalendarTimeError("INVALID_DATE", "Use a valid YYYY-MM-DD date.");
@@ -85,6 +87,7 @@ export function inspectLocalDateTime(
   let local: Temporal.PlainDateTime;
   try {
     local = Temporal.PlainDateTime.from(value, { overflow: "reject" });
+    if (local.year < 1 || local.year > 9999) throw new RangeError("Unsupported calendar date");
   } catch {
     throw new CalendarTimeError(
       "INVALID_LOCAL_TIME",

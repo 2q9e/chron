@@ -42,6 +42,30 @@ export type AllDayCalendarEvent = CalendarEventBase & Readonly<{
 
 export type CalendarEvent = TimedCalendarEvent | AllDayCalendarEvent;
 
+export type CalendarConflict =
+  | Readonly<{
+      id: string;
+      revision: number;
+      title: string;
+      kind: "timed";
+      startLocal: string;
+      endLocal: string;
+      timeZone: string;
+    }>
+  | Readonly<{
+      id: string;
+      revision: number;
+      title: string;
+      kind: "all-day";
+      startDate: string;
+      endDate: string;
+    }>;
+
+export type CalendarConflictReview = Readonly<{
+  id: string;
+  revision: number;
+}>;
+
 export type CreateTimedCalendarEvent = Readonly<{
   kind: "timed";
   title: string;

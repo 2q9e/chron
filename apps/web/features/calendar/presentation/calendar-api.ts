@@ -1,6 +1,8 @@
 import { calendarThemes } from "../domain/types";
 import type {
   CalendarApiError,
+  CalendarConflict,
+  CalendarConflictReview,
   CalendarEvent,
   CalendarEventMutation,
   CalendarPreferences,
@@ -71,11 +73,13 @@ export async function readCalendarError(response: Response): Promise<CalendarReq
     : null;
   const fallback = response.status === 401
     ? "Your session may have expired. Sign in again to continue."
-    : response.status === 412
-      ? "This event changed after you opened it. Reload it and review the latest version before saving."
-      : response.status === 428
-        ? "The event version could not be verified. Reload the calendar and try again."
-        : "Chron could not complete this calendar request. Try again.";
+    : response.status === 409
+      ? "The calendar changed while you reviewed this event. Check the latest overlaps before saving."
+      : response.status === 412
+        ? "This event changed after you opened it. Reload it and review the latest version before saving."
+        : response.status === 428
+          ? "The event version could not be verified. Reload the calendar and try again."
+          : "Chron could not complete this calendar request. Try again.";
   const message = typeof error?.message === "string" && error.message.length > 0
     ? error.message.slice(0, 500)
     : fallback;
@@ -168,6 +172,8 @@ export async function saveCalendarPreferences(
 
 export async function createCalendarEvent(
   mutation: CalendarEventMutation,
+  calendarTimeZone: string,
+  conflicts: readonly CalendarConflict[],
 ): Promise<CalendarEvent> {
   const response = await fetch("/api/calendar/events", {
     method: "POST",
@@ -177,7 +183,11 @@ export async function createCalendarEvent(
       Accept: "application/json",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(mutation),
+    body: JSON.stringify({
+      event: mutation,
+      calendarTimeZone,
+      reviewedConflicts: conflictReview(conflicts),
+    }),
   });
   if (!response.ok) throw await readCalendarError(response);
   const payload = await parseJson(response);
@@ -191,9 +201,58 @@ export async function createCalendarEvent(
   return payload.event;
 }
 
+export async function checkCalendarEventConflicts(
+  event: CalendarEventMutation,
+  calendarTimeZone: string,
+  excludeEventId?: string,
+): Promise<CalendarConflict[]> {
+  const response = await fetch("/api/calendar/events/conflicts", {
+    method: "POST",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      event,
+      calendarTimeZone,
+      ...(excludeEventId ? { excludeEventId } : {}),
+    }),
+  });
+  if (!response.ok) throw await readCalendarError(response);
+  const payload = await parseJson(response);
+  if (!isRecord(payload) || !Array.isArray(payload.conflicts) || !payload.conflicts.every(isCalendarConflict)) {
+    throw new CalendarRequestError(
+      "Chron returned calendar conflicts in an unexpected format. Review the event again.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  return payload.conflicts;
+}
+
+function isCalendarConflict(value: unknown): value is CalendarConflict {
+  if (!isRecord(value) || !isNonEmptyString(value.id) || !isNonEmptyString(value.title)
+    || typeof value.revision !== "number" || !Number.isSafeInteger(value.revision) || value.revision < 1) return false;
+  if (value.kind === "all-day") {
+    return isNonEmptyString(value.startDate) && isNonEmptyString(value.endDate);
+  }
+  return value.kind === "timed"
+    && isNonEmptyString(value.startLocal)
+    && isNonEmptyString(value.endLocal)
+    && isNonEmptyString(value.timeZone);
+}
+
+function conflictReview(conflicts: readonly CalendarConflict[]): CalendarConflictReview[] {
+  return conflicts.map(({ id, revision }) => ({ id, revision }));
+}
+
 export async function updateCalendarEvent(
   event: CalendarEvent,
   mutation: CalendarEventMutation,
+  calendarTimeZone: string,
+  conflicts: readonly CalendarConflict[],
 ): Promise<CalendarEvent> {
   const response = await fetch(`/api/calendar/events/${encodeURIComponent(event.id)}`, {
     method: "PUT",
@@ -204,7 +263,11 @@ export async function updateCalendarEvent(
       "Content-Type": "application/json",
       "If-Match": `"${event.revision}"`,
     },
-    body: JSON.stringify(mutation),
+    body: JSON.stringify({
+      event: mutation,
+      calendarTimeZone,
+      reviewedConflicts: conflictReview(conflicts),
+    }),
   });
   if (!response.ok) throw await readCalendarError(response);
   const payload = await parseJson(response);

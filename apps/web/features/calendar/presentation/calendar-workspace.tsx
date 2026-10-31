@@ -1,9 +1,9 @@
 "use client";
 
 import { authClient } from "../../auth/client";
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { type CalendarEvent, type CalendarPreferences } from "../domain/types";
-import { createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
+import { CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, localToday, navigateDate, newEventDraft, validateEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
 import { CalendarEditor, type Editor } from "./calendar-editor";
 import { CalendarPreferencesForm } from "./calendar-preferences";
@@ -23,6 +23,7 @@ export function CalendarWorkspace({ userName }: { userName: string }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [editor, setEditor] = useState<Editor | null>(null);
+  const editorGeneration = useRef(0);
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
@@ -53,35 +54,103 @@ export function CalendarWorkspace({ userName }: { userName: string }) {
 
   const openNew = useCallback((day: string) => {
     if (!preferences) return;
-    setEditor({ event: null, draft: newEventDraft(day), zone: preferences.timeZone, errors: {}, review: null, deleting: false }); setNotice("");
+    editorGeneration.current += 1;
+    setEditor({ generation: editorGeneration.current, event: null, draft: newEventDraft(day), zone: preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false }); setNotice("");
   }, [preferences]);
   const openEvent = useCallback((event: CalendarEvent) => {
     if (!preferences) return;
-    setEditor({ event, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : preferences.timeZone, errors: {}, review: null, deleting: false }); setNotice("");
+    editorGeneration.current += 1;
+    setEditor({ generation: editorGeneration.current, event, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false }); setNotice("");
   }, [preferences]);
   function changeDraft(field: keyof EventDraft, value: string) {
-    setEditor((current) => current ? { ...current, draft: { ...current.draft, [field]: value }, errors: {}, review: null, deleting: false } : current);
+    setEditor((current) => current ? { ...current, draft: { ...current.draft, [field]: value }, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false } : current);
   }
-  function reviewEvent(event: FormEvent<HTMLFormElement>) {
+  async function reviewEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!editor) return;
+    const generation = editor.generation;
     const result = validateEventDraft(editor.draft, editor.zone);
     if (!result.ok) { setEditor({ ...editor, errors: result.errors }); return; }
-    setEditor({ ...editor, errors: {}, review: result.mutation, deleting: false });
-  }
-  async function confirmEvent() {
-    if (!editor?.review) return;
     setBusy(true); setError("");
     try {
-      if (editor.event) await updateCalendarEvent(editor.event, editor.review); else await createCalendarEvent(editor.review);
-      setEditor(null); setNotice("Event saved."); setReload((value) => value + 1);
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save the event."); }
+      const conflicts = await checkCalendarEventConflicts(
+        result.mutation,
+        preferences?.timeZone ?? editor.zone,
+        editor.event?.id,
+      );
+      if (editorGeneration.current !== generation) return;
+      setEditor({ ...editor, errors: {}, review: result.mutation, conflicts, reviewTimeZone: preferences?.timeZone ?? editor.zone, deleting: false });
+    } catch (reason) {
+      if (editorGeneration.current === generation) {
+        setError(reason instanceof Error ? reason.message : "Could not check for overlapping events.");
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function confirmEvent() {
+    if (!editor?.review || !preferences) return;
+    const generation = editor.generation;
+    setBusy(true); setError("");
+    try {
+      if (editor.reviewTimeZone !== preferences.timeZone) {
+        const conflicts = await checkCalendarEventConflicts(
+          editor.review,
+          preferences.timeZone,
+          editor.event?.id,
+        );
+        if (editorGeneration.current !== generation) return;
+        setEditor({ ...editor, conflicts, reviewTimeZone: preferences.timeZone });
+        setError("The calendar time zone changed. Review the updated overlaps before approving this event.");
+        return;
+      }
+      if (editor.event) {
+        await updateCalendarEvent(editor.event, editor.review, preferences.timeZone, editor.conflicts);
+      } else {
+        await createCalendarEvent(editor.review, preferences.timeZone, editor.conflicts);
+      }
+      if (editorGeneration.current === generation) setEditor(null);
+      setNotice("Event saved."); setReload((value) => value + 1);
+    } catch (reason) {
+      if (editorGeneration.current !== generation) return;
+      if (reason instanceof CalendarRequestError && reason.status === 409) {
+        try {
+          const latestPreferences = reason.code === "CALENDAR_TIME_ZONE_CHANGED"
+            ? await fetchCalendarPreferences()
+            : null;
+          const timeZone = latestPreferences?.timeZone ?? preferences.timeZone;
+          const conflicts = await checkCalendarEventConflicts(
+            editor.review,
+            timeZone,
+            editor.event?.id,
+          );
+          if (editorGeneration.current !== generation) return;
+          if (latestPreferences) {
+            setPreferences(latestPreferences);
+            setSettings(latestPreferences);
+          }
+          setEditor({ ...editor, conflicts, reviewTimeZone: timeZone });
+          setError("An overlapping event changed while you approved this one. Review the updated list and approve again.");
+        } catch {
+          if (editorGeneration.current === generation) {
+            setError("The calendar changed while you approved this event. Reload and review it again.");
+          }
+        }
+      } else {
+        setError(reason instanceof Error ? reason.message : "Could not save the event.");
+      }
+    }
     finally { setBusy(false); }
   }
   async function confirmDelete() {
     if (!editor?.event) return;
+    const generation = editor.generation;
     setBusy(true); setError("");
-    try { await deleteCalendarEvent(editor.event); setEditor(null); setNotice("Event deleted."); setReload((value) => value + 1); }
-    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not delete the event."); }
+    try {
+      await deleteCalendarEvent(editor.event);
+      if (editorGeneration.current === generation) setEditor(null);
+      setNotice("Event deleted."); setReload((value) => value + 1);
+    }
+    catch (reason) { if (editorGeneration.current === generation) setError(reason instanceof Error ? reason.message : "Could not delete the event."); }
     finally { setBusy(false); }
   }
   async function saveSettings(event: FormEvent<HTMLFormElement>) {
@@ -99,7 +168,7 @@ export function CalendarWorkspace({ userName }: { userName: string }) {
     try {
       const result = await authClient.signOut();
       if (result.error) throw new Error("Sign out failed. Please try again.");
-      window.location.assign("/");
+      window.location.assign("/sign-in");
     } catch {
       setSignOutError("Sign out failed. Please try again.");
       setSigningOut(false);
@@ -115,7 +184,7 @@ export function CalendarWorkspace({ userName }: { userName: string }) {
         <p>Signed in as {userName}</p>
       </div>
       <div className={styles.actions}>
-        <button type="button" onClick={() => openNew(date)} disabled={!preferences || !date}>New event</button>
+        <button type="button" onClick={() => openNew(date)} disabled={!preferences || !date || busy}>New event</button>
         <button type="button" onClick={signOut} disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</button>
       </div>
     </header>
@@ -127,7 +196,7 @@ export function CalendarWorkspace({ userName }: { userName: string }) {
     </div>
     {preferences && <p className={styles.zone}>Times shown in {preferences.timeZone}</p>}
     <p role="status" className={styles.status}>{notice || (loading ? "Loading calendar…" : "")}</p>
-    {error && <div className={styles.error} role="alert"><p>{error}</p>{conflict ? <button type="button" onClick={() => { setEditor(null); setError(""); setReload((value) => value + 1); }}>Discard unsaved changes and reload</button> : <button type="button" onClick={() => { setError(""); if (!preferences) window.location.reload(); else setReload((value) => value + 1); }}>Retry loading</button>}</div>}
+    {error && <div className={styles.error} role="alert"><p>{error}</p>{conflict ? <button type="button" onClick={() => { editorGeneration.current += 1; setEditor(null); setError(""); setReload((value) => value + 1); }}>Discard unsaved changes and reload</button> : <button type="button" onClick={() => { setError(""); if (!preferences) window.location.reload(); else setReload((value) => value + 1); }}>Retry loading</button>}</div>}
     {preferences && !loading && !error && <><div className={styles.calendarSurface}>{view === "month" ? <MonthCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : view === "agenda" ? <AgendaCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : <TimeCalendar view={view} events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} />}</div>{events.length === 0 && <p className={styles.empty}>No events in this period. <button type="button" onClick={() => openNew(date)}>Create an event</button></p>}</>}
     {editor && (
       <CalendarEditor
@@ -135,7 +204,7 @@ export function CalendarWorkspace({ userName }: { userName: string }) {
         busy={busy}
         onChange={changeDraft}
         onReview={reviewEvent}
-        onClose={() => setEditor(null)}
+        onClose={() => { editorGeneration.current += 1; setEditor(null); }}
         onDeleteReview={() => setEditor({ ...editor, deleting: true, review: null })}
         onDeleteCancel={() => setEditor({ ...editor, deleting: false })}
         onDeleteConfirm={confirmDelete}
