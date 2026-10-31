@@ -4526,3 +4526,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Temporal, timezone fixtures
 - **Security considerations:** Synthetic dates and events
 - **Verification method:** Assert instant, local label, recurrence
+
+### S408 — Provider adapter contract tests
+
+- **Skill ID:** S408
+- **Name:** Provider adapter contract tests
+- **Purpose:** Check documented provider requests and parsing
+- **When to use:** When Meta or Google adapters change
+- **Implementation approach:** Use sanitized fixtures and transport stubs
+- **Recommended tools:** Vitest, HTTP mock server
+- **Security considerations:** No real keys or private payloads
+- **Verification method:** Assert endpoint, schema, redaction
