@@ -93,3 +93,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** URLSearchParams, Next.js navigation
 - **Security considerations:** Do not put tokens, private notes, or sensitive search terms in URLs
 - **Verification method:** Reload, copy link, and use back/forward while checking state fidelity
+
+### S007 — Component-local state
+
+- **Skill ID:** S007
+- **Name:** Component-local state
+- **Purpose:** Keep transient interaction state close to its owning component
+- **When to use:** When a value has no cross-route persistence requirement
+- **Implementation approach:** Use the narrowest React state owner and lift only for a real shared consumer
+- **Recommended tools:** React useState, TypeScript
+- **Security considerations:** Clear transient secrets and file previews when their owner unmounts
+- **Verification method:** Exercise open/close and unmount paths; inspect for stale visible state
