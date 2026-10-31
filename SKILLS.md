@@ -5190,3 +5190,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** aria-live, React Aria
 - **Security considerations:** Never announce keys, private content, or hidden reasoning
 - **Verification method:** Check screen reader output for duplicate/noisy updates
+
+### S468 — Form label association
+
+- **Skill ID:** S468
+- **Name:** Form label association
+- **Purpose:** Make each input name and purpose available
+- **When to use:** For account and settings forms
+- **Implementation approach:** Use explicit label-for/id and fieldset for related controls
+- **Recommended tools:** HTML labels, React Hook Form
+- **Security considerations:** Do not expose saved credential values in field defaults
+- **Verification method:** Inspect accessibility tree and click label to focus
