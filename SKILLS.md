@@ -5379,3 +5379,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** OpenAPI, route registry
 - **Security considerations:** Avoid duplicate paths with inconsistent auth
 - **Verification method:** Detect route collisions and review ownership list
+
+### S485 — Package boundary strategy
+
+- **Skill ID:** S485
+- **Name:** Package boundary strategy
+- **Purpose:** Avoid creating packages without real reuse or isolation need
+- **When to use:** When a monorepo grows
+- **Implementation approach:** Extract only stable shared modules with consumers
+- **Recommended tools:** pnpm workspaces, dependency graph
+- **Security considerations:** Do not share secret-bearing server package with client
+- **Verification method:** Build packages independently and check dependency direction
