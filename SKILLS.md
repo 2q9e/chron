@@ -4348,3 +4348,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** ORM logger, pg_stat_statements
 - **Security considerations:** Scope batches to tenant
 - **Verification method:** Measure query count at 100 rows
+
+### S392 — Privacy-aware client cache
+
+- **Skill ID:** S392
+- **Name:** Privacy-aware client cache
+- **Purpose:** Remove prior-account cached data during logout and identity changes
+- **When to use:** When caching API results
+- **Implementation approach:** Namespace protected caches by authenticated session and synchronously clear on logout/account switch; use S019 for query ownership and S388 for mutation invalidation
+- **Recommended tools:** TanStack Query lifecycle
+- **Security considerations:** Never cache tokens or keys
+- **Verification method:** Switch users and confirm no prior data flashes; test post-mutation freshness separately under S388
