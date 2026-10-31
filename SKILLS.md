@@ -1971,3 +1971,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Undici dispatcher, proxy
 - **Security considerations:** Do not validate DNS only once
 - **Verification method:** Test answer changes and inspect peer IP
+
+### S177 — URL parser hardening
+
+- **Skill ID:** S177
+- **Name:** URL parser hardening
+- **Purpose:** Reject ambiguous host and scheme forms
+- **When to use:** When parsing imported URLs
+- **Implementation approach:** Use standard parser; reject credentials and odd ports
+- **Recommended tools:** WHATWG URL, allowlist
+- **Security considerations:** No substring host authorization
+- **Verification method:** Property-test Unicode and encoded variants
