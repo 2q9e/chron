@@ -2668,3 +2668,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Typed context object, scoped cache
 - **Security considerations:** Clear on completion and account switch
 - **Verification method:** Inspect context after cancellation
+
+### S240 — Durable agent memory
+
+- **Skill ID:** S240
+- **Name:** Durable agent memory
+- **Purpose:** Persist only approved recurring preferences
+- **When to use:** When continuity benefits future planning
+- **Implementation approach:** Use explicit memory types, consent, provenance, deletion
+- **Recommended tools:** Database schema, memory service
+- **Security considerations:** Never retain secrets or raw documents as general memory
+- **Verification method:** Test export, deletion, and consent revocation
