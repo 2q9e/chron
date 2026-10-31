@@ -3851,3 +3851,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Temporal polyfill, PostgreSQL
 - **Security considerations:** Scope event records to owner and source account
 - **Verification method:** Round-trip timed and all-day records across API/DB and multiple display zones; test DST gaps/folds, timed recurrence, and date-only recurrence without midnight conversion
+
+### S347 — Timezone storage
+
+- **Skill ID:** S347
+- **Name:** Timezone storage
+- **Purpose:** Preserve a timed event’s local-time intent across display zones
+- **When to use:** When creating a timed event
+- **Implementation approach:** For timed events only, persist canonical instant plus original IANA zone and wall-time intent as specified by S346; do not apply this representation to date-only items
+- **Recommended tools:** Temporal, IANA tz database
+- **Security considerations:** Do not infer the event zone from an untrusted client offset alone; keep all-day values date-only under S349
+- **Verification method:** View same event in two zones and compare
