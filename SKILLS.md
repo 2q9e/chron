@@ -5423,3 +5423,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** TypeScript strict mode
 - **Security considerations:** Branded identifiers do not replace authorization
 - **Verification method:** Compile valid and invalid state examples
+
+### S489 — Boundary validation placement
+
+- **Skill ID:** S489
+- **Name:** Boundary validation placement
+- **Purpose:** Validate untrusted values where they enter each layer
+- **When to use:** At HTTP, queue, storage, and provider boundaries
+- **Implementation approach:** Parse once into trusted internal types, revalidate on persistence
+- **Recommended tools:** Zod, JSON Schema
+- **Security considerations:** Never trust types erased at runtime
+- **Verification method:** Fuzz ingress and persisted payload boundaries
