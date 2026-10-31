@@ -3783,3 +3783,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** D3, SVG, accessible list
 - **Security considerations:** Sanitize imported labels and URLs
 - **Verification method:** Compare order with source and navigate without pointer
+
+### S341 — Study timer state
+
+- **Skill ID:** S341
+- **Name:** Study timer state
+- **Purpose:** Track elapsed time only for an explicitly started focused interval
+- **When to use:** When learner starts a timed session
+- **Implementation approach:** Support pause/resume and persist duration, not surveillance; keep timer separate from card queue and rating state in S334
+- **Recommended tools:** Timer hook, Page Visibility API
+- **Security considerations:** Do not monitor keystrokes or background activity
+- **Verification method:** Test tab suspension and pause/resume; verify card review state remains governed by S334
