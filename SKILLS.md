@@ -4436,3 +4436,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Lighthouse CI, bundle analyzer
 - **Security considerations:** Benchmark synthetic content only
 - **Verification method:** Fail CI on agreed regression threshold
+
+### S400 — Idle work scheduling
+
+- **Skill ID:** S400
+- **Name:** Idle work scheduling
+- **Purpose:** Keep background preparation from blocking interaction
+- **When to use:** When prefetch or indexing can wait
+- **Implementation approach:** Use idle callbacks or low-priority task queue
+- **Recommended tools:** requestIdleCallback, scheduler API
+- **Security considerations:** Cancel work on account switch
+- **Verification method:** Interact during background load and check latency
