@@ -4779,3 +4779,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Playwright, DOM assertions
 - **Security considerations:** Use inert synthetic payloads
 - **Verification method:** No active script, handler, or URL remains
+
+### S431 — SSRF regression tests
+
+- **Skill ID:** S431
+- **Name:** SSRF regression tests
+- **Purpose:** Protect fetcher from private address ranges
+- **When to use:** For research retrieval
+- **Implementation approach:** Test IPv4/IPv6, redirects, and DNS changes
+- **Recommended tools:** Mock DNS, egress harness
+- **Security considerations:** Do not probe real internal services
+- **Verification method:** Blocked target opens no connection
