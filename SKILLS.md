@@ -4238,3 +4238,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Fontsource, Lighthouse
 - **Security considerations:** Check license and limit external requests
 - **Verification method:** Measure under throttled network
+
+### S382 — CSS rendering cost
+
+- **Skill ID:** S382
+- **Name:** CSS rendering cost
+- **Purpose:** Reduce recalculation and paint
+- **When to use:** When scroll or typing stalls
+- **Implementation approach:** Simplify selectors; animate transforms
+- **Recommended tools:** Chrome Rendering, stylelint
+- **Security considerations:** CSS hiding is not authorization
+- **Verification method:** Profile style and paint work
