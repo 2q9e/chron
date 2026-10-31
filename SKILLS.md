@@ -4027,3 +4027,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Pointer Events, interval math
 - **Security considerations:** Server rejects out-of-range or unauthorized updates; keep every resize as a draft under S369 until approved
 - **Verification method:** Test minimum duration and DST crossing
+
+### S363 — Conflict detection
+
+- **Skill ID:** S363
+- **Name:** Conflict detection
+- **Purpose:** Identify overlapping commitments before saving
+- **When to use:** When creating or moving an event
+- **Implementation approach:** Compare timed/timed events as half-open instant intervals `[start, end)`; compare all-day/all-day events as half-open date ranges `[startDate, endDate)`. For mixed pairs, project the all-day date boundaries to instants in that calendar's configured IANA zone (not the viewer's display zone), then compare half-open intervals. Require a valid configured calendar zone for mixed comparisons; report indeterminate and request configuration rather than using the host default. Preserve all-day storage as dates under S346/S349
+- **Recommended tools:** Interval index, database exclusion query
+- **Security considerations:** Only reveal conflict details the user may access
+- **Verification method:** Test overlapping and adjacent timed/date intervals, mixed events at calendar-day boundaries, multiple viewer zones, and 23/25-hour DST days; assert display-zone changes do not alter results or stored date-only values
