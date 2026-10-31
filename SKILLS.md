@@ -4735,3 +4735,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** MSW, Testing Library
 - **Security considerations:** No raw provider bodies in fixtures
 - **Verification method:** Assert message, retry, preserved input, focus
+
+### S427 — Empty-state flow tests
+
+- **Skill ID:** S427
+- **Name:** Empty-state flow tests
+- **Purpose:** Verify first-use path reaches real creation
+- **When to use:** When a list has no records
+- **Implementation approach:** Run clean database and activate create action
+- **Recommended tools:** Playwright, DB fixture
+- **Security considerations:** Fixtures are test-only
+- **Verification method:** Creation persists in test database
