@@ -1142,3 +1142,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Figma flow, analytics event schema, form components
 - **Security considerations:** Collect only setup fields needed for a working task; follow current 18+ eligibility and never target minors
 - **Verification method:** Test gated entry, completion, abandonment, resume, and skip behavior with synthetic eligible accounts
+
+### S102 — Empty-state content
+
+- **Skill ID:** S102
+- **Name:** Empty-state content
+- **Purpose:** Explain what belongs in a genuinely empty area without fabricating content
+- **When to use:** When writing empty-state copy for a truly empty collection; pair with S036, which defines the actual empty UI and working action
+- **Implementation approach:** State why the collection is empty and offer a working create/import action; do not show examples, mock cards, seeded records, or placeholders in product UI
+- **Recommended tools:** Content design, Figma, component library
+- **Security considerations:** No examples, seeded records, fake previews, or placeholders in product UI; use only user-provided/authorized runtime content and test-only synthetic fixtures
+- **Verification method:** Review copy against a clean test account, confirm no sample content is visible, and verify the S036 action reaches a real flow
