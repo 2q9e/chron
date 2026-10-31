@@ -3739,3 +3739,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Objective taxonomy, relational links
 - **Security considerations:** Do not invent official course outcomes
 - **Verification method:** Verify each objective traces to supplied syllabus
+
+### S337 — Progress dashboard honesty
+
+- **Skill ID:** S337
+- **Name:** Progress dashboard honesty
+- **Purpose:** Summarize only recorded study activity
+- **When to use:** When showing learning trends
+- **Implementation approach:** Derive values from review and attempt events
+- **Recommended tools:** SQL aggregates, chart library
+- **Security considerations:** Never fabricate streaks or completion
+- **Verification method:** Recompute view from known event fixture
