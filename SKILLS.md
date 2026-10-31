@@ -467,3 +467,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** remark, rehype-sanitize, DOMPurify where needed
 - **Security considerations:** Disallow raw HTML, dangerous URL schemes, and untrusted embeds
 - **Verification method:** Fuzz links and markup payloads; assert scripts and event attributes never execute
+
+## Backend engineering
+
+### S041 — Request payload validation
+
+- **Skill ID:** S041
+- **Name:** Request payload validation
+- **Purpose:** Reject malformed requests before business logic runs
+- **When to use:** When an endpoint accepts JSON, query values, or form data
+- **Implementation approach:** Parse with a runtime schema and return field-level safe errors
+- **Recommended tools:** Zod, TypeScript, Fastify or framework validators
+- **Security considerations:** Never rely on client-side constraints or coerce ambiguous identifiers
+- **Verification method:** Fuzz missing, oversized, and wrong-type fields at the route boundary
