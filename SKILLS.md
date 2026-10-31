@@ -3640,3 +3640,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Quiz state, rule engine
 - **Security considerations:** Do not infer fixed ability from one session; no model-based adaptation before S236
 - **Verification method:** Replay seeded attempts and inspect changes
+
+### S328 — Quiz attempt persistence
+
+- **Skill ID:** S328
+- **Name:** Quiz attempt persistence
+- **Purpose:** Resume interrupted practice without losing answers
+- **When to use:** When user leaves mid-quiz
+- **Implementation approach:** Persist attempt version, answers, and timestamps
+- **Recommended tools:** Database transaction, form state
+- **Security considerations:** Authorize attempt by notebook owner
+- **Verification method:** Reload mid-attempt and compare saved state
