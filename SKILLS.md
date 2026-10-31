@@ -4403,3 +4403,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Chrome Performance, GSAP
 - **Security considerations:** Honor reduced motion; avoid flashing
 - **Verification method:** Profile 60Hz and high-refresh screens
+
+### S397 — Memory leak profiling
+
+- **Skill ID:** S397
+- **Name:** Memory leak profiling
+- **Purpose:** Find retained DOM and GPU objects
+- **When to use:** After repeated navigation or parsing
+- **Implementation approach:** Compare heap snapshots and resource counts
+- **Recommended tools:** Chrome Memory, React Profiler
+- **Security considerations:** Use synthetic data in shared snapshots
+- **Verification method:** Repeat cycles; verify memory stabilizes
