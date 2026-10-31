@@ -2081,3 +2081,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Archive limits, isolated worker
 - **Security considerations:** Reject symlinks and root escape
 - **Verification method:** Test high-ratio and traversal archives
+
+### S187 — Malware quarantine
+
+- **Skill ID:** S187
+- **Name:** Malware quarantine
+- **Purpose:** Keep files unavailable until scan completes
+- **When to use:** Asynchronous upload inspection
+- **Implementation approach:** Use quarantined, clean, rejected states with private ACLs
+- **Recommended tools:** Storage ACLs, scan queue
+- **Security considerations:** No public URL before clean status
+- **Verification method:** Rejected file cannot be fetched or parsed
