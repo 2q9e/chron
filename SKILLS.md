@@ -1916,3 +1916,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CORS middleware, gateway config
 - **Security considerations:** Never wildcard with credentials
 - **Verification method:** Test hostile preflight and credentialed fetch
+
+### S172 — Content Security Policy
+
+- **Skill ID:** S172
+- **Name:** Content Security Policy
+- **Purpose:** Reduce script execution and exfiltration risk
+- **When to use:** When deploying interactive pages
+- **Implementation approach:** Use nonces/hashes and narrow source lists
+- **Recommended tools:** CSP headers, violation reports
+- **Security considerations:** Avoid unsafe-inline and broad wildcards
+- **Verification method:** Enforce policy in browser; review violations
