@@ -174,6 +174,7 @@ export async function createCalendarEvent(
   mutation: CalendarEventMutation,
   calendarTimeZone: string,
   conflicts: readonly CalendarConflict[],
+  operationKey: string,
 ): Promise<CalendarEvent> {
   const response = await fetch("/api/calendar/events", {
     method: "POST",
@@ -182,6 +183,7 @@ export async function createCalendarEvent(
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      "Idempotency-Key": operationKey,
     },
     body: JSON.stringify({
       event: mutation,
@@ -194,6 +196,35 @@ export async function createCalendarEvent(
   if (!isRecord(payload) || !isCalendarEvent(payload.event)) {
     throw new CalendarRequestError(
       "Chron returned a saved event in an unexpected format. Reload and try again.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  return payload.event;
+}
+
+export async function reconcileCalendarCreate(operationKey: string): Promise<CalendarEvent | null> {
+  const response = await fetch("/api/calendar/events", {
+    method: "POST",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Idempotency-Key": operationKey,
+    },
+    body: JSON.stringify({ operation: "reconcile" }),
+  });
+  if (response.status === 404) {
+    const error = await readCalendarError(response);
+    if (error.code === "CREATE_OPERATION_NOT_FOUND") return null;
+    throw error;
+  }
+  if (!response.ok) throw await readCalendarError(response);
+  const payload = await parseJson(response);
+  if (!isRecord(payload) || !isCalendarEvent(payload.event)) {
+    throw new CalendarRequestError(
+      "Chron returned a recovered event in an unexpected format. Retry verification.",
       response.status,
       "INVALID_RESPONSE",
     );

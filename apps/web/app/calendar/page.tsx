@@ -37,7 +37,7 @@ export default async function CalendarPage() {
 
   if (!session) redirect("/sign-in");
 
-  return <CalendarWorkspace userName={session.user.name} />;
+  return <CalendarWorkspace key={session.user.id} userId={session.user.id} userName={session.user.name} />;
 }
 
 async function getSession() {

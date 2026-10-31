@@ -135,6 +135,13 @@
   background: var(--surface);
   margin: 1rem 0;
 }
+.recoveryLink {
+  display: inline-block;
+  margin: 0 1rem .5rem 0;
+  color: var(--accent);
+  font-weight: 700;
+  text-underline-offset: .2em;
+}
 .conflictList {
   margin: 1rem 0;
   padding: .85rem 1rem;
