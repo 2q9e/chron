@@ -3451,3 +3451,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Official Meta documentation and authorized API client
 - **Security considerations:** Do not collect keys before permission or substitute an unofficial inference/search host
 - **Verification method:** Before permission, verify the feature is unavailable; afterward test grounding and citation provenance
+
+## Educational technology
+
+### S311 — Notebook information architecture
+
+- **Skill ID:** S311
+- **Name:** Notebook information architecture
+- **Purpose:** Organize courses, sources, and activities
+- **When to use:** When learners begin a subject
+- **Implementation approach:** Model notebook, source, session, artifact ownership
+- **Recommended tools:** Relational schema, TypeScript
+- **Security considerations:** Scope every record to its owner
+- **Verification method:** Test create, move, archive, delete
