@@ -3928,3 +3928,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Calendar command model, confirmation UI
 - **Security considerations:** Require explicit approval bound to exact recurrence scope/payload under S193, especially for bulk changes
 - **Verification method:** Test each scope and count affected records
+
+### S354 — Recurrence expansion limits
+
+- **Skill ID:** S354
+- **Name:** Recurrence expansion limits
+- **Purpose:** Prevent huge rules from exhausting CPU or memory
+- **When to use:** When rules are imported or user-created
+- **Implementation approach:** Bound frequency, horizon, instance count, and processing time
+- **Recommended tools:** rrule limits, worker timeout
+- **Security considerations:** Reject unbounded malicious recurrence input
+- **Verification method:** Fuzz extreme rules and assert bounded runtime
