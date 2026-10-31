@@ -434,3 +434,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS animations, React Suspense
 - **Security considerations:** Do not make a skeleton look like a completed private record
 - **Verification method:** Capture loading and loaded states; check layout shift and reduced-motion mode
+
+### S038 — Portal and overlay layering
+
+- **Skill ID:** S038
+- **Name:** Portal and overlay layering
+- **Purpose:** Render overlays outside clipping ancestors while preserving ownership
+- **When to use:** When dialogs or menus escape a scroll container
+- **Implementation approach:** Use a centralized portal root and explicit stacking tokens
+- **Recommended tools:** ReactDOM createPortal, Floating UI
+- **Security considerations:** Lock background access for modal state and avoid leaking hidden dialog text
+- **Verification method:** Test nested scroll containers, stacking, Escape, and screen reader isolation
