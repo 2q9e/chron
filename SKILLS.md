@@ -4515,3 +4515,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Migration CLI, disposable PostgreSQL
 - **Security considerations:** Generated fixtures only
 - **Verification method:** Old schema upgrades without lost rows
+
+### S407 — Timezone and DST tests
+
+- **Skill ID:** S407
+- **Name:** Timezone and DST tests
+- **Purpose:** Preserve wall-time intent through clock changes
+- **When to use:** For calendar and reminders
+- **Implementation approach:** Cover IANA gaps, folds, and recurrence transitions
+- **Recommended tools:** Temporal, timezone fixtures
+- **Security considerations:** Synthetic dates and events
+- **Verification method:** Assert instant, local label, recurrence
