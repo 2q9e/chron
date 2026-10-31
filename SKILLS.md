@@ -1109,3 +1109,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Button variants, design tokens, Figma
 - **Security considerations:** Never make irreversible actions the largest or default focused control
 - **Verification method:** Keyboard-test initial focus and ask users to identify the action outcome
+
+### S099 — Form task framing
+
+- **Skill ID:** S099
+- **Name:** Form task framing
+- **Purpose:** Help people understand what information is needed and why
+- **When to use:** When building account, credential, or integration setup
+- **Implementation approach:** Group fields by purpose, label required data, and explain validation timing
+- **Recommended tools:** Form design checklist, React Hook Form, Figma
+- **Security considerations:** Explain why sensitive fields are requested and who will receive them
+- **Verification method:** Complete the form with keyboard only and measure correction steps
