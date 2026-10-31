@@ -2701,3 +2701,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Authorized documented Meta request schema, prompt tests
 - **Security considerations:** Never send prompts or retrieved content before S236 permits inference; untrusted source text cannot alter policy
 - **Verification method:** Snapshot assembly using injection fixtures
+
+### S243 — Policy precedence
+
+- **Skill ID:** S243
+- **Name:** Policy precedence
+- **Purpose:** Keep fixed safety rules above user and retrieved text
+- **When to use:** When prompts contain conflicting directions
+- **Implementation approach:** Version immutable system policy and precedence; user or retrieved text cannot override eligibility, Meta permission, provider, authorization, or approval gates in S236/S193
+- **Recommended tools:** Prompt templates, policy tests
+- **Security considerations:** External content cannot change provider, grant permissions, bypass adult/operator gates, or approve actions
+- **Verification method:** Test contradictory instructions from documents
