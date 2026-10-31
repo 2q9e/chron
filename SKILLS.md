@@ -2092,3 +2092,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Storage ACLs, scan queue
 - **Security considerations:** No public URL before clean status
 - **Verification method:** Rejected file cannot be fetched or parsed
+
+### S188 — MIME sniffing defense
+
+- **Skill ID:** S188
+- **Name:** MIME sniffing defense
+- **Purpose:** Prevent browsers executing uploaded markup
+- **When to use:** When serving files and exports
+- **Implementation approach:** Set verified type, nosniff, attachment disposition
+- **Recommended tools:** HTTP headers, file parser
+- **Security considerations:** Isolate or force-download risky formats
+- **Verification method:** Open hostile SVG/HTML and confirm inert behavior
