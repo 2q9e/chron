@@ -1252,3 +1252,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Settings panel, CSS variables, local preview state
 - **Security considerations:** Persist preferences per account and do not store private content in theme metadata
 - **Verification method:** Change each setting, reload, and verify only the intended appearance changes
+
+### S112 — Dark theme adaptation
+
+- **Skill ID:** S112
+- **Name:** Dark theme adaptation
+- **Purpose:** Retune surfaces and visual hierarchy for low-luminance environments
+- **When to use:** When a dark theme is requested or system preference changes
+- **Implementation approach:** Re-evaluate neutral ramps, borders, images, focus, and elevation rather than invert colors
+- **Recommended tools:** CSS color-scheme, token sets, browser devtools
+- **Security considerations:** Do not make focus or error states disappear in dim palettes
+- **Verification method:** Inspect screenshots with simulated OLED contrast and measure text pairs
