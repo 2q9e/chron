@@ -1263,3 +1263,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** CSS color-scheme, token sets, browser devtools
 - **Security considerations:** Do not make focus or error states disappear in dim palettes
 - **Verification method:** Inspect screenshots with simulated OLED contrast and measure text pairs
+
+### S113 — High-contrast theme composition
+
+- **Skill ID:** S113
+- **Name:** High-contrast theme composition
+- **Purpose:** Support readers who need clear boundaries and stronger text contrast
+- **When to use:** When user preference or accessibility requires heightened separation
+- **Implementation approach:** Increase edge definition and preserve semantic focus, selection, and status cues
+- **Recommended tools:** CSS tokens, forced-colors media queries, axe
+- **Security considerations:** Do not remove user agent forced-color behavior
+- **Verification method:** Test forced colors and high-contrast mode with every core control
