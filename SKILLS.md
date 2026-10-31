@@ -2943,3 +2943,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Usage ledger, rate limiter
 - **Security considerations:** Keep inference disabled before S236; do not expose other users’ usage or treat quota as permission
 - **Verification method:** Simulate quota exhaustion and verify isolation
+
+### S265 — Prompt-injection resilience
+
+- **Skill ID:** S265
+- **Name:** Prompt-injection resilience
+- **Purpose:** Enforce planner and action boundaries when hostile sources inform proposed steps
+- **When to use:** Before executing a plan informed by retrieved content; use S189 specifically for policy/context isolation during prompt assembly
+- **Implementation approach:** Treat passages as data, validate planned steps, and route every call through server checks for identity, ownership, permissions, bounds, and approval under S192/S193; source labels from S189 are defense in depth, not enforcement
+- **Recommended tools:** Prompt tests, source wrappers
+- **Security considerations:** Context labels cannot constrain execution or authorize a tool; server policy must independently validate the proposed action, its inputs/outputs, limits, and exact approval for consequential writes
+- **Verification method:** Run test-only hostile-source cases through planning and the server gate; prove unauthorized calls are rejected and no side effect occurs even when a schema-valid proposal is emitted
