@@ -5,11 +5,13 @@ import {
   type CalendarEventCreateRequest,
   type CalendarEventCommit,
   type CalendarEventMutation,
+  type CalendarEventSearchRequest,
   type CalendarPreferences,
   type CalendarTheme,
 } from "../domain/types.ts";
 import {
   parseCalendarDate,
+  resolveCalendarRange,
   resolveAllDayRange,
   resolveTimedDuration,
   resolveLocalDateTime,
@@ -21,6 +23,7 @@ const maximumAllDayEventDays = 366;
 const maximumTitleLength = 160;
 const maximumDetailsLength = 4000;
 const maximumConflictCount = 32;
+const maximumSearchQueryLength = 120;
 
 function invalidPayload(message = "The calendar fields are invalid."): never {
   throw new CalendarRouteError(400, "INVALID_CALENDAR_FIELDS", message);
@@ -147,6 +150,38 @@ export function parseCalendarPreferences(input: unknown): CalendarPreferences {
     density: density as CalendarDensity,
     weekStartsOn,
     timeZone,
+  };
+}
+
+export function parseCalendarEventSearchRequest(input: unknown): CalendarEventSearchRequest {
+  const value = objectRecord(input);
+  assertAllowedFields(value, ["query", "from", "to", "timeZone", "kind"]);
+
+  if (typeof value.query !== "string" || /[\p{Cc}\p{Cs}]/u.test(value.query)) {
+    return invalidPayload("Search text must contain 1 to 120 characters without control characters.");
+  }
+  const query = value.query.trim();
+  const queryLength = Array.from(query).length;
+  if (queryLength < 1 || queryLength > maximumSearchQueryLength) {
+    return invalidPayload("Search text must contain 1 to 120 characters without control characters.");
+  }
+
+  let kind: CalendarEventSearchRequest["kind"];
+  if (value.kind !== undefined) {
+    if (value.kind !== "timed" && value.kind !== "all-day") {
+      return invalidPayload("Choose a supported calendar event type.");
+    }
+    kind = value.kind;
+  }
+
+  const timeZone = validateTimeZone(value.timeZone);
+  const range = resolveCalendarRange(value.from, value.to, timeZone);
+  return {
+    query,
+    from: range.fromDate,
+    to: range.toDate,
+    timeZone,
+    ...(kind ? { kind } : {}),
   };
 }
 

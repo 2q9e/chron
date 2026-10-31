@@ -16,6 +16,14 @@ export class CalendarRouteError extends Error {
   }
 }
 
+export function calendarSearchTimeoutError(): CalendarRouteError {
+  return new CalendarRouteError(
+    504,
+    "CALENDAR_SEARCH_TIMEOUT",
+    "Search could not finish. Refine the title or date range and try again.",
+  );
+}
+
 export function calendarRouteError(error: unknown): CalendarRouteError {
   if (error instanceof CalendarRouteError) return error;
 

@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import { CalendarTimeError } from "../domain/time.ts";
-import { CalendarRouteError } from "./errors.ts";
+import {
+  CalendarRouteError,
+  calendarSearchTimeoutError,
+  errorResponse,
+} from "./errors.ts";
 import { CalendarRepository } from "./repository.ts";
-import { errorResponse } from "./errors.ts";
 import {
   calendarJson,
   exactQueryValues,
@@ -19,6 +22,7 @@ import {
   parseCalendarEventCommit,
   parseCalendarConflictCheck,
   parseCalendarIdempotencyKey,
+  parseCalendarEventSearchRequest,
   parseCalendarPreferences,
   validateCalendarEventId,
 } from "./validation.ts";
@@ -125,6 +129,69 @@ test("validates the complete persisted preference contract", () => {
   );
 });
 
+test("validates exact calendar search fields and normalizes bounded Unicode text", () => {
+  assert.deepEqual(parseCalendarEventSearchRequest({
+    query: "  Révision de chimie  ",
+    from: "2026-10-30",
+    to: "2027-01-31",
+    timeZone: "America/Montreal",
+    kind: "timed",
+  }), {
+    query: "Révision de chimie",
+    from: "2026-10-30",
+    to: "2027-01-31",
+    timeZone: "America/Montreal",
+    kind: "timed",
+  });
+  assert.deepEqual(parseCalendarEventSearchRequest({
+    query: "😀".repeat(120),
+    from: "2026-10-30",
+    to: "2026-10-31",
+    timeZone: "UTC",
+  }), {
+    query: "😀".repeat(120),
+    from: "2026-10-30",
+    to: "2026-10-31",
+    timeZone: "UTC",
+  });
+
+  const invalidSearches = [
+    { query: "title", from: "2026-10-30", to: "2026-10-31", timeZone: "UTC", ownerId: "other" },
+    { query: "   ", from: "2026-10-30", to: "2026-10-31", timeZone: "UTC" },
+    { query: "😀".repeat(121), from: "2026-10-30", to: "2026-10-31", timeZone: "UTC" },
+    { query: "Plan\nexam", from: "2026-10-30", to: "2026-10-31", timeZone: "UTC" },
+    { query: "\u0085Plan", from: "2026-10-30", to: "2026-10-31", timeZone: "UTC" },
+    { query: "\uD800", from: "2026-10-30", to: "2026-10-31", timeZone: "UTC" },
+    { query: "Plan", from: "2026-10-30", to: "2026-10-31", timeZone: "Not/AZone" },
+    { query: "Plan", from: "2026-10-30", to: "2027-02-01", timeZone: "UTC" },
+    { query: "Plan", from: "2026-10-31", to: "2026-10-31", timeZone: "UTC" },
+    { query: "Plan", from: "2026-10-30", to: "2026-10-31", timeZone: "UTC", kind: "other" },
+  ];
+  for (const input of invalidSearches) {
+    assert.throws(
+      () => parseCalendarEventSearchRequest(input),
+      (error) => error instanceof CalendarRouteError || error instanceof CalendarTimeError,
+    );
+  }
+});
+
+test("search route authenticates a JSON body and uses private no-store responses", () => {
+  const route = readFileSync(
+    new URL("../../../app/api/calendar/events/search/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(route, /requireSameOriginMutation/u);
+  assert.match(route, /requireCalendarUser/u);
+  assert.match(route, /readCalendarJson\(request\)/u);
+  assert.match(route, /repository\.searchEvents\(userId, search\)/u);
+  assert.match(route, /calendarJson\(\{ events \}\)/u);
+  assert.match(route, /withCalendarErrors/u);
+  assert.doesNotMatch(route, /searchParams|URLSearchParams|console\.(?:log|info|debug)/u);
+
+  const response = calendarJson({ events: [] });
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+});
+
 test("validates conflict checks against a calendar zone and owned event id", () => {
   const id = "de305d54-75b4-431b-adb2-eb6b9e546014";
   assert.deepEqual(parseCalendarConflictCheck({
@@ -209,6 +276,28 @@ test("bounds JSON bodies and preserves the too-large error status", async () => 
   const responseForError = errorResponse(new CalendarRouteError(413, "PAYLOAD_TOO_LARGE", "Too large."));
   assert.equal(responseForError.status, 413);
   assert.equal(responseForError.headers.get("cache-control"), "private, no-store");
+});
+
+test("maps search timeouts to a safe private no-store response", async () => {
+  const response = errorResponse(calendarSearchTimeoutError());
+  assert.equal(response.status, 504);
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+  assert.deepEqual(await response.json(), {
+    error: {
+      code: "CALENDAR_SEARCH_TIMEOUT",
+      message: "Search could not finish. Refine the title or date range and try again.",
+    },
+  });
+
+  const databaseError = Object.assign(new Error("statement details"), { code: "57014" });
+  const safeResponse = errorResponse(databaseError);
+  assert.equal(safeResponse.status, 500);
+  assert.deepEqual(await safeResponse.json(), {
+    error: {
+      code: "CALENDAR_REQUEST_FAILED",
+      message: "The calendar request could not be completed.",
+    },
+  });
 });
 
 test("allows only exact configured origins for mutations", () => {

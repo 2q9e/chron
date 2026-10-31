@@ -14,11 +14,14 @@ import type {
   CalendarEventCommit,
   CalendarEvent,
   CalendarEventMutation,
+  CalendarEventSearchRequest,
   CalendarPreferences,
 } from "../domain/types.ts";
-import { CalendarRouteError } from "./errors.ts";
+import { CalendarRouteError, calendarSearchTimeoutError } from "./errors.ts";
 
 const maximumEventsPerRange = 1000;
+const maximumEventsPerSearch = 1000;
+const calendarSearchStatementTimeout = "2000ms";
 const maximumConflictResults = 32;
 
 type EventRow = QueryResultRow & {
@@ -87,6 +90,7 @@ async function withOwnerTransaction<T>(
 ): Promise<T> {
   const client = await pool.connect();
   let transactionOpen = false;
+  let clientReleaseError: Error | undefined;
   try {
     await client.query("BEGIN");
     transactionOpen = true;
@@ -103,11 +107,17 @@ async function withOwnerTransaction<T>(
     return result;
   } catch (error) {
     if (transactionOpen) {
-      await client.query("ROLLBACK").catch(() => undefined);
+      try {
+        await client.query("ROLLBACK");
+      } catch (rollbackError) {
+        clientReleaseError = rollbackError instanceof Error
+          ? rollbackError
+          : new Error("Calendar transaction rollback failed.");
+      }
     }
     throw error;
   } finally {
-    client.release();
+    client.release(clientReleaseError);
   }
 }
 
@@ -169,6 +179,10 @@ function preferencesFromRow(row: PreferencesRow): CalendarPreferences {
     weekStartsOn: row.week_starts_on,
     timeZone: row.time_zone,
   };
+}
+
+function isPostgresQueryCancelled(error: unknown): boolean {
+  return error !== null && typeof error === "object" && "code" in error && error.code === "57014";
 }
 
 function throwMissingOrStale(revision: number | undefined): never {
@@ -462,6 +476,63 @@ export class CalendarRepository {
           422,
           "RANGE_RESULT_LIMIT",
           "Narrow the date range to see these events.",
+        );
+      }
+      return result.rows.map(toCalendarEvent);
+    });
+  }
+
+  searchEvents(
+    ownerId: string,
+    search: CalendarEventSearchRequest,
+  ): Promise<CalendarEvent[]> {
+    const range = resolveCalendarRange(search.from, search.to, search.timeZone);
+    const escapedQuery = search.query.replace(/[\\%_]/gu, (character) => `\\${character}`);
+    const pattern = `%${escapedQuery}%`;
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      await client.query(
+        "SELECT set_config('statement_timeout', $1, true)",
+        [calendarSearchStatementTimeout],
+      );
+      const result = await client.query<EventRow>(
+        `SELECT ${eventColumns}
+         FROM calendar_events
+         WHERE user_id = $1
+           AND title ILIKE $2 ESCAPE E'\\\\'
+           AND (
+             (kind = 'all-day' AND start_date < $4::date AND end_date > $3::date)
+             OR
+             (kind = 'timed' AND starts_at < $7::timestamptz AND ends_at > $6::timestamptz)
+           )
+           AND ($8::text IS NULL OR kind = $8::text)
+         ORDER BY
+           CASE WHEN kind = 'all-day'
+             THEN start_date::timestamp without time zone AT TIME ZONE $5::text
+             ELSE starts_at
+           END,
+           id
+         LIMIT $9`,
+        [
+          ownerId,
+          pattern,
+          range.fromDate,
+          range.toDate,
+          search.timeZone,
+          range.startsAt,
+          range.endsAt,
+          search.kind ?? null,
+          maximumEventsPerSearch + 1,
+        ],
+      ).catch((error: unknown) => {
+        if (isPostgresQueryCancelled(error)) throw calendarSearchTimeoutError();
+        throw error;
+      });
+
+      if (result.rows.length > maximumEventsPerSearch) {
+        throw new CalendarRouteError(
+          422,
+          "SEARCH_RESULT_LIMIT",
+          "Refine the title or narrow the date range to see these events.",
         );
       }
       return result.rows.map(toCalendarEvent);
