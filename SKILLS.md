@@ -1474,3 +1474,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Three.js InstancedMesh, BufferAttribute
 - **Security considerations:** Do not encode private record counts visibly
 - **Verification method:** Compare draw calls and inspect every instance boundary
+
+### S132 — Shader material authoring
+
+- **Skill ID:** S132
+- **Name:** Shader material authoring
+- **Purpose:** Create a focused procedural material effect
+- **When to use:** A bespoke surface needs more than standard PBR
+- **Implementation approach:** Start from standard lighting and add a minimal uniform-based shader change
+- **Recommended tools:** ShaderMaterial, WebGL diagnostics
+- **Security considerations:** Never execute shader text supplied by users
+- **Verification method:** Compile across browsers and compare GPU frame time
