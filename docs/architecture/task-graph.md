@@ -237,8 +237,9 @@ and layer integration; it includes browser checks at desktop and mobile sizes.
   build and desktop/mobile browser verification after the world is connected.
 - **Expected deliverable:** semantic landing route, design tokens, and
   lifecycle-safe native-scroll progress bridge
-- **Status:** Source implementation is staged in the task worktree; build and
-  browser checks await scene integration.
+- **Status:** Integrated into `main`. Lint, typecheck, and production build
+  pass. Desktop browser inspection is partial; narrow, tablet, zoom,
+  accessibility, and fallback checks remain under L1-e.
 
 ### L1-b — persistent 3D scroll world
 
@@ -262,10 +263,11 @@ and layer integration; it includes browser checks at desktop and mobile sizes.
 - **Tests:** typecheck and lint owned files; integrated forward/reverse/fast
   scroll, resized/mobile viewports, reduced motion, fallback, and profiling are
   verified by the main agent in a real browser.
-- **Expected deliverable:** `WorldLayer` with the five-state instrument and
-  an owned CSS fallback, ready for main-agent integration
-- **Status:** Source implementation is staged in the task worktree; build and
-  browser checks await main-agent integration.
+- **Expected deliverable:** persistent `WorldLayer` orchestration,
+  `CalendarInstrument` geometry and scroll motion, and an owned CSS fallback
+- **Status:** Integrated into `main`. Lint, typecheck, and production build
+  pass. Browser fallback, reduced-motion, and responsive checks remain under
+  L1-e.
 
 ### L1-c — independent landing integration review
 
@@ -285,8 +287,11 @@ and layer integration; it includes browser checks at desktop and mobile sizes.
 - **Tests:** independent source review; explicitly mark browser behavior as
   unverified
 - **Expected deliverable:** findings for root remediation
-- **Status:** Review found progress-handshake, fail-closed, reduced-motion, and
-  layer-order issues; source findings are being remediated.
+- **Status:** Source review and refactor follow-up are recorded in
+  `docs/audits/landing-page.md`. LP-01, LP-02, and LP-06 are fixed in source;
+  LP-03 and LP-04 remain open, and LP-05 remains partly open. LP-06's browser
+  fallback runtime is still untested. Configured reviewer model identity was
+  not independently confirmed, and the reviewer did not inspect the browser.
 
 ### L1-d1 — repair progress bridge lifecycle
 
@@ -307,15 +312,16 @@ and layer integration; it includes browser checks at desktop and mobile sizes.
 - **Tests:** source-level protocol and cleanup review; root runs type, lint,
   build, and browser validation
 - **Expected deliverable:** bridge-only remediation and review summary
-- **Status:** In progress.
+- **Status:** Bridge remediation is integrated and covered by the passing
+  lint/typecheck/build checks. Browser behavior remains part of L1-e.
 
 ### L1-d2 — repair world progress and motion lifecycle
 
 - **Assigned agent:** `/root/landing_world`, GPT-6 Luna MAX setting requested at
   spawn; actual runtime identity is not independently exposed
 - **Dependencies:** L1-c findings and agreed `number | null` progress contract
-- **Owned files:** `apps/web/features/landing/world/WorldLayer.tsx` and
-  `world.css` only
+- **Owned files:** `apps/web/features/landing/world/WorldLayer.tsx`,
+  `CalendarInstrument.tsx`, `WorldFallback.tsx`, and `world.css`
 - **Read-only files:** `AGENTS.md`, `SKILLS.md`, `docs/design/scroll-world-contract.md`,
   and the L1-c review
 - **Required skills:** S121, S126, S145, S147–S149, S151, S155, S473, and S478
@@ -329,7 +335,8 @@ and layer integration; it includes browser checks at desktop and mobile sizes.
 - **Tests:** source-level lifecycle and event-contract review; root runs type,
   lint, build, and browser validation
 - **Expected deliverable:** world-only remediation and review summary
-- **Status:** In progress.
+- **Status:** World remediation is integrated and covered by the passing
+  lint/typecheck/build checks. Browser behavior remains part of L1-e.
 
 ### L1-e — integrate and verify landing world
 
@@ -347,10 +354,15 @@ and layer integration; it includes browser checks at desktop and mobile sizes.
   composed areas, text/nav maintain contrast, and mobile framing avoids copy
 - **Tests:** lint, typecheck, production build, direct browser inspection at
   desktop and mobile, deep-link/reload progress, reverse/fast scrolling,
-  reduced-motion, and no-WebGL fallback
+  reduced-motion, WebGL fallback, and visibility handling without
+  IntersectionObserver
 - **Expected deliverable:** reviewed integrated landing experience and
   verification findings in progress documentation
-- **Status:** Waiting for L1-d1 and L1-d2.
+- **Status:** Integration is complete. Production browser inspection covered
+  the chapter sequence and anchors at 1230×480 desktop. The task remains in
+  progress until narrow/tablet/zoom, keyboard, reduced-motion, WebGL fallback,
+  no-IntersectionObserver visibility behavior, reverse/fast scroll, and
+  performance checks are recorded.
 
 ## Integration gates
 
