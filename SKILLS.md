@@ -5333,3 +5333,16 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** axe-core, Playwright, screen reader
 - **Security considerations:** Automation does not replace authorization testing
 - **Verification method:** CI scans and documented manual pass
+
+## Architecture and maintainability
+
+### S481 — Product domain boundaries
+
+- **Skill ID:** S481
+- **Name:** Product domain boundaries
+- **Purpose:** Keep calendar, study, research, and account rules cohesive
+- **When to use:** When adding a major feature
+- **Implementation approach:** Define owned entities and APIs before sharing types
+- **Recommended tools:** Context map, TypeScript modules
+- **Security considerations:** Do not let one domain bypass another’s authorization
+- **Verification method:** Trace a workflow across boundaries without circular imports
