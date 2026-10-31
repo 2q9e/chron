@@ -5500,3 +5500,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Code search, component catalog
 - **Security considerations:** Do not create generic hooks that bypass feature permissions
 - **Verification method:** Verify shared API supports each consumer without flags explosion
+
+### S496 — Architecture decision records
+
+- **Skill ID:** S496
+- **Name:** Architecture decision records
+- **Purpose:** Preserve consequential technical choices and tradeoffs
+- **When to use:** When a decision changes security, data, or deployment
+- **Implementation approach:** Write context, alternatives, decision, consequences, revisit trigger
+- **Recommended tools:** Markdown ADR, PR template
+- **Security considerations:** Exclude secrets and private reference material
+- **Verification method:** Ensure code and current decision agree
