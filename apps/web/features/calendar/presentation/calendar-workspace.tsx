@@ -1,17 +1,18 @@
 "use client";
 
+import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { calendarThemes, type CalendarEvent, type CalendarEventMutation, type CalendarPreferences } from "../domain/types";
+import { type CalendarEvent, type CalendarPreferences } from "../domain/types";
 import { createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
-import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, localToday, navigateDate, newEventDraft, validateEventDraft, visibleRange, type CalendarView, type EventDraft, type EventDraftField } from "./calendar-model";
+import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, localToday, navigateDate, newEventDraft, validateEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
+import { CalendarEditor, type Editor } from "./calendar-editor";
+import { CalendarPreferencesForm } from "./calendar-preferences";
 import { AgendaCalendar, MonthCalendar, TimeCalendar } from "./calendar-views";
 import styles from "./calendar.module.css";
 
-type Editor = { event: CalendarEvent | null; draft: EventDraft; zone: string; errors: Partial<Record<EventDraftField, string>>; review: CalendarEventMutation | null; deleting: boolean };
 const views: CalendarView[] = ["day", "week", "month", "agenda"];
-const themeNames: Record<(typeof calendarThemes)[number], string> = { "pink-liquid-glass": "Pink", "minimal-light": "Light", "premium-dark": "Dark", "soft-pastel": "Pastel", "high-contrast": "High contrast" };
 
-export function CalendarWorkspace() {
+export function CalendarWorkspace({ userName }: { userName: string }) {
   const [locale, setLocale] = useState("en");
   const [date, setDate] = useState("");
   const [view, setView] = useState<CalendarView>("month");
@@ -24,6 +25,8 @@ export function CalendarWorkspace() {
   const [editor, setEditor] = useState<Editor | null>(null);
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -90,9 +93,33 @@ export function CalendarWorkspace() {
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save preferences."); }
     finally { setBusy(false); }
   }
+  async function signOut() {
+    setSigningOut(true);
+    setSignOutError("");
+    try {
+      const result = await authClient.signOut();
+      if (result.error) throw new Error("Sign out failed. Please try again.");
+      window.location.assign("/");
+    } catch {
+      setSignOutError("Sign out failed. Please try again.");
+      setSigningOut(false);
+    }
+  }
   const conflict = error && editor && /changed|version|conflict/i.test(error);
   return <main className={styles.workspace} data-theme={preferences?.theme} data-density={preferences?.density}>
-    <header className={styles.header}><div><p className={styles.eyebrow}>Chron / Calendar</p><h1>Calendar</h1><p>Plan and manage your events.</p></div><button type="button" onClick={() => openNew(date)} disabled={!preferences || !date}>New event</button></header>
+    <header className={styles.header}>
+      <div>
+        <p className={styles.eyebrow}>Chron / Calendar</p>
+        <h1>Calendar</h1>
+        <p>Plan and manage your events.</p>
+        <p>Signed in as {userName}</p>
+      </div>
+      <div className={styles.actions}>
+        <button type="button" onClick={() => openNew(date)} disabled={!preferences || !date}>New event</button>
+        <button type="button" onClick={signOut} disabled={signingOut}>{signingOut ? "Signing out…" : "Sign out"}</button>
+      </div>
+    </header>
+    {signOutError && <p className={styles.error} role="alert">{signOutError}</p>}
     <div className={styles.toolbar}>
       <div className={styles.navigation}><button disabled={!date} type="button" onClick={() => setDate(navigateDate(date, view, -1))} aria-label="Previous period">←</button><button type="button" disabled={!date} onClick={() => setDate(localToday())}>Today</button><button type="button" disabled={!date} onClick={() => setDate(navigateDate(date, view, 1))} aria-label="Next period">→</button></div>
       <h2>{preferences && date ? formatRangeHeading(view, date, preferences.weekStartsOn, locale) : "Calendar"}</h2>
@@ -102,17 +129,21 @@ export function CalendarWorkspace() {
     <p role="status" className={styles.status}>{notice || (loading ? "Loading calendar…" : "")}</p>
     {error && <div className={styles.error} role="alert"><p>{error}</p>{conflict ? <button type="button" onClick={() => { setEditor(null); setError(""); setReload((value) => value + 1); }}>Discard unsaved changes and reload</button> : <button type="button" onClick={() => { setError(""); if (!preferences) window.location.reload(); else setReload((value) => value + 1); }}>Retry loading</button>}</div>}
     {preferences && !loading && !error && <><div className={styles.calendarSurface}>{view === "month" ? <MonthCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : view === "agenda" ? <AgendaCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : <TimeCalendar view={view} events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} />}</div>{events.length === 0 && <p className={styles.empty}>No events in this period. <button type="button" onClick={() => openNew(date)}>Create an event</button></p>}</>}
-    {editor && <section className={styles.panel} aria-labelledby="editor-heading"><div className={styles.panelHeading}><h2 id="editor-heading">{editor.event ? "Edit event" : "New event"}</h2><button type="button" onClick={() => setEditor(null)} disabled={busy}>Close</button></div>
-      <form onSubmit={reviewEvent} className={styles.form}>
-        <label>Title<input autoFocus required maxLength={160} value={editor.draft.title} onChange={(e) => changeDraft("title", e.target.value)} aria-invalid={!!editor.errors.title} aria-describedby={editor.errors.title ? "title-error" : undefined} /></label>{editor.errors.title && <p id="title-error" className={styles.fieldError}>{editor.errors.title}</p>}
-        <label>Details<textarea maxLength={4000} value={editor.draft.details} onChange={(e) => changeDraft("details", e.target.value)} /></label>
-        <label>Event type<select value={editor.draft.kind} onChange={(e) => changeDraft("kind", e.target.value)}><option value="timed">Timed</option><option value="all-day">All day</option></select></label>
-        {editor.draft.kind === "timed" ? <><p>Event time zone: {editor.zone}</p>{(["startLocal", "endLocal"] as const).map((field) => <div key={field}><label>{field === "startLocal" ? "Start" : "End"}<input type="datetime-local" required value={editor.draft[field]} onChange={(e) => changeDraft(field, e.target.value)} aria-invalid={!!editor.errors[field]} aria-describedby={editor.errors[field] ? `${field}-error` : undefined} /></label>{editor.errors[field] && <p id={`${field}-error`} className={styles.fieldError}>{editor.errors[field]}</p>}{editor.errors[field === "startLocal" ? "startDisambiguation" : "endDisambiguation"] && <label>This time occurs twice. Choose an occurrence<select required value={editor.draft[field === "startLocal" ? "startDisambiguation" : "endDisambiguation"]} onChange={(e) => changeDraft(field === "startLocal" ? "startDisambiguation" : "endDisambiguation", e.target.value)}><option value="">Choose</option><option value="earlier">Earlier</option><option value="later">Later</option></select></label>}</div>)}</> : <>{(["startDate", "endDate"] as const).map((field) => <div key={field}><label>{field === "startDate" ? "First day" : "End date (exclusive)"}<input type="date" required value={editor.draft[field]} onChange={(e) => changeDraft(field, e.target.value)} aria-invalid={!!editor.errors[field]} aria-describedby={editor.errors[field] ? `${field}-error` : undefined} /></label>{editor.errors[field] && <p id={`${field}-error`} className={styles.fieldError}>{editor.errors[field]}</p>}</div>)}<p>The end date is the first day outside the event.</p></>}
-        <div className={styles.actions}><button type="submit" disabled={busy}>Review changes</button>{editor.event && <button type="button" disabled={busy} onClick={() => setEditor({ ...editor, deleting: true, review: null })}>Delete event</button>}</div>
-      </form>
-      {editor.review && <div className={styles.review}><h3>Review event</h3><p><strong>{editor.review.title}</strong></p><p>{editor.review.kind === "timed" ? `${editor.review.startLocal}${editor.review.startDisambiguation ? ` (${editor.review.startDisambiguation} occurrence)` : ""} to ${editor.review.endLocal}${editor.review.endDisambiguation ? ` (${editor.review.endDisambiguation} occurrence)` : ""} · ${editor.review.timeZone}` : `${editor.review.startDate} through the day before ${editor.review.endDate} · All day`}</p>{editor.review.details && <p className={styles.details}>{editor.review.details}</p>}<button type="button" disabled={busy} onClick={confirmEvent}>{busy ? "Saving…" : "Approve and save"}</button></div>}
-      {editor.deleting && <div className={styles.review}><h3>Delete this event?</h3><p>{editor.event?.title}</p><button type="button" disabled={busy} onClick={confirmDelete}>{busy ? "Deleting…" : "Confirm deletion"}</button><button type="button" disabled={busy} onClick={() => setEditor({ ...editor, deleting: false })}>Keep event</button></div>}
-    </section>}
-    {settings && <details className={styles.settings}><summary>Calendar preferences</summary><form onSubmit={saveSettings} className={styles.form}><label>Theme<select value={settings.theme} onChange={(e) => setSettings({ ...settings, theme: e.target.value as CalendarPreferences["theme"] })}>{calendarThemes.map((theme) => <option value={theme} key={theme}>{themeNames[theme]}</option>)}</select></label><label>Density<select value={settings.density} onChange={(e) => setSettings({ ...settings, density: e.target.value as CalendarPreferences["density"] })}><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label><label>Week starts on<select value={settings.weekStartsOn} onChange={(e) => setSettings({ ...settings, weekStartsOn: Number(e.target.value) })}>{["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day, index) => <option value={index} key={day}>{day}</option>)}</select></label><label>Display time zone<input value={settings.timeZone} required onChange={(e) => setSettings({ ...settings, timeZone: e.target.value })} /></label><button type="submit" disabled={busy}>{busy ? "Saving…" : "Save preferences"}</button></form></details>}
+    {editor && (
+      <CalendarEditor
+        editor={editor}
+        busy={busy}
+        onChange={changeDraft}
+        onReview={reviewEvent}
+        onClose={() => setEditor(null)}
+        onDeleteReview={() => setEditor({ ...editor, deleting: true, review: null })}
+        onDeleteCancel={() => setEditor({ ...editor, deleting: false })}
+        onDeleteConfirm={confirmDelete}
+        onSave={confirmEvent}
+      />
+    )}
+    {settings && (
+      <CalendarPreferencesForm settings={settings} busy={busy} onChange={setSettings} onSave={saveSettings} />
+    )}
   </main>;
 }
