@@ -56,6 +56,22 @@ export const builtinAgentSkills = [
     outputRules: ["Explain why each source role fits the question.", "Keep source claims distinct from the agent's interpretation."],
   },
   {
+    id: "research.source-quality-assessment",
+    name: "Source quality assessment",
+    domain: "research",
+    whenToUse: "A source is being considered as evidence for a material factual claim.",
+    doNotUseWhen: "A link is included only as further reading and is not used to support a claim.",
+    requiredCapabilities: [],
+    workflow: [
+      "Assess claim relevance, directness, provenance, author or issuing-body identity, and access to the underlying evidence.",
+      "For empirical work, inspect method, sample, applicability, funding, corrections, and publication status when available.",
+      "For current rules or product behavior, inspect effective date, version, jurisdiction, and supersession status.",
+      "Record unknown dimensions as unknown; don't infer them from a domain name, search rank, citation count, or polished presentation.",
+      "Keep the dimensions separate rather than compressing them into an unexplained numerical quality score.",
+    ],
+    outputRules: ["Explain a source's specific strengths and limits for this claim, not a universal ranking of the publisher."],
+  },
+  {
     id: "research.official-primary-sources",
     name: "Official and primary source research",
     domain: "research",

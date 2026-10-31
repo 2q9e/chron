@@ -50,7 +50,7 @@ export interface BuiltinAgentSkill {
 }
 
 export interface EvidencePlan {
-  readonly retrieval: "required" | "recommended" | "not-needed" | "clarify";
+  readonly retrieval: "required" | "not-needed" | "clarify";
   readonly useUserMaterials: boolean;
   readonly useExternalSources: boolean;
   readonly freshness: FreshnessNeed;
@@ -64,6 +64,7 @@ export type SourceRole =
   | "user-provided-document"
   | "official-record"
   | "official-policy-or-standard"
+  | "official-product-documentation"
   | "original-study"
   | "peer-reviewed-synthesis"
   | "government-or-institutional-data"
