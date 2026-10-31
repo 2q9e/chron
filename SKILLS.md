@@ -2712,3 +2712,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Prompt templates, policy tests
 - **Security considerations:** External content cannot change provider, grant permissions, bypass adult/operator gates, or approve actions
 - **Verification method:** Test contradictory instructions from documents
+
+### S244 — Run permission graph
+
+- **Skill ID:** S244
+- **Name:** Run permission graph
+- **Purpose:** Track which resources and tools a run may touch
+- **When to use:** When a run spans several capabilities
+- **Implementation approach:** Resolve grants from session and per-action scope
+- **Recommended tools:** Policy engine, typed permission set
+- **Security considerations:** Planner cannot broaden its own graph
+- **Verification method:** Assert unauthorized edges fail closed
