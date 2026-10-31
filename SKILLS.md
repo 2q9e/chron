@@ -2534,3 +2534,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** Managed backup tooling, restore script
 - **Security considerations:** Restrict backup download and scrub isolated restore targets; never restore private backup material into shared developer worktrees
 - **Verification method:** Run a database restore drill, record measured recovery point, and verify the isolated restore; exercise app checkpoints separately under S435
+
+### S228 — Read-replica consistency
+
+- **Skill ID:** S228
+- **Name:** Read-replica consistency
+- **Purpose:** Avoid showing stale records after a user's write
+- **When to use:** When distributing read load across replicas
+- **Implementation approach:** Route read-after-write paths to primary or use replication position tokens
+- **Recommended tools:** PostgreSQL replicas, routing layer
+- **Security considerations:** Replica routing must preserve tenant and session authorization
+- **Verification method:** Write then immediately read; verify promised consistency behavior
