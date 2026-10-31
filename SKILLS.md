@@ -1716,3 +1716,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** GSAP context, R3F refs
 - **Security considerations:** Cancel tweens on route or session changes
 - **Verification method:** Rapidly enter/exit and scrub; check for stale writes
+
+### S154 — Camera clipping bounds
+
+- **Skill ID:** S154
+- **Name:** Camera clipping bounds
+- **Purpose:** Keep scene composition visible while maintaining appropriate depth precision and render cost
+- **When to use:** When camera movement clips intended geometry or a loose frustum harms depth precision/performance
+- **Implementation approach:** Calculate near/far planes from waypoint bounds and target extents; keep the far plane no wider than the scene requires
+- **Recommended tools:** Three.js Box3, CameraHelper
+- **Security considerations:** Clipping is a rendering/composition control, not authorization; private geometry/assets must never be sent to the client
+- **Verification method:** Sweep path keyframes for clipping/depth artifacts and inspect client bundles/network payloads to confirm no private assets are delivered
