@@ -13,31 +13,33 @@ const themeNames: Record<(typeof calendarThemes)[number], string> = {
 type Props = {
   settings: CalendarPreferences;
   busy: boolean;
+  error: string;
   onChange: (settings: CalendarPreferences) => void;
   onSave: (event: FormEvent<HTMLFormElement>) => void;
 };
 
-export function CalendarPreferencesForm({ settings, busy, onChange, onSave }: Props) {
+export function CalendarPreferencesForm({ settings, busy, error, onChange, onSave }: Props) {
   return (
     <details className={styles.settings}>
       <summary>Calendar preferences</summary>
       <form onSubmit={onSave} className={styles.form}>
+        {error && <p className={styles.error} role="alert">{error}</p>}
         <label>
           Theme
-          <select value={settings.theme} onChange={(e) => onChange({ ...settings, theme: e.target.value as CalendarPreferences["theme"] })}>
+          <select disabled={busy} value={settings.theme} onChange={(e) => onChange({ ...settings, theme: e.target.value as CalendarPreferences["theme"] })}>
             {calendarThemes.map((theme) => <option value={theme} key={theme}>{themeNames[theme]}</option>)}
           </select>
         </label>
         <label>
           Density
-          <select value={settings.density} onChange={(e) => onChange({ ...settings, density: e.target.value as CalendarPreferences["density"] })}>
+          <select disabled={busy} value={settings.density} onChange={(e) => onChange({ ...settings, density: e.target.value as CalendarPreferences["density"] })}>
             <option value="comfortable">Comfortable</option>
             <option value="compact">Compact</option>
           </select>
         </label>
         <label>
           Week starts on
-          <select value={settings.weekStartsOn} onChange={(e) => onChange({ ...settings, weekStartsOn: Number(e.target.value) })}>
+          <select disabled={busy} value={settings.weekStartsOn} onChange={(e) => onChange({ ...settings, weekStartsOn: Number(e.target.value) })}>
             {["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day, index) => (
               <option value={index} key={day}>{day}</option>
             ))}
@@ -45,7 +47,7 @@ export function CalendarPreferencesForm({ settings, busy, onChange, onSave }: Pr
         </label>
         <label>
           Display time zone
-          <input value={settings.timeZone} required onChange={(e) => onChange({ ...settings, timeZone: e.target.value })} />
+          <input disabled={busy} value={settings.timeZone} required onChange={(e) => onChange({ ...settings, timeZone: e.target.value })} />
         </label>
         <button type="submit" disabled={busy}>{busy ? "Saving…" : "Save preferences"}</button>
       </form>

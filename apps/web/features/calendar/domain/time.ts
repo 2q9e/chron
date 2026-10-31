@@ -72,6 +72,14 @@ export function validateTimeZone(value: unknown): string {
   }
 }
 
+export function calendarToday(
+  timeZoneValue: unknown,
+  now: Temporal.Instant = Temporal.Now.instant(),
+): string {
+  const timeZone = validateTimeZone(timeZoneValue);
+  return now.toZonedDateTimeISO(timeZone).toPlainDate().toString();
+}
+
 export function inspectLocalDateTime(
   value: unknown,
   timeZoneValue: unknown,

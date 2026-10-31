@@ -18,37 +18,41 @@ export type Editor = {
 type Props = {
   editor: Editor;
   busy: boolean;
+  error: string;
+  stale: boolean;
   onChange: (field: keyof EventDraft, value: string) => void;
   onReview: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
+  onReloadLatest: () => void;
   onDeleteReview: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   onSave: () => void;
 };
 
-export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDeleteReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
+export function CalendarEditor({ editor, busy, error, stale, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   return (
     <section className={styles.panel} aria-labelledby="editor-heading">
       <div className={styles.panelHeading}>
         <h2 id="editor-heading">{editor.event ? "Edit event" : "New event"}</h2>
         <button type="button" onClick={onClose} disabled={busy}>Close</button>
       </div>
+      {error && <div className={styles.error} role="alert"><p>{error}</p>{stale && <button type="button" disabled={busy} onClick={onReloadLatest}>Discard edits and reload calendar</button>}</div>}
       <form onSubmit={onReview} className={styles.form}>
         <label>
           Title
-          <input autoFocus disabled={busy} required maxLength={160} value={editor.draft.title}
+          <input autoFocus disabled={busy || stale} required maxLength={160} value={editor.draft.title}
             onChange={(e) => onChange("title", e.target.value)}
             aria-invalid={!!editor.errors.title} aria-describedby={editor.errors.title ? "title-error" : undefined} />
         </label>
         {editor.errors.title && <p id="title-error" className={styles.fieldError}>{editor.errors.title}</p>}
         <label>
           Details
-          <textarea disabled={busy} maxLength={4000} value={editor.draft.details} onChange={(e) => onChange("details", e.target.value)} />
+          <textarea disabled={busy || stale} maxLength={4000} value={editor.draft.details} onChange={(e) => onChange("details", e.target.value)} />
         </label>
         <label>
           Event type
-          <select disabled={busy} value={editor.draft.kind} onChange={(e) => onChange("kind", e.target.value)}>
+          <select disabled={busy || stale} value={editor.draft.kind} onChange={(e) => onChange("kind", e.target.value)}>
             <option value="timed">Timed</option>
             <option value="all-day">All day</option>
           </select>
@@ -62,7 +66,7 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
                 <div key={field}>
                   <label>
                     {field === "startLocal" ? "Start" : "End"}
-                    <input disabled={busy} type="datetime-local" required value={editor.draft[field]}
+                    <input disabled={busy || stale} type="datetime-local" required value={editor.draft[field]}
                       onChange={(e) => onChange(field, e.target.value)} aria-invalid={!!editor.errors[field]}
                       aria-describedby={editor.errors[field] ? `${field}-error` : undefined} />
                   </label>
@@ -70,7 +74,7 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
                   {editor.errors[disambiguation] && (
                     <label>
                       This time occurs twice. Choose an occurrence
-                      <select disabled={busy} required value={editor.draft[disambiguation]} onChange={(e) => onChange(disambiguation, e.target.value)}>
+                      <select disabled={busy || stale} required value={editor.draft[disambiguation]} onChange={(e) => onChange(disambiguation, e.target.value)}>
                         <option value="">Choose</option>
                         <option value="earlier">Earlier</option>
                         <option value="later">Later</option>
@@ -87,7 +91,7 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
               <div key={field}>
                 <label>
                   {field === "startDate" ? "First day" : "End date (exclusive)"}
-                  <input disabled={busy} type="date" required value={editor.draft[field]} onChange={(e) => onChange(field, e.target.value)}
+                  <input disabled={busy || stale} type="date" required value={editor.draft[field]} onChange={(e) => onChange(field, e.target.value)}
                     aria-invalid={!!editor.errors[field]} aria-describedby={editor.errors[field] ? `${field}-error` : undefined} />
                 </label>
                 {editor.errors[field] && <p id={`${field}-error`} className={styles.fieldError}>{editor.errors[field]}</p>}
@@ -97,17 +101,17 @@ export function CalendarEditor({ editor, busy, onChange, onReview, onClose, onDe
           </>
         )}
         <div className={styles.actions}>
-          <button type="submit" disabled={busy}>{busy ? "Checking calendar…" : "Review changes"}</button>
-          {editor.event && <button type="button" disabled={busy} onClick={onDeleteReview}>Delete event</button>}
+          <button type="submit" disabled={busy || stale}>{busy ? "Checking calendar…" : "Review changes"}</button>
+          {editor.event && <button type="button" disabled={busy || stale} onClick={onDeleteReview}>Delete event</button>}
         </div>
       </form>
-      {editor.review && <EventReview event={editor.review} conflicts={editor.conflicts} busy={busy} onSave={onSave} />}
+      {editor.review && <EventReview event={editor.review} conflicts={editor.conflicts} busy={busy || stale} onSave={onSave} />}
       {editor.deleting && (
         <div className={styles.review}>
           <h3>Delete this event?</h3>
           <p>{editor.event?.title}</p>
-          <button type="button" disabled={busy} onClick={onDeleteConfirm}>{busy ? "Deleting…" : "Confirm deletion"}</button>
-          <button type="button" disabled={busy} onClick={onDeleteCancel}>Keep event</button>
+          <button type="button" disabled={busy || stale} onClick={onDeleteConfirm}>{busy ? "Deleting…" : "Confirm deletion"}</button>
+          <button type="button" disabled={busy || stale} onClick={onDeleteCancel}>Keep event</button>
         </div>
       )}
     </section>

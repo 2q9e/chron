@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { Temporal } from "@js-temporal/polyfill";
 import {
   CalendarTimeError,
+  calendarToday,
   inspectLocalDateTime,
   parseCalendarDate,
   resolveAllDayRange,
@@ -23,6 +25,13 @@ test("rejects invalid calendar dates and fixed-offset timezone values", () => {
   ), {
     code: "INVALID_TIME_ZONE",
   });
+});
+
+test("computes Today in the selected calendar timezone", () => {
+  const instant = Temporal.Instant.from("2026-10-31T02:30:00Z");
+
+  assert.equal(calendarToday("America/Montreal", instant), "2026-10-30");
+  assert.equal(calendarToday("Europe/London", instant), "2026-10-31");
 });
 
 test("identifies nonexistent spring-forward wall times", () => {
