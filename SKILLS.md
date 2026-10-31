@@ -1131,3 +1131,14 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Recommended tools:** HTML details, React disclosure pattern, usability testing
 - **Security considerations:** Do not bury consent, deletion, or credential-removal controls
 - **Verification method:** Test that users can find advanced controls and understand their defaults
+
+### S101 — Onboarding sequence design
+
+- **Skill ID:** S101
+- **Name:** Onboarding sequence design
+- **Purpose:** Teach first value through a short, task-based setup
+- **When to use:** Only after the S015 signup/operator/legal/Meta eligibility gate passes, when an eligible adult learner begins setup
+- **Implementation approach:** Ask for only what is necessary, save progress, and show a concrete next step
+- **Recommended tools:** Figma flow, analytics event schema, form components
+- **Security considerations:** Collect only setup fields needed for a working task; follow current 18+ eligibility and never target minors
+- **Verification method:** Test gated entry, completion, abandonment, resume, and skip behavior with synthetic eligible accounts
