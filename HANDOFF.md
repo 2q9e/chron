@@ -2,22 +2,22 @@
 
 ## Current checkpoint — 2026-11-02
 
-Calendar users can start moving a repeating occurrence from its editor with
-the keyboard. The selected occurrence's exact schedule and series identity
-seed the existing review-and-approve flow. Timed and all-day duration is
-preserved, including daylight-saving transitions. Unfinished edits are not
-discarded, and announcements identify whether the move affects an event, an
-occurrence, or the full series.
+Calendar search now returns individual recurring occurrences, applies moved
+and cancelled exceptions, and labels timed results in the configured calendar
+timezone. Search work is bounded across candidate rows, exception rows,
+recurrence expansion, output count, and SQL execution time.
 
-Commit `cafeccf` (`improve`) is pushed by `2q9e` to the single GitHub `main`
-branch over HTTPS. Calendar layout tests (73), calendar time tests (66), lint,
-typecheck, and diff checks pass. Independent source re-review found the
-identified move-flow issues resolved. The HTTPS route
-`https://testing.uwu.markets/calendar` verified TLS and redirected to sign-in;
-there is no authorized test account for signed-in browser verification. The
-production build was not run with 96 MB free. Staging remains on release
-`6ddcaf1`; the documented SSH preflight was rejected earlier, so no VPS or
-Cloudflare change was made. Non-test app source has no non-TLS absolute URL.
+Commit `2383aea` (`fix`) is pushed by `2q9e` to the single GitHub `main` branch
+over HTTPS. Calendar server tests (124), domain tests (66), presentation tests
+(77), typecheck, lint, diff checks, and a staged secret-pattern check pass. The
+focused Codex Security diff review completed with zero findings. It reviewed
+the 10 changed files and relevant auth, validation, RLS, and response-contract
+dependencies; it did not verify deployed RLS or signed-in browser behavior.
+The application source contains no `http://` URLs; remaining occurrences are
+test fixtures and insecure-URL rejection cases. The Git remote and staging
+address use HTTPS. Staging remains on release `6ddcaf1`; the documented SSH
+preflight was rejected earlier, so no VPS or Cloudflare change was made. The
+production build was not run with about 97 MB free.
 
 Next actions:
 

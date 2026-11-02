@@ -2,24 +2,23 @@
 
 ## Current checkpoint — 2026-11-02
 
-Calendar users can start moving a repeating occurrence from its editor using
-the keyboard. The selected occurrence's schedule and series identity seed the
-existing review-and-approve flow. Duration is preserved across timed and
-all-day moves, including daylight-saving gaps and repeated local times. The
-editor refuses to discard unfinished changes, and move announcements specify
-whether an event, occurrence, or full series is being moved.
+Calendar search now returns individual recurring occurrences, applies moved
+and cancelled exceptions, and labels timed results in the configured calendar
+timezone. Search work is bounded across candidate rows, exception rows,
+recurrence expansion, output count, and SQL execution time.
 
-Commit `cafeccf` (`improve`), authored as `2q9e`, is pushed to the only GitHub
-branch, `main`, over HTTPS; it contains the latest calendar move refinement.
-Calendar layout tests (73), calendar time tests (66), lint, typecheck, and
-`git diff --check` pass. Independent source re-review found the previously
-identified move-flow issues resolved. A request to
-`https://testing.uwu.markets/calendar` verified TLS and redirected to sign-in;
-no authorized test account is available, so the signed-in calendar has not
-been browser-verified. The production build was not run with 96 MB free. The
-non-test app source scan found no non-TLS absolute URL. Staging remains on
-release `6ddcaf1`; the documented SSH preflight was rejected earlier, so no
-deployment, VPS, or Cloudflare changes were made.
+Commit `2383aea` (`fix`), authored as `2q9e`, is pushed to the only GitHub
+branch, `main`, over HTTPS. Calendar server tests (124), domain tests (66),
+presentation tests (77), typecheck, lint, diff checks, and a staged
+secret-pattern check pass. The focused Codex Security diff review completed
+with zero findings across the 10 changed files and relevant supporting auth,
+validation, RLS, and response-contract source. It did not verify deployed RLS
+or signed-in browser behavior. The application source contains no `http://`
+URLs; remaining occurrences are test fixtures and insecure-URL rejection
+cases. The Git remote and staging address use HTTPS. Staging remains on release
+`6ddcaf1`; the documented SSH preflight was rejected earlier, so no VPS or
+Cloudflare change was made. The production build was not run with about 97 MB
+free.
 
 ## Current checkpoint — 2026-11-02
 
