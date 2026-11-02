@@ -37,6 +37,10 @@ framework's `server-only` boundary and inspect build output.
 - Use server-side rate limits and strict request schemas at all public API
   boundaries. External documents, URLs, model outputs, and OAuth responses are
   untrusted input.
+- Use HTTPS for all external services, OAuth callbacks, webhooks, Git remotes,
+  and staging or production hosts. HTTP is permitted only for loopback-only
+  local development and negative security tests; never publish off-machine
+  HTTP endpoints.
 - Keep provider selection fixed to the official Meta Model API if inference is
   permitted. No alternate model vendor or silent fallback is allowed.
 
