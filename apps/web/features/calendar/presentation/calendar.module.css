@@ -481,6 +481,54 @@
   background: transparent;
   color: var(--accent);
 }
+.cancelledOccurrences {
+  margin: 1.5rem 0;
+  padding: clamp(1rem,2.2vw,1.5rem);
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.cancelledOccurrences h2 {
+  margin: .2rem 0 .35rem;
+  font-size: 1.2rem;
+  letter-spacing: -.02em;
+}
+.cancelledOccurrences p:not(.searchEyebrow) {
+  margin: .2rem 0;
+  color: var(--muted);
+}
+.cancelledOccurrences ul {
+  display: grid;
+  gap: .5rem;
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+}
+.cancelledOccurrences li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--line);
+}
+.cancelledOccurrences li div {
+  display: grid;
+  gap: .25rem;
+  min-width: 0;
+}
+.cancelledOccurrences li span {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+@media (max-width: 38rem) {
+  .cancelledOccurrences li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .cancelledOccurrences li button {
+    width: 100%;
+  }
+}
 .searchPanel {
   margin-block: 1rem;
   padding: clamp(1rem,2.2vw,1.5rem);

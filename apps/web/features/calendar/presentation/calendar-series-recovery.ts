@@ -1,7 +1,12 @@
 const pendingSeriesApprovalPrefix = "chron.calendar.pending-series-approval.v1.";
 const validDraftId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-export type CalendarSeriesApprovalAction = "create" | "update" | "delete" | "cancel-occurrence";
+export type CalendarSeriesApprovalAction =
+  | "create"
+  | "update"
+  | "delete"
+  | "cancel-occurrence"
+  | "restore-occurrence";
 export type PendingCalendarSeriesApproval = Readonly<{
   draftId: string;
   action: CalendarSeriesApprovalAction;
@@ -10,7 +15,7 @@ export type CalendarSeriesApprovalOutcome = "approved" | "stale" | "expired" | "
 
 function isApprovalAction(value: string | null): value is CalendarSeriesApprovalAction {
   return value === "create" || value === "update" || value === "delete"
-    || value === "cancel-occurrence";
+    || value === "cancel-occurrence" || value === "restore-occurrence";
 }
 
 function ownerPrefix(userId: string): string {

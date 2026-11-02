@@ -1,7 +1,8 @@
-import { useEffect, useRef, type FormEvent } from "react";
+import { useEffect, useRef, type FormEvent, type RefObject } from "react";
 import type {
   CalendarConflict,
   CalendarEvent,
+  CalendarEventOccurrence,
   CalendarEventMutation,
   CalendarSeriesDraft,
 } from "../domain/types";
@@ -18,7 +19,7 @@ export type Editor = {
   event: CalendarEvent | null;
   occurrenceKey?: string;
   operationKey: string | null;
-  operationAction: "create" | "update" | "delete" | "cancel-occurrence" | null;
+  operationAction: "create" | "update" | "delete" | "cancel-occurrence" | "restore-occurrence" | null;
   draft: EventDraft;
   zone: string;
   errors: Partial<Record<EventDraftField, string>>;
@@ -27,7 +28,8 @@ export type Editor = {
   reviewTimeZone: string | null;
   deleting: boolean;
   seriesDraft: CalendarSeriesDraft | null;
-  purpose?: "move" | "resize";
+  purpose?: "move" | "resize" | "restore";
+  restoreOccurrence?: CalendarEventOccurrence;
   reviewCalendarTimeZone?: string;
 };
 
@@ -44,14 +46,16 @@ type Props = {
   onReloadLatest: () => void;
   onDeleteReview: () => void;
   onCancelOccurrenceReview: () => void;
+  onRestoreOccurrenceReview: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   onSave: () => void;
 };
 
-export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
+export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   const locked = busy || stale || retryOnly;
   const errorPanel = useRef<HTMLDivElement | null>(null);
+  const seriesReviewHeading = useRef<HTMLHeadingElement | null>(null);
   const reminderOptions = editor.draft.kind === "timed"
     ? timedCalendarReminderChoices.map((value) => ({
         value,
@@ -69,7 +73,9 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
   const reminderNote = editor.draft.reminderChoice === "none"
     ? "No email reminder is scheduled."
     : `Reminders go to your verified Chron email address. ${editor.draft.kind === "all-day" ? `All-day reminder time zone: ${editor.zone}.` : `Timed reminders use ${editor.zone}.`}`;
-  const heading = editor.purpose === "move"
+  const heading = editor.purpose === "restore"
+    ? "Restore canceled occurrence"
+    : editor.purpose === "move"
     ? editor.event?.recurrenceRule ? "Review series move" : "Review event move"
     : editor.purpose === "resize"
       ? "Review event duration change"
@@ -82,6 +88,10 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
   useEffect(() => {
     if (error && !busy) errorPanel.current?.focus();
   }, [busy, error]);
+
+  useEffect(() => {
+    if (editor.seriesDraft) seriesReviewHeading.current?.focus();
+  }, [editor.seriesDraft]);
 
   useEffect(() => {
     if (Object.keys(editor.errors).length === 0) return;
@@ -107,6 +117,23 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
         </p>
       )}
       {error && <div ref={errorPanel} className={styles.error} role="alert" tabIndex={-1}><p>{error}</p>{reauthRequired && <a className={styles.recoveryLink} href="/sign-in">Sign in again</a>}{stale && <button type="button" disabled={busy} onClick={onReloadLatest}>Discard edits and reload calendar</button>}</div>}
+      {editor.purpose === "restore" ? (
+        <div className={styles.review}>
+          <h3>{editor.event?.title}</h3>
+          {editor.restoreOccurrence && (
+            <p>{editor.restoreOccurrence.kind === "all-day"
+              ? `${editor.restoreOccurrence.startDate} through the day before ${editor.restoreOccurrence.endDate} · All day`
+              : `${editor.restoreOccurrence.startLocal} to ${editor.restoreOccurrence.endLocal} · ${editor.restoreOccurrence.timeZone}`}</p>
+          )}
+          <p>This makes only this scheduled occurrence active again. Chron will check overlaps before you approve it.</p>
+          <p>{editor.event?.reminderChoice === "none"
+            ? "This series has no reminder for the occurrence."
+            : "Only a future reminder that has not been attempted can be queued again. Chron will not resend reminders that were already attempted or sent."}</p>
+          <button autoFocus type="button" disabled={locked || !editor.occurrenceKey} onClick={onRestoreOccurrenceReview}>
+            {busy ? "Checking calendar…" : "Review restoration"}
+          </button>
+        </div>
+      ) : (
       <form onSubmit={onReview} className={styles.form}>
         <label>
           Title
@@ -258,10 +285,12 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
           {editor.event && <button type="button" disabled={locked} onClick={onDeleteReview}>{editor.event.recurrenceRule ? "Delete series" : "Delete event"}</button>}
         </div>
       </form>
+      )}
       {editor.seriesDraft && (
         <SeriesDraftReview
           draft={editor.seriesDraft}
           currentEvent={editor.event}
+          headingRef={seriesReviewHeading}
           busy={busy || stale}
           cancelDisabled={retryOnly}
           onApprove={onSave}
@@ -298,6 +327,7 @@ function describeSeries(event: CalendarEvent | CalendarSeriesDraft["event"], rul
 function SeriesDraftReview({
   draft,
   currentEvent,
+  headingRef,
   busy,
   cancelDisabled,
   onApprove,
@@ -305,6 +335,7 @@ function SeriesDraftReview({
 }: {
   draft: CalendarSeriesDraft;
   currentEvent: CalendarEvent | null;
+  headingRef: RefObject<HTMLHeadingElement | null>;
   busy: boolean;
   cancelDisabled: boolean;
   onApprove: () => void;
@@ -312,11 +343,14 @@ function SeriesDraftReview({
 }) {
   const isDelete = draft.action === "delete";
   const isOccurrenceCancellation = draft.action === "cancel-occurrence";
+  const isOccurrenceRestoration = draft.action === "restore-occurrence";
   const occurrences = isDelete ? draft.beforeOccurrences : draft.afterOccurrences;
   const headline = isDelete
     ? `Delete ${occurrences.length} occurrences?`
     : isOccurrenceCancellation
       ? `Cancel ${draft.beforeOccurrences.length === 1 ? "this occurrence" : "this date"}?`
+      : isOccurrenceRestoration
+        ? "Restore this occurrence?"
     : draft.action === "create"
       ? `Create ${occurrences.length} occurrences?`
       : `Update ${draft.beforeOccurrences.length} current occurrences to ${draft.afterOccurrences.length} proposed occurrences?`;
@@ -327,12 +361,15 @@ function SeriesDraftReview({
 
   return (
     <div className={styles.review}>
-      <h3>{isOccurrenceCancellation ? "Review occurrence cancellation" : "Review repeating series"}</h3>
+      <h3 ref={headingRef} tabIndex={-1}>{isOccurrenceCancellation
+        ? "Review occurrence cancellation"
+        : isOccurrenceRestoration ? "Review occurrence restoration" : "Review repeating series"}</h3>
       <p><strong>{headline}</strong></p>
       {draft.action === "create" && draft.event && (
         <p><strong>Proposed:</strong> {describeSeries(draft.event, draft.recurrenceRule)} · Calendar time zone {draft.calendarTimeZone}</p>
       )}
-      {draft.action !== "delete" && draft.action !== "cancel-occurrence" && draft.event && (
+      {draft.action !== "delete" && draft.action !== "cancel-occurrence"
+        && draft.action !== "restore-occurrence" && draft.event && (
         <p aria-live="polite">{reminderReviewText(draft.event, draft.afterOccurrences[0])}</p>
       )}
       {draft.action === "update" && currentEvent && draft.event && (
@@ -348,6 +385,12 @@ function SeriesDraftReview({
       {isOccurrenceCancellation ? (
         <ol className={styles.seriesOccurrences}>
           {draft.beforeOccurrences.map((occurrence) => (
+            <li key={occurrence.occurrenceKey}>{describeOccurrence(occurrence)}</li>
+          ))}
+        </ol>
+      ) : isOccurrenceRestoration ? (
+        <ol className={styles.seriesOccurrences}>
+          {draft.afterOccurrences.map((occurrence) => (
             <li key={occurrence.occurrenceKey}>{describeOccurrence(occurrence)}</li>
           ))}
         </ol>
@@ -377,7 +420,9 @@ function SeriesDraftReview({
       {draft.conflicts.length === 0 ? (
         <p className={styles.conflictStatus}>{isOccurrenceCancellation
           ? "Only this scheduled occurrence changes. Chron cancels queued reminders; one already being delivered may still arrive."
-          : "No overlaps were found in the proposed series."}</p>
+          : isOccurrenceRestoration
+            ? `No overlaps were found for this occurrence in ${draft.calendarTimeZone}.`
+            : "No overlaps were found in the proposed series."}</p>
       ) : (
         <div className={styles.conflictList}>
           <h4>{draft.conflicts.length} overlapping occurrences</h4>
@@ -392,14 +437,21 @@ function SeriesDraftReview({
               );
             })}
           </ul>
-          <p className={styles.conflictStatus}>Review each overlap before approving the series.</p>
+          <p className={styles.conflictStatus}>{isOccurrenceCancellation || isOccurrenceRestoration
+            ? "Review each overlap before approving this occurrence."
+            : "Review each overlap before approving the series."}</p>
         </div>
       )}
       <button type="button" disabled={busy} onClick={onApprove}>
-        {busy ? "Approving…" : isDelete ? "Approve and delete series" : isOccurrenceCancellation ? "Approve occurrence cancellation" : "Approve series changes"}
+        {busy ? "Approving…" : isDelete
+          ? "Approve and delete series"
+          : isOccurrenceCancellation
+            ? "Approve occurrence cancellation"
+            : isOccurrenceRestoration ? "Approve restoration" : "Approve series changes"}
       </button>
       {isDelete && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep series</button>}
       {isOccurrenceCancellation && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep occurrence</button>}
+      {isOccurrenceRestoration && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep occurrence cancelled</button>}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import type {
   CalendarConflictReview,
   CalendarEvent,
   CalendarEventEntry,
+  CalendarEventOccurrence,
   CalendarEventSearchRequest,
   CalendarEventMutation,
   CalendarRecurrenceRule,
@@ -154,9 +155,11 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
   if (!isRecord(value)
     || !isNonEmptyString(value.id)
     || (value.action !== "create" && value.action !== "update" && value.action !== "delete"
-      && value.action !== "cancel-occurrence")
-    || !((value.action === "cancel-occurrence" && value.scope === "occurrence")
-      || (value.action !== "cancel-occurrence" && value.scope === "series"))
+      && value.action !== "cancel-occurrence" && value.action !== "restore-occurrence")
+    || !(((value.action === "cancel-occurrence" || value.action === "restore-occurrence")
+      && value.scope === "occurrence")
+      || ((value.action !== "cancel-occurrence" && value.action !== "restore-occurrence")
+        && value.scope === "series"))
     || !["pending", "approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     || typeof value.replayed !== "boolean"
     || !(value.targetEventId === null || isNonEmptyString(value.targetEventId))
@@ -186,7 +189,8 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
       && value.conflicts.length === 0;
   }
 
-  if (value.action === "delete" || value.action === "cancel-occurrence") {
+  if (value.action === "delete" || value.action === "cancel-occurrence"
+    || value.action === "restore-occurrence") {
     return value.targetEventId !== null
       && value.targetRevision !== null
       && value.event === null
@@ -194,8 +198,13 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
       && (value.action === "cancel-occurrence"
         ? value.scope === "occurrence" && value.beforeOccurrences.length === 1
           && value.beforeOccurrences[0].occurrenceKey.length <= 200
-        : value.beforeOccurrences.length > 0)
-      && value.afterOccurrences.length === 0;
+          && value.afterOccurrences.length === 0
+        : value.action === "restore-occurrence"
+          ? value.scope === "occurrence" && value.beforeOccurrences.length === 0
+            && value.afterOccurrences.length === 1
+            && value.afterOccurrences[0].occurrenceKey.length <= 200
+            && value.calendarTimeZone !== null
+          : value.beforeOccurrences.length > 0 && value.afterOccurrences.length === 0);
   }
   return (value.action === "create"
       ? value.targetEventId === null && value.targetRevision === null && value.beforeOccurrences.length === 0
@@ -209,7 +218,7 @@ function isCalendarSeriesApproval(value: unknown): value is CalendarSeriesApprov
   return isRecord(value)
     && isNonEmptyString(value.id)
     && (value.action === "create" || value.action === "update" || value.action === "delete"
-      || value.action === "cancel-occurrence")
+      || value.action === "cancel-occurrence" || value.action === "restore-occurrence")
     && ["approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     && (value.event === null || isCalendarEvent(value.event));
 }
@@ -246,6 +255,14 @@ function matchesSeriesDraftRequest(
       && draft.afterOccurrences.length === 0
       && draft.conflicts.length === 0;
   }
+  if (request.action === "restore-occurrence") {
+    return draft.event === null
+      && draft.recurrenceRule === null
+      && draft.calendarTimeZone === request.calendarTimeZone
+      && draft.beforeOccurrences.length === 0
+      && draft.afterOccurrences.length === 1
+      && draft.afterOccurrences[0].occurrenceKey === request.occurrenceKey;
+  }
   if (request.action === "delete") {
     return draft.event === null
       && draft.recurrenceRule === null
@@ -267,7 +284,8 @@ function matchesApprovedEvent(
 ): boolean {
   if (approval.id !== draft.id || approval.action !== draft.action) return false;
   if (approval.outcome !== "approved") return approval.event === null;
-  if (draft.action === "delete" || draft.action === "cancel-occurrence") {
+  if (draft.action === "delete" || draft.action === "cancel-occurrence"
+    || draft.action === "restore-occurrence") {
     return approval.event === null;
   }
   if (!approval.event || !draft.event || !draft.recurrenceRule) return false;
@@ -366,6 +384,14 @@ function isCalendarEventEntry(value: unknown): value is CalendarEventEntry {
     && isCalendarEvent(record.series)
     && record.series.id === record.seriesId
     && Object.hasOwn(record.series, "recurrenceRule");
+}
+
+function isCalendarOccurrenceEntry(value: unknown): value is CalendarEventOccurrence {
+  if (!isRecord(value)) return false;
+  const record: Record<string, unknown> = value;
+  if (!isCalendarEventEntry(value)) return false;
+  return isNonEmptyString(record.occurrenceKey)
+    && isCalendarEvent(record.series);
 }
 
 function isCalendarPreferences(value: unknown): value is CalendarPreferences {
@@ -597,6 +623,34 @@ export async function fetchCalendarEvents(
     );
   }
   return payload.events;
+}
+
+export async function fetchCalendarCancelledOccurrences(
+  from: string,
+  to: string,
+  timeZone: string,
+  signal?: AbortSignal,
+): Promise<CalendarEventOccurrence[]> {
+  const query = new URLSearchParams({ from, to, timeZone });
+  const response = await fetch(`/api/calendar/events/cancelled?${query.toString()}`, {
+    method: "GET",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: { Accept: "application/json" },
+    signal,
+  });
+  if (!response.ok) throw await readCalendarError(response);
+  const payload = await parseJson(response);
+  if (!isRecord(payload)
+    || !Array.isArray(payload.occurrences)
+    || !payload.occurrences.every(isCalendarOccurrenceEntry)) {
+    throw new CalendarRequestError(
+      "Chron returned cancelled occurrences in an unexpected format. Reload and try again.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  return payload.occurrences;
 }
 
 export async function fetchCalendarReminderStatus(
@@ -917,6 +971,7 @@ export async function approveCalendarSeriesDraft(
   const outcomeMatchesAction = payload.approval.outcome !== "approved"
     ? payload.approval.event === null
     : expectedAction === "delete" || expectedAction === "cancel-occurrence"
+      || expectedAction === "restore-occurrence"
       ? payload.approval.event === null
       : payload.approval.event !== null;
   if (response.status !== expectedStatus

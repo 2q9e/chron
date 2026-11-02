@@ -46,22 +46,25 @@ Object.defineProperty(globalThis, "localStorage", {
 const firstDraftId = "74953a92-52d7-4bb1-b623-1c5e18371490";
 const secondDraftId = "84953a92-52d7-4bb1-b623-1c5e18371490";
 const thirdDraftId = "94953a92-52d7-4bb1-b623-1c5e18371490";
+const fourthDraftId = "a4953a92-52d7-4bb1-b623-1c5e18371490";
 
 test("stores only opaque, user-scoped series draft IDs", () => {
   assert.equal(storePendingCalendarSeriesApproval("user/one", firstDraftId, "create"), true);
   assert.equal(storePendingCalendarSeriesApproval("user/one", secondDraftId, "delete"), true);
   assert.equal(storePendingCalendarSeriesApproval("user/one", thirdDraftId, "cancel-occurrence"), true);
+  assert.equal(storePendingCalendarSeriesApproval("user/one", fourthDraftId, "restore-occurrence"), true);
   assert.equal(storePendingCalendarSeriesApproval("user/two", firstDraftId, "update"), true);
 
   assert.deepEqual(pendingCalendarSeriesApprovals("user/one"), [
     { draftId: firstDraftId, action: "create" },
     { draftId: secondDraftId, action: "delete" },
     { draftId: thirdDraftId, action: "cancel-occurrence" },
+    { draftId: fourthDraftId, action: "restore-occurrence" },
   ]);
   assert.deepEqual(pendingCalendarSeriesApprovals("user/two"), [
     { draftId: firstDraftId, action: "update" },
   ]);
-  assert.equal([...storage.values.values()].every((value) => ["create", "update", "delete", "cancel-occurrence"].includes(value)), true);
+  assert.equal([...storage.values.values()].every((value) => ["create", "update", "delete", "cancel-occurrence", "restore-occurrence"].includes(value)), true);
   assert.equal([...storage.values.keys()].some((key) => key.includes("Seminar")), false);
 });
 
@@ -70,6 +73,7 @@ test("clears one pending approval without affecting other drafts or users", () =
   assert.deepEqual(pendingCalendarSeriesApprovals("user/one"), [
     { draftId: secondDraftId, action: "delete" },
     { draftId: thirdDraftId, action: "cancel-occurrence" },
+    { draftId: fourthDraftId, action: "restore-occurrence" },
   ]);
   assert.deepEqual(pendingCalendarSeriesApprovals("user/two"), [
     { draftId: firstDraftId, action: "update" },
@@ -91,6 +95,7 @@ test("replays the same approval IDs after an uncertain earlier result", async ()
     { draftId: firstDraftId, action: "create" },
     { draftId: secondDraftId, action: "delete" },
     { draftId: thirdDraftId, action: "cancel-occurrence" },
+    { draftId: fourthDraftId, action: "restore-occurrence" },
   ];
   const firstAttempt = await reconcileCalendarSeriesApprovalBatch(approvals, async ({ draftId }) => {
     if (draftId === secondDraftId) throw new Error("The response was lost.");
@@ -105,6 +110,6 @@ test("replays the same approval IDs after an uncertain earlier result", async ()
     return "approved";
   });
   assert.deepEqual(replayed, approvals);
-  assert.deepEqual(retry.outcomes, ["approved", "approved", "approved"]);
+  assert.deepEqual(retry.outcomes, ["approved", "approved", "approved", "approved"]);
   assert.equal(retry.error, null);
 });

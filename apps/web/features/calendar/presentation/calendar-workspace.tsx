@@ -3,8 +3,8 @@
 import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
-import { calendarEventSeries, type CalendarEventEntry, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
-import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
+import { calendarEventSeries, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
+import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
 import {
@@ -48,6 +48,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [preferences, setPreferences] = useState<CalendarPreferences | null>(null);
   const [settings, setSettings] = useState<CalendarPreferences | null>(null);
   const [events, setEvents] = useState<CalendarEventEntry[]>([]);
+  const [cancelledOccurrences, setCancelledOccurrences] = useState<CalendarEventOccurrence[]>([]);
+  const [cancelledLoadError, setCancelledLoadError] = useState("");
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState("");
@@ -179,8 +181,34 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     if (!preferences || !date) return;
     const controller = new AbortController();
     const range = visibleRange(view, date, preferences.weekStartsOn);
-    Promise.resolve().then(() => { if (!controller.signal.aborted) { setLoading(true); setLoadError(""); } });
-    fetchCalendarEvents(range.from, range.to, preferences.timeZone, controller.signal).then((items) => { setEvents(items); setLoading(false); }).catch((reason: unknown) => { if (!controller.signal.aborted) { setLoading(false); setLoadError(reason instanceof Error ? reason.message : "Could not load events."); } });
+    Promise.resolve().then(() => {
+      if (controller.signal.aborted) return;
+      setLoading(true);
+      setLoadError("");
+      setCancelledLoadError("");
+      setCancelledOccurrences([]);
+    });
+    fetchCalendarEvents(range.from, range.to, preferences.timeZone, controller.signal).then((items) => {
+      if (controller.signal.aborted) return;
+      setEvents(items);
+      setLoadError("");
+      setLoading(false);
+    }).catch((reason: unknown) => {
+      if (!controller.signal.aborted) {
+        setLoading(false);
+        setLoadError(reason instanceof Error ? reason.message : "Could not load events.");
+      }
+    });
+    fetchCalendarCancelledOccurrences(range.from, range.to, preferences.timeZone, controller.signal).then((cancelled) => {
+      if (controller.signal.aborted) return;
+      setCancelledOccurrences(cancelled);
+      setCancelledLoadError("");
+    }).catch(() => {
+      if (!controller.signal.aborted) {
+        setCancelledOccurrences([]);
+        setCancelledLoadError("Cancelled occurrences are temporarily unavailable. Active calendar events are still available.");
+      }
+    });
     return () => controller.abort();
   }, [date, view, preferences, reload]);
 
@@ -282,6 +310,42 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
     setEditor({ generation: editorGeneration.current, event, occurrenceKey: "occurrenceKey" in selected ? selected.occurrenceKey : undefined, operationKey: event.recurrenceRule ? crypto.randomUUID() : null, operationAction: event.recurrenceRule ? "update" : null, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : event.reminderTimeZone ?? preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false, seriesDraft: null }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
+  }, [preferences, calendarLocked, rememberEditorOpener]);
+  const openCancelledOccurrence = useCallback((
+    selected: CalendarEventOccurrence,
+    returnFocusTarget?: HTMLElement | null,
+  ) => {
+    if (!preferences || calendarLocked) return;
+    if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
+    else rememberEditorOpener();
+    focusAfterEditor.current = null;
+    editorGeneration.current += 1;
+    setEditor({
+      generation: editorGeneration.current,
+      event: selected.series,
+      occurrenceKey: selected.occurrenceKey,
+      operationKey: crypto.randomUUID(),
+      operationAction: "restore-occurrence",
+      draft: buildEventDraft(selected.series),
+      zone: selected.kind === "timed"
+        ? selected.timeZone
+        : selected.series.kind === "all-day"
+          ? selected.series.reminderTimeZone ?? preferences.timeZone
+          : preferences.timeZone,
+      errors: {},
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+      purpose: "restore",
+      restoreOccurrence: selected,
+    });
+    setEditorError("");
+    setEditorStale(false);
+    setEditorRetryOnly(false);
+    setEditorReauthRequired(false);
+    setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
   const moveEvent: CalendarMoveAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone) => {
     if (!preferences || calendarLocked) return;
@@ -462,8 +526,10 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       const proposal = current.seriesDraft;
       if (!proposal) return;
       const generation = current.generation;
-      if ((proposal.action === "create" || proposal.action === "update")
-        && proposal.calendarTimeZone !== preferences.timeZone) {
+      if (((proposal.action === "create" || proposal.action === "update")
+        && proposal.calendarTimeZone !== preferences.timeZone)
+        || (proposal.action === "restore-occurrence"
+          && proposal.calendarTimeZone !== preferences.timeZone)) {
         setEditor({ ...current, operationKey: crypto.randomUUID(), operationAction: proposal.action, seriesDraft: null });
         setEditorError("The calendar time zone changed. Review the recurring proposal again.");
         return;
@@ -482,6 +548,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
           closeEditor(true);
           setNotice(approval.action === "cancel-occurrence"
             ? "Occurrence cancelled."
+            : approval.action === "restore-occurrence"
+              ? "Occurrence restored."
             : approval.action === "create"
             ? "Repeating series created."
             : approval.action === "update"
@@ -747,6 +815,58 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     }
   }
 
+  async function reviewOccurrenceRestore() {
+    if (editor?.purpose !== "restore" || !editor.event?.recurrenceRule
+      || !editor.occurrenceKey || !preferences || backgroundLocked || editorRetryOnly) return;
+    const operationKey = editor.operationAction === "restore-occurrence"
+      ? editor.operationKey
+      : crypto.randomUUID();
+    if (!operationKey) {
+      setEditorError("The occurrence proposal key is missing. Reload the calendar before continuing.");
+      return;
+    }
+    const generation = editor.generation;
+    setEditor({
+      ...editor,
+      operationKey,
+      operationAction: "restore-occurrence",
+      review: null,
+      conflicts: [],
+      deleting: false,
+      seriesDraft: null,
+    });
+    setBusy(true);
+    setEditorError("");
+    try {
+      const draft = await createCalendarSeriesDraft({
+        action: "restore-occurrence",
+        scope: "occurrence",
+        targetEventId: editor.event.id,
+        targetRevision: editor.event.revision,
+        occurrenceKey: editor.occurrenceKey,
+        calendarTimeZone: preferences.timeZone,
+      }, operationKey);
+      if (editorGeneration.current !== generation) return;
+      if (draft.outcome !== "pending") {
+        setEditor({ ...editor, operationKey: crypto.randomUUID(), operationAction: "restore-occurrence", seriesDraft: null });
+        setEditorError("That occurrence proposal is no longer pending. Reload the calendar and review it again.");
+        return;
+      }
+      setEditor({ ...editor, operationKey, review: null, conflicts: [], deleting: false, seriesDraft: draft });
+    } catch (reason) {
+      if (editorGeneration.current !== generation) return;
+      setEditorError(reason instanceof Error ? reason.message : "Could not prepare the occurrence restoration. Try again.");
+      if (reason instanceof CalendarRequestError
+        && (reason.status === 412 || reason.code === "SERIES_TARGET_STALE"
+          || reason.code === "EVENT_NOT_FOUND" || reason.code === "OCCURRENCE_NOT_CANCELLED"
+          || reason.code === "OCCURRENCE_NOT_IN_SERIES")) {
+        setEditorStale(true);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function confirmDelete() {
     if (!editor?.event || backgroundLocked || editorRetryOnly) return;
     if (editor.event.recurrenceRule) {
@@ -837,7 +957,42 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     )}
     <p role="status" className={styles.status}>{loading ? "Loading calendar…" : notice}</p>
     {loadError && <div className={styles.error} role="alert"><p>{loadError}</p><button type="button" onClick={() => { setLoadError(""); if (!preferences) window.location.reload(); else setReload((value) => value + 1); }}>Retry loading calendar</button></div>}
+    {cancelledLoadError && preferences && !loading && !loadError && (
+      <div className={styles.error} role="alert">
+        <p>{cancelledLoadError}</p>
+        <button type="button" onClick={() => setReload((value) => value + 1)}>Retry loading</button>
+      </div>
+    )}
     {preferences && !loading && !loadError && <><div className={styles.calendarSurface} inert={calendarLocked}>{view === "month" ? <MonthCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onSelectEvent={openEvent} /> : view === "agenda" ? <AgendaCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : <TimeCalendar view={view} events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onResizeEvent={resizeEvent} onSelectEvent={openEvent} />}</div>{events.length === 0 && <p className={styles.empty}>No events in this period. <button type="button" disabled={calendarLocked} onClick={() => openNew(date)}>Create an event</button></p>}</>}
+    {preferences && !loading && !loadError && cancelledOccurrences.length > 0 && (
+      <section className={styles.cancelledOccurrences} aria-labelledby="cancelled-occurrences-heading">
+        <div>
+          <p className={styles.searchEyebrow}>Calendar exceptions</p>
+          <h2 id="cancelled-occurrences-heading">Cancelled occurrences in this period</h2>
+          <p>These dates remain part of their series. Review a date to restore it individually.</p>
+        </div>
+        <ul>
+          {cancelledOccurrences.map((occurrence) => (
+            <li key={occurrence.occurrenceKey}>
+              <div>
+                <strong>{occurrence.title}</strong>
+                <span>{occurrence.kind === "all-day"
+                  ? `${occurrence.startDate} through the day before ${occurrence.endDate} · All day`
+                  : `${occurrence.startLocal} to ${occurrence.endLocal} · ${occurrence.timeZone}`}</span>
+              </div>
+              <button
+                type="button"
+                disabled={calendarLocked || !!editor}
+                aria-label={`Review restore for ${occurrence.title} on ${occurrence.kind === "all-day"
+                  ? occurrence.startDate
+                  : `${occurrence.startLocal} in ${occurrence.timeZone}`}`}
+                onClick={(event) => openCancelledOccurrence(occurrence, event.currentTarget)}
+              >Review restore</button>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )}
     {editor && (
       <CalendarEditor
         editor={editor}
@@ -852,10 +1007,13 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         onReloadLatest={discardAndReload}
         onDeleteReview={reviewDelete}
         onCancelOccurrenceReview={reviewOccurrenceCancel}
+        onRestoreOccurrenceReview={reviewOccurrenceRestore}
         onDeleteCancel={() => setEditor({
           ...editor,
           operationKey: editor.event?.recurrenceRule ? crypto.randomUUID() : editor.operationKey,
-          operationAction: editor.event?.recurrenceRule ? "update" : editor.operationAction,
+          operationAction: editor.purpose === "restore"
+            ? "restore-occurrence"
+            : editor.event?.recurrenceRule ? "update" : editor.operationAction,
           deleting: false,
           seriesDraft: null,
         })}

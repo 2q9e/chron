@@ -4,6 +4,7 @@ import {
   approveCalendarSeriesDraft,
   CalendarRequestError,
   createCalendarSeriesDraft,
+  fetchCalendarCancelledOccurrences,
   fetchCalendarEvents,
   fetchCalendarReminderStatus,
 } from "./calendar-api.ts";
@@ -98,6 +99,92 @@ test("calendar list accepts dated occurrences only when their series root matche
     await assert.rejects(
       fetchCalendarEvents("2026-06-01", "2026-07-01", "UTC"),
       (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("cancelled occurrence lookup is bounded to same-origin calendar range and validates its series", async () => {
+  let request;
+  globalThis.fetch = async (url, init) => {
+    request = { url, init };
+    return response({ occurrences: [occurrence()] });
+  };
+  try {
+    const [item] = await fetchCalendarCancelledOccurrences(
+      "2026-06-01",
+      "2026-07-01",
+      "America/Montreal",
+    );
+    assert.equal(item.occurrenceKey, `${seriesId}:2026-06-08`);
+    assert.equal(request.url, "/api/calendar/events/cancelled?from=2026-06-01&to=2026-07-01&timeZone=America%2FMontreal");
+    assert.equal(request.init.cache, "no-store");
+    assert.equal(request.init.credentials, "same-origin");
+
+    const invalid = occurrence();
+    invalid.seriesId = "another-series";
+    globalThis.fetch = async () => response({ occurrences: [invalid] });
+    await assert.rejects(
+      fetchCalendarCancelledOccurrences("2026-06-01", "2026-07-01", "UTC"),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("restoration proposals bind the exact occurrence, timezone, and user approval", async () => {
+  const request = {
+    action: "restore-occurrence",
+    scope: "occurrence",
+    targetEventId: seriesId,
+    targetRevision: 2,
+    occurrenceKey: `${seriesId}:2026-06-08`,
+    calendarTimeZone: "America/Montreal",
+  };
+  const draft = {
+    id: "74953a92-52d7-4bb1-b623-1c5e18371490",
+    action: request.action,
+    scope: request.scope,
+    outcome: "pending",
+    replayed: false,
+    targetEventId: seriesId,
+    targetRevision: 2,
+    event: null,
+    recurrenceRule: null,
+    calendarTimeZone: request.calendarTimeZone,
+    beforeOccurrences: [],
+    afterOccurrences: [{
+      occurrenceKey: request.occurrenceKey,
+      kind: "all-day",
+      startDate: "2026-06-08",
+      endDate: "2026-06-09",
+    }],
+    conflicts: [],
+    expiresAt: "2026-06-01T12:15:00.000Z",
+  };
+  let createRequest;
+  globalThis.fetch = async (url, init) => {
+    createRequest = { url, init };
+    return response({ draft }, 201);
+  };
+  try {
+    const created = await createCalendarSeriesDraft(request, "restore-key-1");
+    assert.equal(created.action, "restore-occurrence");
+    assert.equal(JSON.parse(createRequest.init.body).occurrenceKey, request.occurrenceKey);
+    assert.equal(createRequest.init.headers["Idempotency-Key"], "restore-key-1");
+
+    const approval = {
+      id: draft.id,
+      action: "restore-occurrence",
+      outcome: "approved",
+      event: null,
+    };
+    globalThis.fetch = async () => response({ approval });
+    assert.deepEqual(
+      await approveCalendarSeriesDraft(draft.id, request.action, draft),
+      approval,
     );
   } finally {
     globalThis.fetch = originalFetch;
