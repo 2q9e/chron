@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import pg from "pg";
 import { CalendarRepository } from "../features/calendar/server/repository.ts";
+import { ResearchRateLimitRepository } from "../features/research/server/rate-limit-repository.ts";
 
 const { Pool } = pg;
 const migrationDirectory = fileURLToPath(new URL("../db/migrations/", import.meta.url));
@@ -141,6 +142,17 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     );
 
     const repository = new CalendarRepository(applicationPool);
+    const researchRateLimit = new ResearchRateLimitRepository(applicationPool);
+    const researchWindowStart = new Date("2026-11-02T12:00:00.000Z");
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      assert.equal(await researchRateLimit.consume(accountA, researchWindowStart), true);
+    }
+    assert.equal(await researchRateLimit.consume(accountA, researchWindowStart), false);
+    assert.equal(await researchRateLimit.consume(accountB, researchWindowStart), true);
+    assert.equal(
+      await researchRateLimit.consume(accountA, new Date(researchWindowStart.getTime() + 60_000)),
+      true,
+    );
     const range = { from: "2026-11-01", to: "2026-11-04", timeZone: "UTC" };
     const eventsA = await repository.listEvents(accountA, range.from, range.to, range.timeZone);
     const eventsB = await repository.listEvents(accountB, range.from, range.to, range.timeZone);
@@ -590,6 +602,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       "calendar_series_expiry_worker_state",
       "calendar_event_reminders",
       "calendar_reminder_worker_state",
+      "research_web_rate_limits",
     ];
     const rlsResult = await databasePool.query(
       `SELECT relation.relname, relation.relrowsecurity, relation.relforcerowsecurity
@@ -609,6 +622,10 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       "SELECT count(*)::integer AS count FROM calendar_event_occurrence_exceptions",
     );
     assert.equal(unscopedExceptions.rows[0].count, 0);
+    const unscopedResearchLimits = await applicationPool.query(
+      "SELECT count(*)::integer AS count FROM research_web_rate_limits",
+    );
+    assert.equal(unscopedResearchLimits.rows[0].count, 0);
 
     const client = await applicationPool.connect();
     try {
@@ -676,6 +693,11 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       [[accountA, accountB]],
     );
     assert.equal(exceptionCascadeCheck.rows[0].count, 0);
+    const researchLimitCascadeCheck = await databasePool.query(
+      "SELECT count(*)::integer AS count FROM research_web_rate_limits WHERE user_id = ANY($1::text[])",
+      [[accountA, accountB]],
+    );
+    assert.equal(researchLimitCascadeCheck.rows[0].count, 0);
   } finally {
     await applicationPool?.end();
     await databasePool?.end();
