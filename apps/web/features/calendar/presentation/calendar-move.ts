@@ -151,3 +151,67 @@ export function moveCalendarEventDraft(
     },
   };
 }
+
+export function resizeCalendarEventDraft(
+  event: CalendarEvent,
+  targetDateValue: string,
+  targetMinute: number | null,
+  calendarTimeZone: string,
+): CalendarMoveResult {
+  if (event.recurrenceRule) {
+    return { ok: false, message: "Open the repeating series to review a duration change." };
+  }
+  if (event.kind !== "timed") {
+    return { ok: false, message: "Only timed events can be resized on the time grid." };
+  }
+  if (targetMinute === null || !Number.isInteger(targetMinute)
+    || targetMinute < 0 || targetMinute % calendarMoveSnapMinutes !== 0) {
+    return { ok: false, message: "Choose an end time on a 15-minute grid slot." };
+  }
+
+  let targetDate: Temporal.PlainDate;
+  let startOfDay: Temporal.Instant;
+  let endOfDay: Temporal.Instant;
+  try {
+    targetDate = parseCalendarDate(targetDateValue);
+    startOfDay = targetDate.toZonedDateTime(calendarTimeZone).toInstant();
+    endOfDay = targetDate.add({ days: 1 }).toZonedDateTime(calendarTimeZone).toInstant();
+  } catch {
+    return { ok: false, message: "Choose a valid calendar date and time zone for this resize." };
+  }
+
+  const dayDurationMinutes = Number(endOfDay.epochMilliseconds - startOfDay.epochMilliseconds) / 60_000;
+  if (targetMinute >= dayDurationMinutes) {
+    return { ok: false, message: "Choose an end time within the selected calendar day." };
+  }
+
+  let originalStart: Temporal.Instant;
+  try {
+    originalStart = Temporal.Instant.from(event.startsAt);
+  } catch {
+    return { ok: false, message: "This event has an invalid start time and cannot be resized." };
+  }
+
+  const resizedEnd = startOfDay.add({ minutes: targetMinute });
+  const durationMinutes = Number(resizedEnd.epochMilliseconds - originalStart.epochMilliseconds) / 60_000;
+  if (durationMinutes < calendarMoveSnapMinutes) {
+    return { ok: false, message: "Keep at least 15 minutes between the start and end." };
+  }
+
+  const maximumDurationMinutes = 366 * 24 * 60;
+  if (durationMinutes > maximumDurationMinutes) {
+    return { ok: false, message: "Timed events cannot last more than 366 days." };
+  }
+
+  const endLocal = resizedEnd.toZonedDateTimeISO(event.timeZone)
+    .toPlainDateTime().toString({ smallestUnit: "minute" });
+  return {
+    ok: true,
+    timeZone: event.timeZone,
+    draft: {
+      ...buildEventDraft(event),
+      endLocal,
+      endDisambiguation: disambiguationFor(endLocal, event.timeZone, resizedEnd),
+    },
+  };
+}

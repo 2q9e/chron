@@ -5,6 +5,7 @@ import {
   calendarMinuteAtPointer,
   calendarMoveSnapMinutes,
   moveCalendarEventDraft,
+  resizeCalendarEventDraft,
 } from "./calendar-move.ts";
 
 function timedEvent({
@@ -132,4 +133,53 @@ test("series occurrences require the explicit series editor", () => {
 
   assert.equal(moved.ok, false);
   assert.match(moved.message, /repeating series/);
+});
+
+test("resize changes the end slot while preserving the start and event timezone", () => {
+  const event = timedEvent({ start: "09:00", end: "10:30" });
+  const resized = resizeCalendarEventDraft(event, "2026-06-15", 690, "America/Toronto");
+
+  assert.equal(resized.ok, true);
+  assert.equal(resized.timeZone, "America/Toronto");
+  assert.equal(resized.draft.startLocal, "2026-06-15T09:00");
+  assert.equal(resized.draft.endLocal, "2026-06-15T11:30");
+});
+
+test("resize converts a calendar-zone end slot into the event's timezone", () => {
+  const event = timedEvent({ start: "09:00", end: "10:30" });
+  const resized = resizeCalendarEventDraft(event, "2026-06-15", 900, "UTC");
+
+  assert.equal(resized.ok, true);
+  assert.equal(resized.draft.endLocal, "2026-06-15T11:00");
+});
+
+test("resize preserves the chosen fall-back occurrence", () => {
+  const event = timedEvent({ date: "2026-11-01", start: "00:30", end: "02:30" });
+  const resized = resizeCalendarEventDraft(event, "2026-11-01", 150, "America/Toronto");
+
+  assert.equal(resized.ok, true);
+  assert.equal(resized.draft.endLocal, "2026-11-01T01:30");
+  assert.equal(resized.draft.endDisambiguation, "later");
+});
+
+test("resize matches the server's 366-day duration limit", () => {
+  const event = timedEvent({ timeZone: "UTC", start: "09:00", end: "10:30" });
+  const maximum = resizeCalendarEventDraft(event, "2027-06-16", 540, "UTC");
+  const tooLong = resizeCalendarEventDraft(event, "2027-06-16", 555, "UTC");
+
+  assert.equal(maximum.ok, true);
+  assert.equal(maximum.draft.endLocal, "2027-06-16T09:00");
+  assert.equal(tooLong.ok, false);
+  assert.match(tooLong.message, /366 days/);
+});
+
+test("resize rejects short, negative, off-grid, all-day, and recurring changes", () => {
+  const event = timedEvent({ start: "09:00", end: "10:30" });
+  assert.equal(resizeCalendarEventDraft(event, "2026-06-15", 525, "UTC").ok, false);
+  assert.equal(resizeCalendarEventDraft(event, "2026-06-15", 540, "UTC").ok, false);
+  assert.equal(resizeCalendarEventDraft(event, "2026-06-15", 547, "UTC").ok, false);
+  assert.equal(resizeCalendarEventDraft(event, "2026-06-15", null, "UTC").ok, false);
+  assert.equal(resizeCalendarEventDraft(event, "invalid", 600, "UTC").ok, false);
+  assert.equal(resizeCalendarEventDraft({ kind: "all-day" }, "2026-06-15", 600, "UTC").ok, false);
+  assert.equal(resizeCalendarEventDraft(timedEvent({ recurrenceRule: { frequency: "weekly", interval: 1, count: 3 } }), "2026-06-15", 600, "UTC").ok, false);
 });
