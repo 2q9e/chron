@@ -96,8 +96,20 @@
   display: inline-flex;
   align-items: center;
   gap: .4rem;
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   cursor: pointer;
+}
+
+.fieldError {
+  grid-column: 1 / -1;
+  color: var(--accent);
+  font-size: .875rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.form input[aria-invalid="true"] {
+  border-color: var(--accent);
 }
 
 .weekdays input {
@@ -213,7 +225,8 @@
   .topic,
   .weekdays,
   .note,
-  .actions {
+  .actions,
+  .fieldError {
     grid-column: auto;
   }
 

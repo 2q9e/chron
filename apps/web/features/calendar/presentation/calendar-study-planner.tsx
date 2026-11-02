@@ -5,7 +5,7 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { formatDateOnly, formatInstant } from "./calendar-model";
 import { fetchCalendarEvents } from "./calendar-api";
 import { resolveCalendarRange } from "../domain/time";
-import { planStudyTime, type StudyPlan, type StudyPlanSession, type StudyPlannerInput } from "../domain/study-planner";
+import { planStudyTime, studyPlannerInputErrors, type StudyPlan, type StudyPlanSession, type StudyPlannerField, type StudyPlannerInput } from "../domain/study-planner";
 import styles from "./calendar-study-planner.module.css";
 
 type Fields = Readonly<{
@@ -83,6 +83,7 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
   const [weekdays, setWeekdays] = useState<readonly number[]>([1, 2, 3, 4, 5]);
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<StudyPlannerField, string>>>({});
   const [loading, setLoading] = useState(false);
   const request = useRef<AbortController | null>(null);
 
@@ -93,6 +94,11 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
 
   function changeField(field: keyof Fields, value: string) {
     setFields((current) => ({ ...current, [field]: value }));
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next[field];
+      return next;
+    });
     setPlan(null);
     setError("");
   }
@@ -101,6 +107,11 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
     setWeekdays((current) => current.includes(day)
       ? current.filter((selected) => selected !== day)
       : [...current, day].sort((left, right) => left - right));
+    setFieldErrors((current) => {
+      const next = { ...current };
+      delete next.weekdays;
+      return next;
+    });
     setPlan(null);
     setError("");
   }
@@ -108,6 +119,14 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (disabled || loading) return;
+    const input = toInput(fields, weekdays, timeZone);
+    const validation = studyPlannerInputErrors(input);
+    setFieldErrors(validation);
+    setPlan(null);
+    if (Object.keys(validation).length > 0) {
+      setError("Check the highlighted fields before generating a plan.");
+      return;
+    }
     const controller = new AbortController();
     request.current?.abort();
     request.current = controller;
@@ -116,7 +135,6 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
     setError("");
 
     try {
-      const input = toInput(fields, weekdays, timeZone);
       planStudyTime(input, []);
       const throughDate = Temporal.PlainDate.from(fields.deadline).add({ days: 1 }).toString();
       const range = resolveCalendarRange(fields.startDate, throughDate, timeZone);
@@ -136,6 +154,18 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
     }
   }
 
+  function inputA11y(field: StudyPlannerField, errorId: string) {
+    return {
+      "aria-invalid": fieldErrors[field] ? true as const : undefined,
+      "aria-describedby": fieldErrors[field] ? errorId : undefined,
+    };
+  }
+
+  function fieldError(field: StudyPlannerField, errorId: string) {
+    const message = fieldErrors[field];
+    return message ? <span id={errorId} className={styles.fieldError}>{message}</span> : null;
+  }
+
   return (
     <section id="calendar-study-planner" className={styles.planner} aria-labelledby={`${id}-heading`}>
       <div className={styles.heading}>
@@ -146,6 +176,7 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
         </div>
         <button type="button" onClick={onClose}>Close planner</button>
       </div>
+      {fieldError("timeZone", `${id}-time-zone-error`)}
 
       <form className={styles.form} onSubmit={submit}>
         <label className={styles.topic} htmlFor={`${id}-topic`}>
@@ -158,43 +189,53 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
             autoComplete="off"
             required
             disabled={disabled || loading}
+            {...inputA11y("topic", `${id}-topic-error`)}
           />
+          {fieldError("topic", `${id}-topic-error`)}
         </label>
 
         <label htmlFor={`${id}-total`}>
           Total study time (minutes)
-          <input id={`${id}-total`} type="number" min="15" max="10080" step="15" value={fields.totalMinutes} onChange={(event) => changeField("totalMinutes", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-total`} type="number" min="15" max="10080" step="15" value={fields.totalMinutes} onChange={(event) => changeField("totalMinutes", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("totalMinutes", `${id}-total-error`)} />
+          {fieldError("totalMinutes", `${id}-total-error`)}
         </label>
         <label htmlFor={`${id}-session`}>
           Session length (minutes)
-          <input id={`${id}-session`} type="number" min="15" max="180" step="15" value={fields.sessionMinutes} onChange={(event) => changeField("sessionMinutes", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-session`} type="number" min="15" max="180" step="15" value={fields.sessionMinutes} onChange={(event) => changeField("sessionMinutes", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("sessionMinutes", `${id}-session-error`)} />
+          {fieldError("sessionMinutes", `${id}-session-error`)}
         </label>
         <label htmlFor={`${id}-start-date`}>
           Start date
-          <input id={`${id}-start-date`} type="date" value={fields.startDate} onChange={(event) => changeField("startDate", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-start-date`} type="date" value={fields.startDate} onChange={(event) => changeField("startDate", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("startDate", `${id}-start-date-error`)} />
+          {fieldError("startDate", `${id}-start-date-error`)}
         </label>
         <label htmlFor={`${id}-deadline`}>
           Deadline
-          <input id={`${id}-deadline`} type="date" value={fields.deadline} onChange={(event) => changeField("deadline", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-deadline`} type="date" value={fields.deadline} onChange={(event) => changeField("deadline", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("deadline", `${id}-deadline-error`)} />
+          {fieldError("deadline", `${id}-deadline-error`)}
         </label>
         <label htmlFor={`${id}-day-start`}>
           Daily window starts
-          <input id={`${id}-day-start`} type="time" step="900" value={fields.dayStart} onChange={(event) => changeField("dayStart", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-day-start`} type="time" step="900" value={fields.dayStart} onChange={(event) => changeField("dayStart", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("dayStart", `${id}-day-start-error`)} />
+          {fieldError("dayStart", `${id}-day-start-error`)}
         </label>
         <label htmlFor={`${id}-day-end`}>
           Daily window ends
-          <input id={`${id}-day-end`} type="time" step="900" value={fields.dayEnd} onChange={(event) => changeField("dayEnd", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-day-end`} type="time" step="900" value={fields.dayEnd} onChange={(event) => changeField("dayEnd", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("dayEnd", `${id}-day-end-error`)} />
+          {fieldError("dayEnd", `${id}-day-end-error`)}
         </label>
         <label htmlFor={`${id}-buffer`}>
           Buffer around saved events (minutes)
-          <input id={`${id}-buffer`} type="number" min="0" max="60" step="15" value={fields.eventBufferMinutes} onChange={(event) => changeField("eventBufferMinutes", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-buffer`} type="number" min="0" max="60" step="15" value={fields.eventBufferMinutes} onChange={(event) => changeField("eventBufferMinutes", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("eventBufferMinutes", `${id}-buffer-error`)} />
+          {fieldError("eventBufferMinutes", `${id}-buffer-error`)}
         </label>
         <label htmlFor={`${id}-break`}>
           Break between sessions (minutes)
-          <input id={`${id}-break`} type="number" min="0" max="60" step="15" value={fields.sessionBreakMinutes} onChange={(event) => changeField("sessionBreakMinutes", event.currentTarget.value)} required disabled={disabled || loading} />
+          <input id={`${id}-break`} type="number" min="0" max="60" step="15" value={fields.sessionBreakMinutes} onChange={(event) => changeField("sessionBreakMinutes", event.currentTarget.value)} required disabled={disabled || loading} {...inputA11y("sessionBreakMinutes", `${id}-break-error`)} />
+          {fieldError("sessionBreakMinutes", `${id}-break-error`)}
         </label>
 
-        <fieldset className={styles.weekdays} disabled={disabled || loading}>
+        <fieldset className={styles.weekdays} disabled={disabled || loading} {...inputA11y("weekdays", `${id}-weekdays-error`)}>
           <legend>Available weekdays</legend>
           {weekdayOptions.map(({ value, label }) => (
             <label key={value}>
@@ -202,6 +243,7 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
               {label}
             </label>
           ))}
+          {fieldError("weekdays", `${id}-weekdays-error`)}
         </fieldset>
 
         <p className={styles.note}>Times use your calendar time zone. Session lengths and buffers follow 15-minute increments. Existing event times are padded by the buffer; all-day events block their full dates. On a repeated clock hour, the window uses the first start and last end occurrence. Nonexistent windows are skipped.</p>

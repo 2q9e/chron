@@ -24,6 +24,19 @@ export type StudyPlannerInput = Readonly<{
   sessionBreakMinutes: number;
 }>;
 
+export type StudyPlannerField =
+  | "topic"
+  | "totalMinutes"
+  | "sessionMinutes"
+  | "startDate"
+  | "deadline"
+  | "dayStart"
+  | "dayEnd"
+  | "eventBufferMinutes"
+  | "sessionBreakMinutes"
+  | "weekdays"
+  | "timeZone";
+
 export type StudyPlanSession = Readonly<{
   id: string;
   date: string;
@@ -70,10 +83,8 @@ function invalidPlan(message: string): never {
   throw new StudyPlannerError(message, "INVALID_PLAN");
 }
 
-function validateMultiple(value: number, min: number, max: number, field: string): void {
-  if (!Number.isSafeInteger(value) || value < min || value > max || value % 15 !== 0) {
-    invalidPlan(`${field} must be in 15-minute increments within its supported range.`);
-  }
+function isValidMultiple(value: number, min: number, max: number): boolean {
+  return Number.isSafeInteger(value) && value >= min && value <= max && value % 15 === 0;
 }
 
 function localDateTime(date: string, time: string): string {
@@ -219,26 +230,79 @@ function makeSession(
   };
 }
 
+export function studyPlannerInputErrors(
+  input: StudyPlannerInput,
+): Partial<Record<StudyPlannerField, string>> {
+  const errors: Partial<Record<StudyPlannerField, string>> = {};
+  const topic = typeof input.topic === "string" ? input.topic.trim() : "";
+  if (!topic || topic.length > 153 || /[\u0000-\u001f\u007f]/u.test(topic)) {
+    errors.topic = "Enter a topic of 1 to 153 characters without control characters.";
+  }
+  if (!isValidMultiple(input.totalMinutes, 15, maximumStudyMinutes)) {
+    errors.totalMinutes = "Use 15-minute increments from 15 to 10,080 minutes.";
+  }
+  if (!isValidMultiple(input.sessionMinutes, 15, 180)) {
+    errors.sessionMinutes = "Use 15-minute increments from 15 to 180 minutes.";
+  }
+  if (!isValidMultiple(input.eventBufferMinutes, 0, 60)) {
+    errors.eventBufferMinutes = "Use 15-minute increments from 0 to 60 minutes.";
+  }
+  if (!isValidMultiple(input.sessionBreakMinutes, 0, 60)) {
+    errors.sessionBreakMinutes = "Use 15-minute increments from 0 to 60 minutes.";
+  }
+  if (!quarterHourTimePattern.test(input.dayStart)) {
+    errors.dayStart = "Choose a start time on a 15-minute boundary.";
+  }
+  if (!quarterHourTimePattern.test(input.dayEnd)) {
+    errors.dayEnd = "Choose an end time on a 15-minute boundary.";
+  } else if (quarterHourTimePattern.test(input.dayStart) && input.dayStart >= input.dayEnd) {
+    errors.dayEnd = "Choose an end time after the start time.";
+  }
+
+  let start: Temporal.PlainDate | null = null;
+  let deadline: Temporal.PlainDate | null = null;
+  try {
+    start = parseCalendarDate(input.startDate);
+  } catch {
+    errors.startDate = "Choose a valid start date.";
+  }
+  try {
+    deadline = parseCalendarDate(input.deadline);
+  } catch {
+    errors.deadline = "Choose a valid deadline.";
+  }
+  if (start && deadline) {
+    const span = start.until(deadline, { largestUnit: "day" }).days;
+    if (span < 0 || span >= maximumPlanningDays) {
+      errors.deadline = "Choose a deadline on or after the start date and within 59 days.";
+    }
+  }
+
+  try {
+    validateTimeZone(input.timeZone);
+  } catch {
+    errors.timeZone = "The saved calendar time zone is invalid. Update calendar settings before planning.";
+  }
+
+  const weekdayValues = Array.isArray(input.weekdays) ? input.weekdays : [];
+  const selectedDays = new Set(weekdayValues);
+  if (selectedDays.size === 0
+    || selectedDays.size !== weekdayValues.length
+    || [...selectedDays].some((day) => !Number.isInteger(day) || day < 1 || day > 7)) {
+    errors.weekdays = "Select one or more available weekdays.";
+  }
+  return errors;
+}
+
 function validateInput(input: StudyPlannerInput): Readonly<{
   topic: string;
   timeZone: string;
   start: Temporal.PlainDate;
   deadline: Temporal.PlainDate;
 }> {
+  const errors = studyPlannerInputErrors(input);
+  if (Object.keys(errors).length > 0) invalidPlan(Object.values(errors)[0]!);
   const topic = typeof input.topic === "string" ? input.topic.trim() : "";
-  if (!topic || topic.length > 153 || /[\u0000-\u001f\u007f]/u.test(topic)) {
-    invalidPlan("Enter a topic of 1 to 153 characters without control characters.");
-  }
-  validateMultiple(input.totalMinutes, 15, maximumStudyMinutes, "Total study time");
-  validateMultiple(input.sessionMinutes, 15, 180, "Session length");
-  validateMultiple(input.eventBufferMinutes, 0, 60, "Calendar event buffer");
-  validateMultiple(input.sessionBreakMinutes, 0, 60, "Break between sessions");
-  if (!quarterHourTimePattern.test(input.dayStart)
-    || !quarterHourTimePattern.test(input.dayEnd)
-    || input.dayStart >= input.dayEnd) {
-    invalidPlan("Choose a valid, increasing study window on 15-minute boundaries.");
-  }
-
   const timeZone = validateTimeZone(input.timeZone);
   const start = parseCalendarDate(input.startDate);
   const deadline = parseCalendarDate(input.deadline);

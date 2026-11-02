@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { planStudyTime, StudyPlannerError } from "./study-planner.ts";
+import { planStudyTime, StudyPlannerError, studyPlannerInputErrors } from "./study-planner.ts";
 
 const weekdays = [1, 2, 3, 4, 5];
 
@@ -153,5 +153,30 @@ test("rejects invalid planning windows instead of silently guessing", () => {
   assert.throws(
     () => planStudyTime(input({ dayStart: "02:07" }), []),
     (error) => error instanceof StudyPlannerError && error.code === "INVALID_PLAN",
+  );
+});
+
+test("returns field-specific errors for invalid planner controls", () => {
+  const errors = studyPlannerInputErrors(input({
+    topic: " ",
+    totalMinutes: 50,
+    deadline: "2025-01-05",
+    dayStart: "09:07",
+    dayEnd: "09:15",
+    eventBufferMinutes: 10,
+    weekdays: [],
+  }));
+
+  assert.deepEqual(Object.keys(errors).sort(), [
+    "dayStart",
+    "deadline",
+    "eventBufferMinutes",
+    "topic",
+    "totalMinutes",
+    "weekdays",
+  ]);
+  assert.equal(
+    studyPlannerInputErrors(input({ dayStart: "09:00", dayEnd: "08:00" })).dayEnd,
+    "Choose an end time after the start time.",
   );
 });
