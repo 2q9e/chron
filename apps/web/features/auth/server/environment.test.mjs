@@ -46,6 +46,15 @@ test("requires verified TLS for remote databases", () => {
   assert.equal(config.databaseTls, true);
 });
 
+test("requires HTTPS for non-loopback authentication origins outside production", () => {
+  assert.throws(
+    () => loadAuthEnvironment(validEnvironment({
+      BETTER_AUTH_URL: "http://chron.example.test",
+    })),
+    (error) => error instanceof AuthConfigurationError && /non-loopback.*HTTPS/i.test(error.message),
+  );
+});
+
 test("production requires HTTPS and a bounded, explicit trusted-proxy list", () => {
   const base = {
     NODE_ENV: "production",

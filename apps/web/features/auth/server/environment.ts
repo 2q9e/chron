@@ -83,6 +83,10 @@ export function loadAuthEnvironment(
     throw new AuthConfigurationError("BETTER_AUTH_URL must contain only the application origin.");
   }
 
+  if (base.protocol === "http:" && !isLoopback(base.hostname)) {
+    throw new AuthConfigurationError("Non-loopback authentication requires HTTPS.");
+  }
+
   if (production && (base.protocol !== "https:" || isLoopback(base.hostname))) {
     throw new AuthConfigurationError("Production authentication requires a public HTTPS origin.");
   }
