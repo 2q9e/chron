@@ -2,6 +2,25 @@
 
 ## Current checkpoint — 2026-11-02
 
+Month view now shows two events per date and keeps the remainder reachable in
+a native disclosure. Each disclosure includes its date in its accessible
+name. The expanded date survives event-editor reloads, and focus returns to
+the source event, disclosure, or date cell after saves and drag moves. Drag
+callbacks retain the actual source handle and date; delayed close events cannot
+collapse a different day's disclosure.
+
+Commit `aa47c2f` (`improve`), authored as `2q9e`, is pushed to the only GitHub
+branch, `main`, over HTTPS. Calendar presentation tests (70), lint, typecheck,
+and `git diff --check` pass. A read-only independent re-review found no
+remaining issue in disclosure state or focus recovery. The HTTPS staging page
+opens to sign-in; no authorized test account is available, so the signed-in
+calendar has not been browser-verified. The local production build was not run
+with 97 MB free. The non-test app source scan found no `http://` URL. Staging
+remains on release `6ddcaf1`; the documented SSH preflight was rejected, so no
+deployment, VPS, or Cloudflare changes were made.
+
+## Current checkpoint — 2026-11-02
+
 The runtime skill policy now separates discovery of new sources from reading
 validated user-provided HTTPS URLs. Automatic external research requires both
 the known-URL read capability and the separate source-discovery capability;
