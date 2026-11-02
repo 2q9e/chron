@@ -4,9 +4,11 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 629 non-merge commits at this
-checkpoint. The latest calendar resize source commits are `590331f update`
-and `c1d7647 improve`; both were pushed over HTTPS to `main`. The reminder
+remote branch. Public `main` contains 632 non-merge commits at this
+checkpoint. The latest source commit is `d122d05 update`, which defers
+authentication/database initialization in the protected reminder route until
+after the bearer check. The calendar resize commits `590331f update` and
+`c1d7647 improve` were also pushed over HTTPS to `main`. The reminder
 event and outbox integration was pushed as
 `be722e9`; bounded reminder delivery source was pushed in six small commits
 through `f44ed03`. Public history exceeds 600 non-merge commits. New commits
@@ -80,9 +82,9 @@ day/week views. It opens the existing event editor for conflict review and
 explicit save, preserves the start and timezone, retains the selected repeated
 hour occurrence, and honors the server's 366-day duration bound. The calendar
 presentation (51), API (89), and time (39) suites, typecheck, lint, and diff
-check pass. No production build or authenticated browser/database resize check
-was performed; only 56 MB was free, and there is no configured database or
-test account.
+check pass. The later C1-build0 fix allows the production build to pass without
+runtime auth/database settings. No authenticated browser/database resize check
+was performed; there is no configured database or test account.
 C-01 through C-14 have
 source-level fixes recorded in the audit; C-15 tracks unverified PostgreSQL
 owner isolation and C-16 records the source-fixed return-focus issue. Rendered
@@ -269,6 +271,11 @@ awaits narrow and zoom browser checks.
   tests cover timezone conversion, DST fold selection, the exact duration cap,
   and invalid targets. A production build and authenticated browser/database
   verification were unavailable.
+- After `d122d05`, the calendar API/server suite passed 91 tests and the
+  auth-configuration suite passed 14; typecheck, lint, and the production build
+  passed. The build ran without `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, or
+  `DATABASE_URL`. Build output was placed temporarily in `/tmp`, then the
+  previous `.next` directory was restored and the temporary artifacts removed.
 - Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
   is active but has no `testing.uwu.markets` DNS record. No hosting changes
   were made. The HTTPS-only check was repeated on 2026-11-01 and DNS still

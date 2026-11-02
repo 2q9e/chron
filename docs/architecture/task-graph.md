@@ -1085,9 +1085,9 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   flow; every change is reviewed before explicit save.
 - **Tests:** Calendar presentation (51), API (89), and time (39) suites,
   typecheck, lint, and `git diff --check` pass. Exact 366-day acceptance and
-  over-limit rejection are tested. Production build was skipped with 56 MB
-  free; authenticated browser, keyboard, and database checks require a
-  configured disposable PostgreSQL service/account.
+  over-limit rejection are tested. The production build subsequently passed
+  via C1-build0 using `/tmp` for output; authenticated browser, keyboard, and
+  database checks require a configured disposable PostgreSQL service/account.
 - **Expected deliverables:** DST-safe resize helper, end handle, reviewed editor
   flow, focused tests, audit entry, and updated project memory; separate
   reviewed commits on the existing `main` branch.

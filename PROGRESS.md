@@ -46,13 +46,16 @@ add a 15-minute end handle for longer, wide, one-off timed blocks in day/week
 views. Resizing preserves the start and timezone, honors DST folds and the
 366-day server limit, and opens the existing conflict-review editor for explicit
 approval. Calendar presentation (51), API (89), and time (39) suites, typecheck,
-lint, and `git diff --check` pass. The production build and authenticated
-browser interaction were not verified: the workspace had 56 MB free, no
-database or account was configured, and HTTPS staging DNS is still absent.
+lint, and `git diff --check` pass. Commit `d122d05 update` defers protected
+reminder-route authentication/database initialization until after the bearer
+check. The API suite now passes 91 tests, auth configuration passes 14, and
+the production build succeeds without runtime authentication or database
+settings. The authenticated browser interaction remains unverified: no
+database or account is configured, and HTTPS staging DNS is still absent.
 The source commits are on the single public `main` branch. Root `AGENTS.md`
 remains local-only and is ignored; it was removed from the current public tree.
-Public history had 628 non-merge commits immediately before this documentation
-checkpoint; this checkpoint brings it to 629.
+Public history had 631 non-merge commits immediately before this documentation
+checkpoint; this checkpoint brings it to 632.
 
 The focused Codex Security diff review covered all ten changed files from
 `c7d9771` through `b0395ec` and found no source candidates. It was a sequential
