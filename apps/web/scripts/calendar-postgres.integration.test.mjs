@@ -416,7 +416,17 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     }, `postgres-split-seed-${randomUUID()}`);
     const splitSource = await repository.approveSeriesDraft(accountA, splitSeed.id);
     assert.equal(splitSource.outcome, "approved");
+    assert.equal(splitSource.event.reminderChoice, "event-day-9am");
+    assert.equal(splitSource.event.reminderTimeZone, "UTC");
     const splitSourceId = splitSource.event.id;
+    const seededSplitReminders = await databasePool.query(
+      `SELECT occurrence_key
+       FROM calendar_event_reminders
+       WHERE user_id = $1 AND event_id = $2::uuid
+       ORDER BY occurrence_key`,
+      [accountA, splitSourceId],
+    );
+    assert.equal(seededSplitReminders.rows.length, 4);
     const splitSourceKeys = [2, 9, 16, 23].map((day) =>
       `${splitSourceId}:2099-02-${String(day).padStart(2, "0")}`
     );
