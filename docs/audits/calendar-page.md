@@ -13,6 +13,11 @@ authenticated calendar has not been exercised in a browser because this
 runtime has no configured PostgreSQL database or disposable account. Scores
 are source-review scores, not launch approval.
 
+The follow-up below reviews one-off movement source at `3b6028c`. It does not
+change the earlier score table: the new interaction has not been rendered or
+tested with a real authenticated account, and there was no independent reviewer
+with enforceable filesystem isolation available.
+
 ## Scores
 
 | Category | Score | Evidence and limits |
@@ -237,3 +242,24 @@ invent successful results.
 - **Assigned agent:** Main integration owner
 - **Verification method:** Independent source re-review, calendar-layout/search suite, lint, typecheck, and production build; authenticated keyboard return-path check is still pending.
 - **Status:** Fixed in source; the stable search heading is saved as the editor return target and remains mounted when the result list clears. Browser focus behavior remains unverified.
+
+### C-17 — Verify event movement in an authenticated browser
+
+- **Issue:** The new one-off drag movement is verified by source tests only.
+- **Severity:** P2, verification gap
+- **Affected files:** `apps/web/features/calendar/presentation/calendar-event-control.tsx`,
+  `calendar-move.ts`, `calendar-views.tsx`, `calendar-workspace.tsx`,
+  `calendar-editor.tsx`, and `calendar.module.css`.
+- **Why it is a problem:** Unit tests cannot establish pointer capture, touch
+  behavior, visible drop feedback, keyboard editor access, conflict review, or
+  persistence after a real authenticated save.
+- **Recommended correction:** Run the move workflow against a disposable
+  PostgreSQL account in a real desktop and mobile browser, including month and
+  time-grid drops, conflict/no-conflict cases, keyboard use, timezone changes,
+  and DST boundaries.
+- **Assigned agent:** Main integration owner.
+- **Verification method:** Real authenticated browser walkthrough plus
+  database assertions; inspect desktop/mobile rendering and keyboard focus.
+- **Status:** Open. Source suites, typecheck, and lint pass. No PostgreSQL
+  service/account is configured in this runtime; no live browser verification
+  or deployment is claimed.

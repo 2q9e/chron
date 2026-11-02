@@ -34,8 +34,14 @@ empty, and offline states. Status source is implemented; database-backed
 delivery, SMTP, and staging remain unverified. Commit `42f789b` now enforces
 HTTPS for non-loopback authentication origins in every environment; loopback
 HTTP is accepted only for local development. Its 14 auth-configuration/email
-tests, typecheck, and lint pass. All work remains on the same `main` branch;
-this documentation checkpoint brings public history to 617 non-merge commits.
+tests, typecheck, and lint pass. Commit `3b6028c improve` adds one-off event
+drag movement to month/day/week views, with a review editor, conflict preview,
+15-minute time-grid snapping, preserved duration and timezone, and DST-aware
+handling. Calendar layout/time/API suites (42/39/89), typecheck, and lint pass.
+The production build and authenticated browser interaction were not verified:
+the workspace had 56 MB free, and no database/account was configured. All work
+remains on the same `main` branch; this documentation checkpoint brings public
+history to 619 non-merge commits.
 
 The focused Codex Security diff review covered all ten changed files from
 `c7d9771` through `b0395ec` and found no source candidates. It was a sequential
@@ -154,7 +160,10 @@ database, browser, SMTP, and staging checks remain open.
   status read and UI, outbox, delivery worker, internal route, and HTTPS
   scheduler are implemented in source and locally tested. Live PostgreSQL
   execution, SMTP delivery, and rendered browser behavior remain unverified.
-  Drag scheduling and external calendar synchronization remain later work.
+  One-off drag scheduling is implemented in source at `3b6028c`; the review
+  editor reuses the existing owner-scoped conflict and update paths. Browser
+  pointer/touch/keyboard behavior and database persistence remain unverified.
+  Recurring-series drag and external calendar synchronization remain open.
   PostgreSQL ownership and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
   the user-authorized Chron-specific VPS and Cloudflare resources. Rechecked

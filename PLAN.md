@@ -42,9 +42,13 @@ read and editor panel now show persisted job counts and safe failure categories.
 Database-backed behavior, SMTP delivery, and staging remain unverified. Public
 staging and email URLs must use HTTPS; the testing hostname currently has no
 DNS record. Non-loopback authentication origins are enforced as HTTPS in every
-environment; loopback HTTP is accepted only for local development. Drag
-scheduling, external sync, and a real database/browser
-walkthrough remain open until integrated and verified. See
+environment; loopback HTTP is accepted only for local development. One-off
+event drag scheduling is implemented in month, day, and week views. Grid drops
+snap to 15-minute slots, then open the existing editor with conflict preview
+and explicit save; recurring events continue through the series editor. Source
+tests cover time-zone and daylight-saving transitions, but a real
+database-backed browser walkthrough remains open. External calendar sync also
+remains open. See
 `docs/architecture/calendar-reminders.md` for the reminder dependency graph
 and acceptance criteria.
 

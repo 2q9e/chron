@@ -975,3 +975,42 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
 - **Expected deliverables:** Dated results and screenshots when supported.
 - **Status:** Blocked by missing PostgreSQL client/server, database service,
   database URL, and disposable account in this runtime.
+
+### C1-move0 — one-off event drag movement
+
+- **Task ID:** C1-move0
+- **Objective:** Add accessible, reviewed drag movement for one-off events in
+  month, day, and week views, reusing the existing conflict and owner-scoped
+  persistence flow; record remaining runtime verification.
+- **Assigned agent:** Main integration owner.
+- **Required model:** Runtime model identity was not attested; no model claim.
+- **Required reasoning level:** Runtime reasoning configuration was not
+  attested; no level claim.
+- **Dependencies:** C1 event editor, conflict preview, owner-scoped update API,
+  and calendar time-zone utilities.
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-event-control.tsx`,
+  `calendar-move.ts`, `calendar-move.test.mjs`, `calendar-views.tsx`,
+  `calendar-workspace.tsx`, `calendar-editor.tsx`, `calendar.module.css`,
+  `calendar-model.ts`, and `calendar-model.test.mjs`.
+- **Read-only files:** Calendar update/conflict APIs, server routes, repository,
+  authentication middleware, migrations, and existing series editor.
+- **Required skills:** Repository skills S346–S369 and S422–S423; installed
+  React, TypeScript, accessibility, touch interaction, and frontend testing
+  guidance. These were read and applied to implementation and review.
+- **Security permissions:** No credentials, database data, reference materials,
+  or unrelated VPS files. Movement calls the existing authenticated,
+  owner-scoped update and conflict paths; no new route or bypass was added.
+  No deployment or remote infrastructure change.
+- **Acceptance criteria:** Month/day/week movement opens a review editor;
+  time-grid drops snap to 15 minutes; duration and IANA timezone are preserved;
+  DST gaps/folds are handled without guessing; conflicts are reviewed before
+  explicit save; keyboard access remains available; recurring events use the
+  explicit series flow.
+- **Tests:** Calendar layout (42), time (39), and API (89) suites, typecheck,
+  lint, and `git diff --check` pass. Production build was not run with 56 MB
+  free. Authenticated browser/database checks require a configured disposable
+  PostgreSQL service and test account, which were unavailable.
+- **Expected deliverables:** Source implementation, focused tests, audit entry,
+  and accurate progress/handoff evidence; changes committed on `main` only.
+- **Status:** Source implementation is pushed as `3b6028c improve`. Real
+  pointer, touch, keyboard, visual, and persistence verification remains open.

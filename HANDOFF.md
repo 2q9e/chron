@@ -4,7 +4,7 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 617 non-merge commits after this
+remote branch. Public `main` contains 619 non-merge commits after this
 checkpoint. The reminder event and outbox integration was pushed as
 `be722e9`; bounded reminder delivery source was pushed in six small commits
 through `f44ed03`. Public history exceeds 600 non-merge commits. New commits
@@ -55,8 +55,16 @@ Follow-up commit `42f789b` enforces HTTPS for every non-loopback
 `BETTER_AUTH_URL` in all environments; loopback HTTP remains available for
 local development. The auth configuration/email suite now passes 14 tests,
 with typecheck and lint passing.
-Drag scheduling, external sync, database-backed runtime verification, and a
-real authenticated browser walkthrough remain open.
+Commit `3b6028c improve` adds one-off pointer/touch movement to month, day, and
+week views. Grid drops snap to 15-minute slots and open the existing event
+editor for conflict review and explicit save. Duration and event timezone are
+preserved; DST gaps/folds are handled explicitly. It passes calendar
+layout/time/API suites (42/39/89), typecheck, and lint. The production build
+was not run with only 56 MB free, and this new interaction has not been tested
+in an authenticated browser. Recurring-series drag, external sync,
+database-backed runtime verification, and a real authenticated browser
+walkthrough remain open. All public/staging access stays HTTPS-only; no VPS
+configuration was changed.
 C-01 through C-14 have
 source-level fixes recorded in the audit; C-15 tracks unverified PostgreSQL
 owner isolation and C-16 records the source-fixed return-focus issue. Rendered
@@ -229,6 +237,10 @@ awaits narrow and zoom browser checks.
   recovery (5) tests, plus typecheck and lint. No production build was run
   because free disk space is low. No configured database, authenticated browser,
   migration execution, or SMTP delivery was verified.
+- After `3b6028c`, calendar layout (42), time (39), and API (89) suites passed;
+  typecheck and lint passed. The new movement interaction has source-level
+  coverage only. The production build was skipped with 56 MB free, and no
+  configured PostgreSQL/database account permits authenticated browser checks.
 - Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
   is active but has no `testing.uwu.markets` DNS record. No hosting changes
   were made. The HTTPS-only check was repeated on 2026-11-02 and DNS still
@@ -236,11 +248,11 @@ awaits narrow and zoom browser checks.
 
 ## Next actions
 
-1. Continue C1-rmd4 with browser and keyboard review of the integrated
-   reminder flow. Source security review found no candidates; database and
-   browser acceptance remain open.
-2. Configure disposable PostgreSQL and account fixtures; apply migrations and
-   verify owner isolation and reminder persistence.
+1. Configure a disposable PostgreSQL test database/account, apply migrations,
+   and verify drag-move persistence, owner isolation, conflict review, keyboard
+   editor access, and pointer/touch behavior in a real browser.
+2. Continue C1-rmd4 with browser and keyboard review of the integrated reminder
+   flow; database and browser acceptance remain open.
 3. Configure only the Chron-specific staging DNS/tunnel/app route, preserving
    HTTPS at `testing.uwu.markets` and leaving unrelated VPS services untouched.
 4. Repeat the authenticated walkthrough over HTTPS at desktop and mobile sizes
