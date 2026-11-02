@@ -12,6 +12,14 @@ commit `4a092e8`. Full-series request validation is pushed as `521990b` and
 `8cda070`; persisted series proposals and approvals remain unfinished. No code
 or visual material was copied from another folder.
 
+The latest calendar increment, `9e46615 update`, is on the single public
+`main` branch (584 non-empty commits after this progress update). Event reads
+now include validated finite recurrence rules, and ordinary single-event
+edits/deletes reject series targets until the reviewed series workflow is
+implemented. Calendar API (52), calendar time (28), typecheck, and lint pass.
+These repository tests do not replace live PostgreSQL or authenticated browser
+verification.
+
 ## Completed
 
 - Created Chron as a separate project with its own Git history. No application
@@ -113,8 +121,9 @@ or visual material was copied from another folder.
   and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
   the user-authorized Chron-specific VPS and Cloudflare resources. DNS and the
-  tunnel route are not configured yet; the staging VPS timed out over SSH, and
-  no remote change was made. Require HTTPS for all public access.
+  tunnel route are not configured yet; an HTTPS request could not resolve the
+  hostname, and Cloudflare has no `testing.uwu.markets` DNS record. No remote
+  change was made. Use HTTPS only for all staging checks and public access.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -145,12 +154,11 @@ or visual material was copied from another folder.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- Public GitHub `main` had 570 non-empty, purposeful commits after the search
-  API, UI, and focus-fix pushes and before this documentation update;
-  the initial history had 533 and reviewed calendar fixes were pushed from
-  local `main`. The calendar API, auth route, sign-in screen, calendar views,
-  overlap review, and idempotent event creation are included. Never count
-  empty or duplicate commits toward the requested total.
+- Public GitHub `main` has 584 non-empty commits, with only `main` published.
+  The calendar API, auth route, sign-in screen, calendar views, overlap review,
+  idempotent event creation, bounded search, recurrence parsing, and series
+  expiry worker are included. Never count empty or duplicate commits toward
+  the requested total.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
   reduced motion, keyboard, fallback, and performance review remain.
 

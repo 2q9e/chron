@@ -4,7 +4,7 @@
 
 Chron is a standalone repository on one published branch, public GitHub
 `main`. Remote and local `main` matched at the last checked code push; public
-`main` had 577 purposeful commits before this documentation update.
+`main` has 584 purposeful commits after this handoff update.
 The calendar API, protected route, sign-in, views, preferences, and conflict
 review are pushed. Idempotent event creation, safe recovery, reload-safe focus,
 and accessible short-event targets were pushed as `f304c19` and `ec93688`;
@@ -81,13 +81,16 @@ and database-backed verification remains pending.
   verified.
 - The recurrence request parser validates exact full-series create, update,
   and delete scopes, finite bounded rules, dates, durations, and revisions.
-  Persisted series draft creation, conflict review, and approval routes are not
-  implemented yet.
+  Event reads now round-trip validated finite recurrence rules. Normal event
+  edits and deletes fail closed for series targets. Persisted series draft
+  creation, recurrence-aware conflict review, and atomic approval routes are
+  not implemented yet; do not expose the unintegrated route patch.
 - The user requested staging at `https://testing.uwu.markets` through the
   supplied VPS and Cloudflare setup, without changing other VPS services.
-  The target DNS record and tunnel route are absent. A deployment attempt could
-  not reach the VPS over SSH, so no DNS, tunnel, VPS, or service changes were
-  made. Keep the public origin HTTPS and retry when SSH connectivity returns.
+  An HTTPS-only request could not resolve the hostname, and Cloudflare shows no
+  `testing.uwu.markets` DNS record. The tunnel route is also absent. No DNS,
+  tunnel, VPS, or service changes were made. Do not use HTTP; retry after the
+  staging route is configured and reachable over HTTPS.
 - Event create/update require an explicit user review. The server recalculates
   overlaps and compares the submitted `(id, revision)` snapshot inside the same
   owner-serialized transaction as the write. The configured time zone is also
@@ -158,6 +161,13 @@ awaits narrow and zoom browser checks.
   dependency vulnerabilities. The full dependency audit has 11 moderate
   development-only `minimatch` denial-of-service advisories and no high or
   critical findings; avoid forced upgrades.
+- After commit `9e46615`, calendar API tests passed (52), calendar time tests
+  passed (28), and typecheck and lint passed. The recurrence repository check
+  uses the existing in-memory database fixture; no PostgreSQL service or
+  authenticated session was available.
+- Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
+  is active but has no `testing.uwu.markets` DNS record. No hosting changes
+  were made.
 
 ## Next actions
 
