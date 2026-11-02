@@ -1,5 +1,11 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { calendarThemes } from "../domain/types.ts";
+import {
+  allDayCalendarReminderChoices,
+  timedCalendarReminderChoices,
+  type AllDayCalendarReminderChoice,
+  type TimedCalendarReminderChoice,
+} from "../domain/reminders.ts";
 import type {
   CalendarApiError,
   CalendarConflict,
@@ -87,12 +93,26 @@ function isCalendarEventMutation(value: unknown): value is CalendarEventMutation
     || !isNonEmptyString(value.title)
     || !(value.details === undefined || typeof value.details === "string")) return false;
   if (value.kind === "all-day") {
-    return isNonEmptyString(value.startDate) && isNonEmptyString(value.endDate);
+    const reminderChoice = value.reminderChoice;
+    const reminderValid = reminderChoice === undefined
+      || (typeof reminderChoice === "string"
+        && allDayCalendarReminderChoices.includes(reminderChoice as AllDayCalendarReminderChoice));
+    const hasReminder = reminderChoice !== undefined && reminderChoice !== "none";
+    return isNonEmptyString(value.startDate)
+      && isNonEmptyString(value.endDate)
+      && reminderValid
+      && (hasReminder
+        ? isNonEmptyString(value.reminderTimeZone)
+        : value.reminderTimeZone === undefined);
   }
   return value.kind === "timed"
     && isNonEmptyString(value.startLocal)
     && isNonEmptyString(value.endLocal)
     && isNonEmptyString(value.timeZone)
+    && (value.reminderChoice === undefined
+      || (typeof value.reminderChoice === "string"
+        && timedCalendarReminderChoices.includes(value.reminderChoice as TimedCalendarReminderChoice)))
+    && value.reminderTimeZone === undefined
     && (value.startDisambiguation === undefined
       || value.startDisambiguation === "earlier"
       || value.startDisambiguation === "later")
@@ -244,11 +264,13 @@ function matchesApprovedEvent(
     || event.kind !== draft.event.kind
     || event.title !== draft.event.title
     || event.details !== (draft.event.details ?? null)
+    || event.reminderChoice !== (draft.event.reminderChoice ?? "none")
     || !sameJsonValue(event.recurrenceRule, draft.recurrenceRule)) return false;
   return event.kind === "all-day"
     ? draft.event.kind === "all-day"
       && event.startDate === draft.event.startDate
       && event.endDate === draft.event.endDate
+      && event.reminderTimeZone === (draft.event.reminderTimeZone ?? null)
     : draft.event.kind === "timed"
       && event.startLocal === draft.event.startLocal
       && event.endLocal === draft.event.endLocal
@@ -284,7 +306,20 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
   }
 
   if (value.kind === "all-day") {
-    return isNonEmptyString(value.startDate) && isNonEmptyString(value.endDate);
+    if (!isNonEmptyString(value.startDate) || !isNonEmptyString(value.endDate)) return false;
+    if (Object.hasOwn(value, "occurrenceKey")) return true;
+    if (typeof value.reminderChoice !== "string"
+      || !allDayCalendarReminderChoices.includes(value.reminderChoice as AllDayCalendarReminderChoice)) {
+      return false;
+    }
+    if (value.reminderChoice === "none") return value.reminderTimeZone === null;
+    if (!isNonEmptyString(value.reminderTimeZone)) return false;
+    try {
+      new Intl.DateTimeFormat("en", { timeZone: value.reminderTimeZone });
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   return value.kind === "timed"
@@ -292,7 +327,11 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
     && isNonEmptyString(value.endLocal)
     && isNonEmptyString(value.timeZone)
     && isNonEmptyString(value.startsAt)
-    && isNonEmptyString(value.endsAt);
+    && isNonEmptyString(value.endsAt)
+    && (Object.hasOwn(value, "occurrenceKey")
+      || (typeof value.reminderChoice === "string"
+        && timedCalendarReminderChoices.includes(value.reminderChoice as TimedCalendarReminderChoice)
+        && !Object.hasOwn(value, "reminderTimeZone")));
 }
 
 function isCalendarEventEntry(value: unknown): value is CalendarEventEntry {

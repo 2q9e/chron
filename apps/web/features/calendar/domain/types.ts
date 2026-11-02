@@ -1,3 +1,8 @@
+import type {
+  AllDayCalendarReminderChoice,
+  TimedCalendarReminderChoice,
+} from "./reminders.ts";
+
 export const calendarThemes = [
   "pink-liquid-glass",
   "minimal-light",
@@ -101,6 +106,7 @@ type CalendarEventBase = Readonly<{
 
 export type TimedCalendarEvent = CalendarEventBase & Readonly<{
   kind: "timed";
+  reminderChoice: TimedCalendarReminderChoice;
   startLocal: string;
   endLocal: string;
   timeZone: string;
@@ -110,6 +116,8 @@ export type TimedCalendarEvent = CalendarEventBase & Readonly<{
 
 export type AllDayCalendarEvent = CalendarEventBase & Readonly<{
   kind: "all-day";
+  reminderChoice: AllDayCalendarReminderChoice;
+  reminderTimeZone: string | null;
   startDate: string;
   endDate: string;
 }>;
@@ -210,6 +218,7 @@ export type CreateTimedCalendarEvent = Readonly<{
   startLocal: string;
   endLocal: string;
   timeZone: string;
+  reminderChoice?: TimedCalendarReminderChoice;
   startDisambiguation?: "earlier" | "later";
   endDisambiguation?: "earlier" | "later";
 }>;
@@ -220,6 +229,8 @@ export type CreateAllDayCalendarEvent = Readonly<{
   details?: string;
   startDate: string;
   endDate: string;
+  reminderChoice?: AllDayCalendarReminderChoice;
+  reminderTimeZone?: string;
 }>;
 
 export type CalendarEventMutation =

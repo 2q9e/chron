@@ -11,6 +11,12 @@ import {
   type CalendarTheme,
 } from "../domain/types.ts";
 import {
+  allDayCalendarReminderChoices,
+  timedCalendarReminderChoices,
+  type AllDayCalendarReminderChoice,
+  type TimedCalendarReminderChoice,
+} from "../domain/reminders.ts";
+import {
   maximumRecurringEventDurationDays,
   expandCalendarRecurrence,
   normalizeRecurrenceRule,
@@ -79,6 +85,24 @@ function optionalDisambiguation(value: unknown): "earlier" | "later" | undefined
     return invalidPayload("Choose the earlier or later time when clocks repeat.");
   }
   return value;
+}
+
+function parseTimedReminderChoice(value: unknown): TimedCalendarReminderChoice | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string"
+    || !timedCalendarReminderChoices.includes(value as TimedCalendarReminderChoice)) {
+    return invalidPayload("Choose a supported reminder for the timed event.");
+  }
+  return value as TimedCalendarReminderChoice;
+}
+
+function parseAllDayReminderChoice(value: unknown): AllDayCalendarReminderChoice | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string"
+    || !allDayCalendarReminderChoices.includes(value as AllDayCalendarReminderChoice)) {
+    return invalidPayload("Choose a supported reminder for the all-day event.");
+  }
+  return value as AllDayCalendarReminderChoice;
 }
 
 export type CalendarSeriesDraftRequest =
@@ -169,6 +193,7 @@ function assertRecurrenceFullyExpandable(
         return {
           ...metadata,
           kind: "timed" as const,
+          reminderChoice: event.reminderChoice ?? "none",
           startLocal: start.local,
           endLocal: end.local,
           timeZone: start.timeZone,
@@ -179,6 +204,8 @@ function assertRecurrenceFullyExpandable(
     : {
         ...metadata,
         kind: "all-day" as const,
+        reminderChoice: event.reminderChoice ?? "none",
+        reminderTimeZone: event.reminderTimeZone ?? null,
         startDate: event.startDate,
         endDate: event.endDate,
       };
@@ -290,9 +317,11 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
       "startLocal",
       "endLocal",
       "timeZone",
+      "reminderChoice",
       "startDisambiguation",
       "endDisambiguation",
     ]);
+    const reminderChoice = parseTimedReminderChoice(value.reminderChoice);
     const startDisambiguation = optionalDisambiguation(value.startDisambiguation);
     const endDisambiguation = optionalDisambiguation(value.endDisambiguation);
     const start = resolveLocalDateTime(value.startLocal, value.timeZone, startDisambiguation);
@@ -305,13 +334,33 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
       startLocal: start.local,
       endLocal: end.local,
       timeZone: start.timeZone,
+      ...(reminderChoice !== undefined ? { reminderChoice } : {}),
       ...(startDisambiguation ? { startDisambiguation } : {}),
       ...(endDisambiguation ? { endDisambiguation } : {}),
     };
   }
 
   if (value.kind === "all-day") {
-    assertAllowedFields(value, ["kind", "title", "details", "startDate", "endDate"]);
+    assertAllowedFields(value, [
+      "kind",
+      "title",
+      "details",
+      "startDate",
+      "endDate",
+      "reminderChoice",
+      "reminderTimeZone",
+    ]);
+    const reminderChoice = parseAllDayReminderChoice(value.reminderChoice);
+    if (reminderChoice === undefined || reminderChoice === "none") {
+      if (value.reminderTimeZone !== undefined) {
+        return invalidPayload("An all-day reminder time zone is only used when a reminder is selected.");
+      }
+    } else if (typeof value.reminderTimeZone !== "string") {
+      return invalidPayload("Choose the calendar time zone for this all-day reminder.");
+    }
+    const reminderTimeZone = reminderChoice && reminderChoice !== "none"
+      ? validateTimeZone(value.reminderTimeZone)
+      : undefined;
     const range = resolveAllDayRange(value.startDate, value.endDate);
     const start = parseCalendarDate(range.startDate);
     const end = parseCalendarDate(range.endDate);
@@ -322,6 +371,8 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
       kind: "all-day",
       title,
       ...(details ? { details } : {}),
+      ...(reminderChoice !== undefined ? { reminderChoice } : {}),
+      ...(reminderTimeZone ? { reminderTimeZone } : {}),
       ...range,
     };
   }

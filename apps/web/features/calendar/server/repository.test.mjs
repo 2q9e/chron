@@ -81,6 +81,213 @@ test("creates an owner-scoped event inside one transaction", async () => {
   assert.equal(calls[7].values[1], ownerId);
 });
 
+test("persists an opted-in timed reminder with its event in the owner transaction", async () => {
+  const eventId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const row = {
+    id: eventId,
+    kind: "timed",
+    title: "Review session",
+    details: null,
+    revision: 1,
+    reminder_choice: "15-minutes-before",
+    reminder_time_zone: null,
+    start_local: "2026-11-10T09:00",
+    end_local: "2026-11-10T10:00",
+    time_zone: "America/Montreal",
+    starts_at: new Date("2026-11-10T14:00:00.000Z"),
+    ends_at: new Date("2026-11-10T15:00:00.000Z"),
+    start_date: null,
+    end_date: null,
+    created_at: new Date("2026-11-01T12:00:00.000Z"),
+    updated_at: new Date("2026-11-01T12:00:00.000Z"),
+  };
+  const { pool, calls } = createPool((sql) => {
+    if (sql.startsWith("INSERT INTO calendar_events")) return { rows: [row] };
+    if (sql.includes("INSERT INTO calendar_event_create_requests")
+      || sql.includes("UPDATE calendar_event_create_requests")) {
+      return { rows: [{ idempotency_key: "create-with-reminder" }] };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  const result = await repository.createEvent(ownerId, {
+    kind: "timed",
+    title: "Review session",
+    startLocal: "2026-11-10T09:00",
+    endLocal: "2026-11-10T10:00",
+    timeZone: "America/Montreal",
+    reminderChoice: "15-minutes-before",
+  }, "America/Montreal", [], "create-with-reminder");
+
+  assert.equal(result.event.reminderChoice, "15-minutes-before");
+  const eventInsert = calls.find(({ sql }) => sql.startsWith("INSERT INTO calendar_events"));
+  assert.ok(eventInsert);
+  assert.match(eventInsert.sql, /reminder_choice[\s\S]*reminder_time_zone/u);
+  assert.equal(eventInsert.values[9], "15-minutes-before");
+
+  const reminderInsert = calls.find(({ sql }) => sql.includes("INSERT INTO calendar_event_reminders"));
+  assert.ok(reminderInsert);
+  assert.match(reminderInsert.sql, /WHERE job\.scheduled_at > clock_timestamp\(\)/u);
+  assert.deepEqual(reminderInsert.values.slice(0, 3), [ownerId, eventId, 1]);
+  const [job] = JSON.parse(reminderInsert.values[3]);
+  assert.equal(job.occurrenceKey, `${eventId}:single`);
+  assert.equal(job.scheduledAt, "2026-11-10T13:45:00Z");
+  assert.equal(job.timeZone, "America/Montreal");
+  assert.equal(calls.at(-1).sql, "COMMIT");
+});
+
+test("updates cancel stale reminder work and insert only the current revision", async () => {
+  const eventId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const row = {
+    id: eventId,
+    kind: "timed",
+    title: "Review session",
+    details: null,
+    revision: 2,
+    reminder_choice: "30-minutes-before",
+    reminder_time_zone: null,
+    start_local: "2026-11-12T09:00",
+    end_local: "2026-11-12T10:00",
+    time_zone: "America/Montreal",
+    starts_at: new Date("2026-11-12T14:00:00.000Z"),
+    ends_at: new Date("2026-11-12T15:00:00.000Z"),
+    start_date: null,
+    end_date: null,
+    recurrence_frequency: null,
+    created_at: new Date("2026-11-01T12:00:00.000Z"),
+    updated_at: new Date("2026-11-01T12:00:00.000Z"),
+  };
+  const { pool, calls } = createPool((sql) => {
+    if (sql.includes("SELECT recurrence_frequency")) {
+      return { rows: [{ recurrence_frequency: null }] };
+    }
+    if (sql.startsWith("UPDATE calendar_events")) return { rows: [row] };
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  const event = await repository.updateEvent(ownerId, eventId, 1, {
+    kind: "timed",
+    title: "Review session",
+    startLocal: "2026-11-12T09:00",
+    endLocal: "2026-11-12T10:00",
+    timeZone: "America/Montreal",
+    reminderChoice: "30-minutes-before",
+  }, "America/Montreal", []);
+
+  assert.equal(event.revision, 2);
+  assert.equal(event.reminderChoice, "30-minutes-before");
+  const cancellation = calls.find(({ sql }) => sql.includes("UPDATE calendar_event_reminders"));
+  assert.ok(cancellation);
+  assert.match(cancellation.sql, /event_revision < \$3/u);
+  assert.match(cancellation.sql, /status IN \('pending', 'leased'\)/u);
+  assert.deepEqual(cancellation.values, [ownerId, eventId, 2]);
+  const insert = calls.find(({ sql }) => sql.includes("INSERT INTO calendar_event_reminders"));
+  assert.ok(insert);
+  assert.deepEqual(insert.values.slice(0, 3), [ownerId, eventId, 2]);
+  const [job] = JSON.parse(insert.values[3]);
+  assert.equal(job.scheduledAt, "2026-11-12T13:30:00Z");
+  assert.equal(calls.at(-1).sql, "COMMIT");
+});
+
+test("captures the calendar zone for an all-day reminder without storing event text in the job", async () => {
+  const eventId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const row = {
+    id: eventId,
+    kind: "all-day",
+    title: "Exam week",
+    details: "Private location",
+    revision: 1,
+    reminder_choice: "previous-day-9am",
+    reminder_time_zone: "America/Montreal",
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-11-10",
+    end_date: "2026-11-11",
+    created_at: new Date("2026-11-01T12:00:00.000Z"),
+    updated_at: new Date("2026-11-01T12:00:00.000Z"),
+  };
+  const { pool, calls } = createPool((sql) => {
+    if (sql.startsWith("INSERT INTO calendar_events")) return { rows: [row] };
+    if (sql.includes("INSERT INTO calendar_event_create_requests")
+      || sql.includes("UPDATE calendar_event_create_requests")) {
+      return { rows: [{ idempotency_key: "create-all-day-reminder" }] };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  const result = await repository.createEvent(ownerId, {
+    kind: "all-day",
+    title: "Exam week",
+    details: "Private location",
+    startDate: "2026-11-10",
+    endDate: "2026-11-11",
+    reminderChoice: "previous-day-9am",
+    reminderTimeZone: "America/Montreal",
+  }, "America/Montreal", [], "create-all-day-reminder");
+
+  assert.equal(result.event.reminderTimeZone, "America/Montreal");
+  const eventInsert = calls.find(({ sql }) => sql.startsWith("INSERT INTO calendar_events"));
+  assert.deepEqual(eventInsert.values.slice(-2), ["previous-day-9am", "America/Montreal"]);
+  const reminderInsert = calls.find(({ sql }) => sql.includes("INSERT INTO calendar_event_reminders"));
+  assert.ok(reminderInsert);
+  const [job] = JSON.parse(reminderInsert.values[3]);
+  assert.equal(job.scheduledAt, "2026-11-09T14:00:00Z");
+  assert.equal(job.timeZone, "America/Montreal");
+  assert.deepEqual(Object.keys(job).sort(), ["id", "occurrenceKey", "scheduledAt", "timeZone"]);
+  assert.equal(JSON.stringify(job).includes("Private location"), false);
+});
+
+test("rolls back the event when its reminder outbox write fails", async () => {
+  const row = {
+    id: "de305d54-75b4-431b-adb2-eb6b9e546014",
+    kind: "timed",
+    title: "Review session",
+    details: null,
+    revision: 1,
+    reminder_choice: "5-minutes-before",
+    reminder_time_zone: null,
+    start_local: "2026-11-10T09:00",
+    end_local: "2026-11-10T10:00",
+    time_zone: "America/Montreal",
+    starts_at: new Date("2026-11-10T14:00:00.000Z"),
+    ends_at: new Date("2026-11-10T15:00:00.000Z"),
+    start_date: null,
+    end_date: null,
+    created_at: new Date("2026-11-01T12:00:00.000Z"),
+    updated_at: new Date("2026-11-01T12:00:00.000Z"),
+  };
+  const { pool, calls } = createPool((sql) => {
+    if (sql.startsWith("INSERT INTO calendar_events")) return { rows: [row] };
+    if (sql.includes("INSERT INTO calendar_event_reminders")) {
+      throw new Error("outbox unavailable");
+    }
+    if (sql.includes("INSERT INTO calendar_event_create_requests")) {
+      return { rows: [{ idempotency_key: "create-rollback-reminder" }] };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(repository.createEvent(ownerId, {
+    kind: "timed",
+    title: "Review session",
+    startLocal: "2026-11-10T09:00",
+    endLocal: "2026-11-10T10:00",
+    timeZone: "America/Montreal",
+    reminderChoice: "5-minutes-before",
+  }, "America/Montreal", [], "create-rollback-reminder"), /outbox unavailable/u);
+
+  assert.equal(calls.some(({ sql }) => sql.startsWith("INSERT INTO calendar_events")), true);
+  assert.equal(calls.some(({ sql }) => sql.includes("UPDATE calendar_event_create_requests")), false);
+  assert.equal(calls.at(-1).sql, "ROLLBACK");
+});
+
 test("does not commit an event when its reviewed conflict set is stale", async () => {
   const conflictRow = {
     id: "de305d54-75b4-431b-adb2-eb6b9e546014",

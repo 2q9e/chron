@@ -75,6 +75,7 @@ function cloneDraft(draft) {
 class SeriesProposalPool {
   events = new Map();
   drafts = new Map();
+  reminderJobs = [];
   preferences = new Map([[ownerId, "America/Montreal"]]);
 
   addEvent(row) {
@@ -194,24 +195,27 @@ class SeriesProposalPool {
           if (statement.includes("VALUES ($1, $2, 'timed'")) {
             const [id, user_id, title, details, start_local, end_local, time_zone,
               starts_at, ends_at, recurrence_frequency, recurrence_interval,
-              recurrence_count] = values;
+              recurrence_count, reminder_choice] = values;
             const row = {
               id, user_id, kind: "timed", title, details, revision: 1,
               start_local, end_local, time_zone, starts_at, ends_at,
               start_date: null, end_date: null,
               recurrence_frequency, recurrence_interval, recurrence_count,
+              reminder_choice, reminder_time_zone: null,
               created_at: now, updated_at: now,
             };
             this.events.set(id, row);
             return { rows: [row] };
           }
           const [id, user_id, title, details, start_date, end_date,
-            recurrence_frequency, recurrence_interval, recurrence_count] = values;
+            recurrence_frequency, recurrence_interval, recurrence_count,
+            reminder_choice, reminder_time_zone] = values;
           const row = {
             id, user_id, kind: "all-day", title, details, revision: 1,
             start_local: null, end_local: null, time_zone: null,
             starts_at: null, ends_at: null, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
+            reminder_choice, reminder_time_zone,
             created_at: now, updated_at: now,
           };
           this.events.set(id, row);
@@ -326,15 +330,24 @@ class SeriesProposalPool {
           });
           return { rows: [this.projectedDraft(draft)] };
         }
+        if (statement.startsWith("UPDATE calendar_event_reminders")) {
+          return { rows: [] };
+        }
+        if (statement.startsWith("INSERT INTO calendar_event_reminders")) {
+          this.reminderJobs.push(...JSON.parse(values[3]));
+          return { rows: [] };
+        }
         if (statement.startsWith("UPDATE calendar_events") && statement.includes("SET kind = 'all-day'")) {
           const [queryOwner, id, revision, title, details, start_date, end_date,
-            recurrence_frequency, recurrence_interval, recurrence_count] = values;
+            recurrence_frequency, recurrence_interval, recurrence_count,
+            reminder_choice, reminder_time_zone] = values;
           const row = this.events.get(id);
           if (!row || row.user_id !== queryOwner || queryOwner !== owner || row.revision !== revision) return { rows: [] };
           Object.assign(row, {
             kind: "all-day", title, details, start_local: null, end_local: null,
             time_zone: null, starts_at: null, ends_at: null, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
+            reminder_choice, reminder_time_zone,
             revision: row.revision + 1, updated_at: new Date().toISOString(),
           });
           return { rows: [row] };
@@ -342,13 +355,14 @@ class SeriesProposalPool {
         if (statement.startsWith("UPDATE calendar_events") && statement.includes("SET kind = 'timed'")) {
           const [queryOwner, id, revision, title, details, start_local, end_local,
             time_zone, starts_at, ends_at, recurrence_frequency,
-            recurrence_interval, recurrence_count] = values;
+            recurrence_interval, recurrence_count, reminder_choice] = values;
           const row = this.events.get(id);
           if (!row || row.user_id !== queryOwner || queryOwner !== owner || row.revision !== revision) return { rows: [] };
           Object.assign(row, {
             kind: "timed", title, details, start_local, end_local, time_zone,
             starts_at, ends_at, start_date: null, end_date: null,
             recurrence_frequency, recurrence_interval, recurrence_count,
+            reminder_choice, reminder_time_zone: null,
             revision: row.revision + 1, updated_at: new Date().toISOString(),
           });
           return { rows: [row] };
@@ -416,6 +430,37 @@ test("approval creates once, binds the exact draft, and returns the saved event 
   assert.equal(replay.outcome, "approved");
   assert.equal(replay.event.id, approval.event.id);
   assert.equal(pool.events.size, 1);
+});
+
+test("approved recurring reminders are generated per finite occurrence", async () => {
+  const pool = new SeriesProposalPool();
+  const repository = new CalendarRepository(pool);
+  const request = proposal({
+    event: {
+      kind: "all-day",
+      title: "Study group",
+      startDate: "2026-11-02",
+      endDate: "2026-11-03",
+      reminderChoice: "event-day-9am",
+      reminderTimeZone: "America/Montreal",
+    },
+  });
+  const draft = await repository.createSeriesDraft(ownerId, request, "series-reminder-1");
+
+  const approval = await repository.approveSeriesDraft(ownerId, draft.id);
+
+  assert.equal(approval.event.reminderChoice, "event-day-9am");
+  assert.equal(approval.event.reminderTimeZone, "America/Montreal");
+  assert.equal(pool.reminderJobs.length, 3);
+  assert.equal(new Set(pool.reminderJobs.map(({ occurrenceKey }) => occurrenceKey)).size, 3);
+  assert.deepEqual(
+    pool.reminderJobs.map(({ scheduledAt, timeZone }) => [scheduledAt, timeZone]),
+    [
+      ["2026-11-02T14:00:00Z", "America/Montreal"],
+      ["2026-11-09T14:00:00Z", "America/Montreal"],
+      ["2026-11-16T14:00:00Z", "America/Montreal"],
+    ],
+  );
 });
 
 test("stales and scrubs a draft when a new event changes its conflict snapshot", async () => {

@@ -55,6 +55,23 @@ test("accepts a valid timed event and normalizes optional details", () => {
   });
 });
 
+test("accepts only timed reminder choices for timed events", () => {
+  assert.deepEqual(parseCalendarEventMutation({
+    ...validTimedEvent,
+    reminderChoice: "15-minutes-before",
+  }), {
+    ...validTimedEvent,
+    reminderChoice: "15-minutes-before",
+  });
+  assert.throws(
+    () => parseCalendarEventMutation({
+      ...validTimedEvent,
+      reminderChoice: "event-day-9am",
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+});
+
 test("rejects unknown event fields, blank titles, and oversized content", () => {
   assert.throws(
     () => parseCalendarEventMutation({ ...validTimedEvent, userId: "another-user" }),
@@ -257,6 +274,46 @@ test("keeps all-day bounds date-only and end-exclusive", () => {
       endDate: "2026-11-09",
     }),
     (error) => error instanceof CalendarTimeError && error.code === "INVALID_DATE_RANGE",
+  );
+});
+
+test("requires a saved calendar zone only for selected all-day reminders", () => {
+  const event = {
+    kind: "all-day",
+    title: "Exam week",
+    startDate: "2026-11-02",
+    endDate: "2026-11-03",
+  };
+  assert.deepEqual(parseCalendarEventMutation({
+    ...event,
+    reminderChoice: "previous-day-9am",
+    reminderTimeZone: "America/Montreal",
+  }), {
+    ...event,
+    reminderChoice: "previous-day-9am",
+    reminderTimeZone: "America/Montreal",
+  });
+  assert.throws(
+    () => parseCalendarEventMutation({
+      ...event,
+      reminderChoice: "event-day-9am",
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarEventMutation({
+      ...event,
+      reminderChoice: "event-day-9am",
+      reminderTimeZone: "Not/AZone",
+    }),
+    (error) => error instanceof CalendarTimeError && error.code === "INVALID_TIME_ZONE",
+  );
+  assert.throws(
+    () => parseCalendarEventMutation({
+      ...event,
+      reminderTimeZone: "America/Montreal",
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
   );
 });
 
@@ -678,6 +735,10 @@ class MemoryCalendarPool {
           };
           this.events.set(id, row);
           return { rows: [row] };
+        }
+        if (statement.startsWith("UPDATE calendar_event_reminders")
+          || statement.startsWith("INSERT INTO calendar_event_reminders")) {
+          return { rows: [] };
         }
         if (statement.startsWith("UPDATE calendar_events")) {
           const [queryOwnerId, eventId, expectedRevision, title, details, startDate, endDate] = values;

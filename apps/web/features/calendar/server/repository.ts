@@ -21,6 +21,12 @@ import type {
   CalendarRecurrenceRule,
 } from "../domain/types.ts";
 import {
+  allDayCalendarReminderChoices,
+  scheduleCalendarReminder,
+  timedCalendarReminderChoices,
+  type CalendarReminderOccurrence,
+} from "../domain/reminders.ts";
+import {
   normalizeRecurrenceRule,
   RecurrenceError,
   type CalendarRecurrenceOccurrence,
@@ -53,6 +59,8 @@ type EventRow = QueryResultRow & {
   title: string;
   details: string | null;
   revision: number;
+  reminder_choice: string | null;
+  reminder_time_zone: string | null;
   start_local: string | null;
   end_local: string | null;
   time_zone: string | null;
@@ -172,6 +180,8 @@ const eventColumns = `
   title,
   details,
   revision,
+  reminder_choice,
+  reminder_time_zone,
   CASE WHEN kind = 'timed' THEN to_char(start_local, 'YYYY-MM-DD"T"HH24:MI') END AS start_local,
   CASE WHEN kind = 'timed' THEN to_char(end_local, 'YYYY-MM-DD"T"HH24:MI') END AS end_local,
   time_zone,
@@ -296,12 +306,16 @@ function toCalendarEvent(row: EventRow): CalendarEvent {
   };
 
   if (row.kind === "timed") {
-    if (!row.start_local || !row.end_local || !row.time_zone) {
+    const reminderChoice = row.reminder_choice ?? "none";
+    if (!row.start_local || !row.end_local || !row.time_zone
+      || !timedCalendarReminderChoices.includes(reminderChoice as (typeof timedCalendarReminderChoices)[number])
+      || row.reminder_time_zone != null) {
       throw new Error("Timed calendar event is missing local-time data.");
     }
     return {
       ...base,
       kind: "timed",
+      reminderChoice: reminderChoice as (typeof timedCalendarReminderChoices)[number],
       startLocal: row.start_local,
       endLocal: row.end_local,
       timeZone: row.time_zone,
@@ -311,18 +325,139 @@ function toCalendarEvent(row: EventRow): CalendarEvent {
   }
 
   if (row.kind === "all-day") {
-    if (!row.start_date || !row.end_date) {
+    const reminderChoice = row.reminder_choice ?? "none";
+    const reminderTimeZone = row.reminder_time_zone ?? null;
+    if (!row.start_date || !row.end_date
+      || !allDayCalendarReminderChoices.includes(reminderChoice as (typeof allDayCalendarReminderChoices)[number])
+      || (reminderChoice === "none" ? reminderTimeZone !== null : reminderTimeZone === null)) {
       throw new Error("All-day calendar event is missing date bounds.");
     }
     return {
       ...base,
       kind: "all-day",
+      reminderChoice: reminderChoice as (typeof allDayCalendarReminderChoices)[number],
+      reminderTimeZone: reminderTimeZone === null ? null : validateTimeZone(reminderTimeZone),
       startDate: row.start_date,
       endDate: row.end_date,
     };
   }
 
   throw new Error("Calendar event has an unsupported stored type.");
+}
+
+function reminderOccurrences(event: CalendarEvent): readonly CalendarReminderOccurrence[] {
+  const occurrences = event.recurrenceRule
+    ? expandFullCalendarSeries(event, event.recurrenceRule)
+    : [{
+        occurrenceKey: `${event.id}:single`,
+        ...(event.kind === "timed"
+          ? {
+              kind: "timed" as const,
+              startLocal: event.startLocal,
+              startsAt: event.startsAt,
+              timeZone: event.timeZone,
+            }
+          : {
+              kind: "all-day" as const,
+              startDate: event.startDate,
+            }),
+      }];
+
+  return occurrences.map((occurrence) => occurrence.kind === "timed"
+    ? {
+        occurrenceKey: occurrence.occurrenceKey,
+        kind: "timed",
+        startLocal: occurrence.startLocal,
+        startsAt: occurrence.startsAt,
+        timeZone: occurrence.timeZone,
+      }
+    : {
+        occurrenceKey: occurrence.occurrenceKey,
+        kind: "all-day",
+        startDate: occurrence.startDate,
+      });
+}
+
+type ReminderJobInput = Readonly<{
+  id: string;
+  occurrenceKey: string;
+  scheduledAt: string;
+  timeZone: string;
+}>;
+
+function reminderJobsForEvent(event: CalendarEvent): readonly ReminderJobInput[] {
+  if (event.reminderChoice === "none") return [];
+  const reminderTimeZone = event.kind === "all-day"
+    ? event.reminderTimeZone ?? undefined
+    : undefined;
+  if (event.kind === "all-day" && !reminderTimeZone) {
+    throw new Error("An all-day reminder is missing its saved time zone.");
+  }
+
+  return reminderOccurrences(event).flatMap((occurrence) => {
+    const schedule = scheduleCalendarReminder(
+      event.reminderChoice,
+      occurrence,
+      reminderTimeZone,
+    );
+    return schedule ? [{ id: randomUUID(), ...schedule }] : [];
+  });
+}
+
+async function insertCalendarReminderJobs(
+  client: PoolClient,
+  ownerId: string,
+  event: CalendarEvent,
+): Promise<void> {
+  const jobs = reminderJobsForEvent(event);
+  if (jobs.length === 0) return;
+
+  await client.query(
+    `INSERT INTO calendar_event_reminders (
+       id, user_id, event_id, event_revision, occurrence_key, scheduled_at,
+       time_zone, next_attempt_at, status
+     )
+     SELECT
+       job.id,
+       $1,
+       $2::uuid,
+       $3,
+       job.occurrence_key,
+       job.scheduled_at,
+       job.time_zone,
+       job.scheduled_at,
+       'pending'
+     FROM jsonb_to_recordset($4::jsonb) AS job(
+       id uuid,
+       occurrence_key text,
+       scheduled_at timestamptz,
+       time_zone text
+     )
+     WHERE job.scheduled_at > clock_timestamp()
+     ON CONFLICT ON CONSTRAINT calendar_event_reminders_revision_occurrence_unique
+     DO NOTHING`,
+    [ownerId, event.id, event.revision, JSON.stringify(jobs)],
+  );
+}
+
+async function replaceCalendarReminderJobs(
+  client: PoolClient,
+  ownerId: string,
+  event: CalendarEvent,
+): Promise<void> {
+  await client.query(
+    `UPDATE calendar_event_reminders
+     SET status = 'cancelled',
+         lease_token = NULL,
+         lease_expires_at = NULL,
+         updated_at = clock_timestamp()
+     WHERE user_id = $1
+       AND event_id = $2::uuid
+       AND event_revision < $3
+       AND status IN ('pending', 'leased')`,
+    [ownerId, event.id, event.revision],
+  );
+  await insertCalendarReminderJobs(client, ownerId, event);
 }
 
 function preferencesFromRow(row: PreferencesRow): CalendarPreferences {
@@ -797,6 +932,7 @@ function seriesEventFromMutation(
     return {
       ...base,
       kind: "timed",
+      reminderChoice: mutation.reminderChoice ?? "none",
       startLocal: start.local,
       endLocal: end.local,
       timeZone: start.timeZone,
@@ -808,6 +944,10 @@ function seriesEventFromMutation(
   return {
     ...base,
     kind: "all-day",
+    reminderChoice: mutation.reminderChoice ?? "none",
+    reminderTimeZone: mutation.reminderChoice && mutation.reminderChoice !== "none"
+      ? mutation.reminderTimeZone ?? null
+      : null,
     startDate: bounds.startDate,
     endDate: bounds.endDate,
   };
@@ -1244,10 +1384,12 @@ async function insertSeriesEvent(
           `INSERT INTO calendar_events (
              id, user_id, kind, title, details, start_local, end_local,
              time_zone, starts_at, ends_at, recurrence_frequency,
-             recurrence_interval, recurrence_count, revision
+             recurrence_interval, recurrence_count, reminder_choice,
+             reminder_time_zone, revision
            ) VALUES (
              $1, $2, 'timed', $3, $4, $5::timestamp, $6::timestamp,
-             $7, $8::timestamptz, $9::timestamptz, $10, $11, $12, 1
+             $7, $8::timestamptz, $9::timestamptz, $10, $11, $12, $13,
+             NULL, 1
            )
            RETURNING ${eventColumns}`,
           [
@@ -1263,14 +1405,19 @@ async function insertSeriesEvent(
             recurrence.frequency,
             recurrence.interval,
             recurrence.count,
+            mutation.reminderChoice ?? "none",
           ],
         );
       })()
     : await client.query<EventRow>(
         `INSERT INTO calendar_events (
            id, user_id, kind, title, details, start_date, end_date,
-           recurrence_frequency, recurrence_interval, recurrence_count, revision
-         ) VALUES ($1, $2, 'all-day', $3, $4, $5::date, $6::date, $7, $8, $9, 1)
+           recurrence_frequency, recurrence_interval, recurrence_count,
+           reminder_choice, reminder_time_zone, revision
+         ) VALUES (
+           $1, $2, 'all-day', $3, $4, $5::date, $6::date, $7, $8, $9,
+           $10, $11, 1
+         )
          RETURNING ${eventColumns}`,
         [
           eventId,
@@ -1282,6 +1429,10 @@ async function insertSeriesEvent(
           recurrence.frequency,
           recurrence.interval,
           recurrence.count,
+          mutation.reminderChoice ?? "none",
+          mutation.reminderChoice === "none" || mutation.reminderChoice === undefined
+            ? null
+            : mutation.reminderTimeZone,
         ],
       );
   if (!result.rows[0]) throw new Error("Recurring event insert returned no row.");
@@ -1325,6 +1476,8 @@ async function updateSeriesEvent(
                recurrence_frequency = $11,
                recurrence_interval = $12,
                recurrence_count = $13,
+               reminder_choice = $14,
+               reminder_time_zone = NULL,
                revision = revision + 1,
                updated_at = clock_timestamp()
            WHERE user_id = $1 AND id = $2::uuid AND revision = $3
@@ -1343,6 +1496,7 @@ async function updateSeriesEvent(
             recurrence.frequency,
             recurrence.interval,
             recurrence.count,
+            mutation.reminderChoice ?? "none",
           ],
         );
       })()
@@ -1361,6 +1515,8 @@ async function updateSeriesEvent(
              recurrence_frequency = $8,
              recurrence_interval = $9,
              recurrence_count = $10,
+             reminder_choice = $11,
+             reminder_time_zone = $12,
              revision = revision + 1,
              updated_at = clock_timestamp()
          WHERE user_id = $1 AND id = $2::uuid AND revision = $3
@@ -1376,6 +1532,10 @@ async function updateSeriesEvent(
           recurrence.frequency,
           recurrence.interval,
           recurrence.count,
+          mutation.reminderChoice ?? "none",
+          mutation.reminderChoice === "none" || mutation.reminderChoice === undefined
+            ? null
+            : mutation.reminderTimeZone,
         ],
       );
   return result.rows[0] ? toCalendarEvent(result.rows[0]) : null;
@@ -1656,14 +1816,27 @@ export class CalendarRepository {
         ? await this.insertTimed(client, ownerId, eventId, mutation)
         : await client.query<EventRow>(
           `INSERT INTO calendar_events (
-             id, user_id, kind, title, details, start_date, end_date, revision
-           ) VALUES ($1, $2, 'all-day', $3, $4, $5::date, $6::date, 1)
+             id, user_id, kind, title, details, start_date, end_date,
+             reminder_choice, reminder_time_zone, revision
+           ) VALUES ($1, $2, 'all-day', $3, $4, $5::date, $6::date, $7, $8, 1)
            RETURNING ${eventColumns}`,
-          [eventId, ownerId, mutation.title, mutation.details ?? null, mutation.startDate, mutation.endDate],
+          [
+            eventId,
+            ownerId,
+            mutation.title,
+            mutation.details ?? null,
+            mutation.startDate,
+            mutation.endDate,
+            mutation.reminderChoice ?? "none",
+            mutation.reminderChoice === undefined || mutation.reminderChoice === "none"
+              ? null
+              : mutation.reminderTimeZone,
+          ],
         );
       const row = result.rows[0];
       if (!row) throw new Error("Calendar event insert returned no row.");
       const event = toCalendarEvent(row);
+      await insertCalendarReminderJobs(client, ownerId, event);
       const completed = await client.query(
         `UPDATE calendar_event_create_requests
          SET state = 'complete', completed_at = CURRENT_TIMESTAMP
@@ -1763,10 +1936,11 @@ export class CalendarRepository {
     return client.query<EventRow>(
       `INSERT INTO calendar_events (
          id, user_id, kind, title, details, start_local, end_local,
-         time_zone, starts_at, ends_at, revision
+         time_zone, starts_at, ends_at, reminder_choice, reminder_time_zone,
+         revision
        ) VALUES (
          $1, $2, 'timed', $3, $4, $5::timestamp, $6::timestamp,
-         $7, $8::timestamptz, $9::timestamptz, 1
+         $7, $8::timestamptz, $9::timestamptz, $10, NULL, 1
        )
        RETURNING ${eventColumns}`,
       [
@@ -1779,6 +1953,7 @@ export class CalendarRepository {
         start.timeZone,
         start.instant,
         end.instant,
+        mutation.reminderChoice ?? "none",
       ],
     );
   }
@@ -1813,14 +1988,32 @@ export class CalendarRepository {
                ends_at = NULL,
                start_date = $6::date,
                end_date = $7::date,
+               reminder_choice = $8,
+               reminder_time_zone = $9,
                revision = revision + 1,
                updated_at = CURRENT_TIMESTAMP
            WHERE user_id = $1 AND id = $2::uuid AND revision = $3
            RETURNING ${eventColumns}`,
-          [ownerId, eventId, expectedRevision, mutation.title, mutation.details ?? null, mutation.startDate, mutation.endDate],
+          [
+            ownerId,
+            eventId,
+            expectedRevision,
+            mutation.title,
+            mutation.details ?? null,
+            mutation.startDate,
+            mutation.endDate,
+            mutation.reminderChoice ?? "none",
+            mutation.reminderChoice === undefined || mutation.reminderChoice === "none"
+              ? null
+              : mutation.reminderTimeZone,
+          ],
         );
 
-      if (result.rows[0]) return toCalendarEvent(result.rows[0]);
+      if (result.rows[0]) {
+        const event = toCalendarEvent(result.rows[0]);
+        await replaceCalendarReminderJobs(client, ownerId, event);
+        return event;
+      }
       const current = await client.query<{ revision: number } & QueryResultRow>(
         "SELECT revision FROM calendar_events WHERE user_id = $1 AND id = $2::uuid",
         [ownerId, eventId],
@@ -1859,6 +2052,8 @@ export class CalendarRepository {
            ends_at = $10::timestamptz,
            start_date = NULL,
            end_date = NULL,
+           reminder_choice = $11,
+           reminder_time_zone = NULL,
            revision = revision + 1,
            updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $1 AND id = $2::uuid AND revision = $3
@@ -1874,6 +2069,7 @@ export class CalendarRepository {
         start.timeZone,
         start.instant,
         end.instant,
+        mutation.reminderChoice ?? "none",
       ],
     );
   }
@@ -2133,6 +2329,7 @@ export class CalendarRepository {
           request.event,
           request.recurrenceRule,
         );
+        await insertCalendarReminderJobs(client, ownerId, event);
       } else if (request.action === "update") {
         event = await updateSeriesEvent(
           client,
@@ -2146,6 +2343,7 @@ export class CalendarRepository {
           const stale = await transitionPendingSeriesDraft(client, ownerId, draftId, "stale");
           return calendarSeriesApproval(stale);
         }
+        await replaceCalendarReminderJobs(client, ownerId, event);
         await staleOtherSeriesDraftsForTarget(client, ownerId, event.id, draftId);
       } else {
         const deleted = await client.query(

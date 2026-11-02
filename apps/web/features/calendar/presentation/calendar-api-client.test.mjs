@@ -17,6 +17,8 @@ function rootEvent() {
     title: "Weekly seminar",
     details: null,
     revision: 2,
+    reminderChoice: "none",
+    reminderTimeZone: null,
     startDate: "2026-06-01",
     endDate: "2026-06-02",
     recurrenceRule: { frequency: "weekly", interval: 1, count: 4 },
