@@ -1,7 +1,7 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { inspectLocalDateTime, parseCalendarDate } from "../domain/time.ts";
-import type { CalendarEvent } from "../domain/types";
-import { buildEventDraft, type EventDraft } from "./calendar-model.ts";
+import type { CalendarEvent, CalendarEventEntry, CalendarEventOccurrence } from "../domain/types";
+import { buildEventDraft, updateEventDraft, type EventDraft } from "./calendar-model.ts";
 
 export const calendarMoveSnapMinutes = 15;
 const minutesPerDay = 24 * 60;
@@ -9,6 +9,29 @@ const minutesPerDay = 24 * 60;
 export type CalendarMoveResult =
   | Readonly<{ ok: true; draft: EventDraft; timeZone: string }>
   | Readonly<{ ok: false; message: string }>;
+
+export function calendarMoveScope(event: CalendarEventEntry): "event" | "occurrence" | "series" {
+  if ("occurrenceKey" in event) return "occurrence";
+  return event.recurrenceRule ? "series" : "event";
+}
+
+export function calendarOccurrenceMoveSource(occurrence: CalendarEventOccurrence): CalendarEvent | null {
+  const event = occurrence.series;
+  if (occurrence.kind === "timed" && event.kind === "timed") {
+    return {
+      ...event,
+      startLocal: occurrence.startLocal,
+      endLocal: occurrence.endLocal,
+      timeZone: occurrence.timeZone,
+      startsAt: occurrence.startsAt,
+      endsAt: occurrence.endsAt,
+    };
+  }
+  if (occurrence.kind === "all-day" && event.kind === "all-day") {
+    return { ...event, startDate: occurrence.startDate, endDate: occurrence.endDate };
+  }
+  return null;
+}
 
 export function calendarMinuteAtPointer(
   clientY: number,
@@ -47,6 +70,60 @@ function disambiguationFor(
   return Temporal.Instant.compare(Temporal.Instant.from(resolution.earlier), instant) === 0
     ? "earlier"
     : "later";
+}
+
+export function updateCalendarOccurrenceMoveDraft(
+  draft: EventDraft,
+  occurrence: CalendarEventOccurrence,
+  field: keyof EventDraft,
+  value: string,
+): EventDraft {
+  const updated = updateEventDraft(draft, field, value);
+  if (occurrence.kind === "all-day" && field === "startDate") {
+    try {
+      const durationDays = Temporal.PlainDate.from(occurrence.startDate)
+        .until(Temporal.PlainDate.from(occurrence.endDate), { largestUnit: "day" }).days;
+      if (durationDays < 1) return updated;
+      return {
+        ...updated,
+        endDate: parseCalendarDate(value).add({ days: durationDays }).toString(),
+      };
+    } catch {
+      return updated;
+    }
+  }
+  if (occurrence.kind !== "timed" || (field !== "startLocal" && field !== "startDisambiguation")) {
+    return updated;
+  }
+
+  try {
+    const resolution = inspectLocalDateTime(updated.startLocal, occurrence.timeZone);
+    if (resolution.kind === "gap") return { ...updated, endDisambiguation: "" };
+    let movedStart: Temporal.Instant;
+    if (resolution.kind === "unique") {
+      movedStart = Temporal.Instant.from(resolution.instant);
+    } else if (updated.startDisambiguation === "earlier") {
+      movedStart = Temporal.Instant.from(resolution.earlier);
+    } else if (updated.startDisambiguation === "later") {
+      movedStart = Temporal.Instant.from(resolution.later);
+    } else {
+      return { ...updated, endDisambiguation: "" };
+    }
+    const originalStart = Temporal.Instant.from(occurrence.startsAt);
+    const originalEnd = Temporal.Instant.from(occurrence.endsAt);
+    const durationMilliseconds = Number(originalEnd.epochMilliseconds - originalStart.epochMilliseconds);
+    if (!Number.isSafeInteger(durationMilliseconds) || durationMilliseconds <= 0) return updated;
+    const movedEnd = movedStart.add({ milliseconds: durationMilliseconds });
+    const endLocal = movedEnd.toZonedDateTimeISO(occurrence.timeZone)
+      .toPlainDateTime().toString({ smallestUnit: "minute" });
+    return {
+      ...updated,
+      endLocal,
+      endDisambiguation: disambiguationFor(endLocal, occurrence.timeZone, movedEnd),
+    };
+  } catch {
+    return { ...updated, endDisambiguation: "" };
+  }
 }
 
 export function moveCalendarEventDraft(

@@ -447,6 +447,12 @@ export function updateEventDraft(
   field: keyof EventDraft,
   value: string,
 ): EventDraft {
+  if (field === "startLocal" && value !== draft.startLocal) {
+    return { ...draft, startLocal: value, startDisambiguation: "" };
+  }
+  if (field === "endLocal" && value !== draft.endLocal) {
+    return { ...draft, endLocal: value, endDisambiguation: "" };
+  }
   if (field === "kind") {
     if (value !== "timed" && value !== "all-day") return draft;
     if (value === draft.kind) return draft;

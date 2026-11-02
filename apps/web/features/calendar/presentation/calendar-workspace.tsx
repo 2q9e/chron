@@ -32,7 +32,7 @@ import {
 } from "./calendar-model";
 import { CalendarEditor, type Editor } from "./calendar-editor";
 import type { CalendarMoveAction, CalendarResizeAction } from "./calendar-event-control";
-import { moveCalendarEventDraft, resizeCalendarEventDraft } from "./calendar-move.ts";
+import { calendarOccurrenceMoveSource, moveCalendarEventDraft, resizeCalendarEventDraft, updateCalendarOccurrenceMoveDraft } from "./calendar-move.ts";
 import { CalendarSearch } from "./calendar-search";
 import { CalendarPreferencesForm } from "./calendar-preferences";
 import { CalendarStudyPlanner } from "./calendar-study-planner";
@@ -97,6 +97,10 @@ function withEventSchedule(draft: EventDraft, schedule: EventDraft): EventDraft 
     endDisambiguation: schedule.endDisambiguation,
     reminderChoice: draft.kind === schedule.kind ? draft.reminderChoice : schedule.reminderChoice,
   };
+}
+
+function eventDraftsMatch(left: EventDraft, right: EventDraft): boolean {
+  return (Object.keys(left) as (keyof EventDraft)[]).every((field) => left[field] === right[field]);
 }
 
 export function CalendarWorkspace({ userId, userName }: { userId: string; userName: string }) {
@@ -441,6 +445,50 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     });
     setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
+  const moveEditorOccurrence = useCallback(() => {
+    if (!editor || !preferences || calendarLocked) return;
+    const occurrence = editor.occurrence;
+    const event = editor.event;
+    if (!occurrence || !event?.recurrenceRule || !editor.occurrenceKey
+      || editor.occurrenceKey !== occurrence.occurrenceKey
+      || event.id !== occurrence.series.id
+      || event.revision !== occurrence.series.revision) {
+      setNotice("This occurrence is no longer available in the current series. Reload the calendar before moving it.");
+      return;
+    }
+    if (editor.seriesScope === "following" || editor.seriesDraft || editor.review || editor.deleting
+      || Object.keys(editor.errors).length > 0
+      || !eventDraftsMatch(editor.draft, buildEventDraft(event))) {
+      setEditorError("Review or discard the current series edits before moving one occurrence.");
+      return;
+    }
+    const moveSource = calendarOccurrenceMoveSource(occurrence);
+    if (!moveSource) {
+      setNotice("This occurrence no longer matches its series. Reload the calendar before moving it.");
+      return;
+    }
+    editorGeneration.current += 1;
+    setEditor({
+      ...editor,
+      generation: editorGeneration.current,
+      operationKey: crypto.randomUUID(),
+      operationAction: "move-occurrence",
+      seriesScope: "series",
+      draft: buildEventDraft(moveSource),
+      errors: {},
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+      purpose: "move-occurrence",
+    });
+    setEditorError("");
+    setEditorStale(false);
+    setEditorRetryOnly(false);
+    setEditorReauthRequired(false);
+    setNotice("");
+  }, [editor, preferences, calendarLocked]);
   const openCancelledOccurrence = useCallback((
     selected: CalendarEventOccurrence,
     returnFocusTarget?: HTMLElement | null,
@@ -482,14 +530,15 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     if (!preferences || calendarLocked) return;
     const event = calendarEventSeries(selected);
     const isOccurrenceMove = "occurrenceKey" in selected && !!event.recurrenceRule;
-    const moveSource: CalendarEvent = isOccurrenceMove && "occurrenceKey" in selected
-      ? selected.kind === "timed" && event.kind === "timed"
-        ? { ...event, startLocal: selected.startLocal, endLocal: selected.endLocal,
-            timeZone: selected.timeZone, startsAt: selected.startsAt, endsAt: selected.endsAt }
-        : selected.kind === "all-day" && event.kind === "all-day"
-          ? { ...event, startDate: selected.startDate, endDate: selected.endDate }
-          : event
-      : event;
+    if ("occurrenceKey" in selected && !isOccurrenceMove) {
+      setNotice("This occurrence is no longer part of a repeating series. Reload the calendar before moving it.");
+      return;
+    }
+    const moveSource = "occurrenceKey" in selected ? calendarOccurrenceMoveSource(selected) : event;
+    if (!moveSource) {
+      setNotice("This occurrence no longer matches its series. Reload the calendar before moving it.");
+      return;
+    }
     const moved = moveCalendarEventDraft(moveSource, targetDate, targetMinute, calendarTimeZone);
     if (!moved.ok) {
       setNotice(moved.message);
@@ -502,6 +551,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditor({
       generation: editorGeneration.current,
       event,
+      occurrence: isOccurrenceMove && "occurrenceKey" in selected ? selected : undefined,
       occurrenceKey: isOccurrenceMove && "occurrenceKey" in selected ? selected.occurrenceKey : undefined,
       operationKey: event.recurrenceRule ? crypto.randomUUID() : null,
       operationAction: isOccurrenceMove ? "move-occurrence" : event.recurrenceRule ? "update" : null,
@@ -566,9 +616,12 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       ...current,
       operationKey: !current.event || current.event.recurrenceRule ? nextOperationKey : current.operationKey,
       operationAction: !current.event ? "create" : current.event.recurrenceRule
-        ? current.seriesScope === "following" ? "split-series" : "update"
+        ? current.purpose === "move-occurrence" ? "move-occurrence"
+          : current.seriesScope === "following" ? "split-series" : "update"
         : null,
-      draft: updateEventDraft(current.draft, field, value),
+      draft: current.purpose === "move-occurrence" && current.occurrence
+        ? updateCalendarOccurrenceMoveDraft(current.draft, current.occurrence, field, value)
+        : updateEventDraft(current.draft, field, value),
       errors: {},
       review: null,
       conflicts: [],
@@ -631,11 +684,11 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setEditorError("A repeating series must keep a finite recurrence rule.");
       return;
     }
-    const proposalAction = editor.seriesScope === "following"
-      ? "split-series"
-      : editor.purpose === "move-occurrence"
+    const proposalAction = editor.purpose === "move-occurrence"
       ? "move-occurrence"
-      : editor.event ? "update" : "create";
+      : editor.seriesScope === "following"
+        ? "split-series"
+        : editor.event ? "update" : "create";
     const operationKey = editor.operationAction === proposalAction
       ? editor.operationKey
       : crypto.randomUUID();
@@ -1351,6 +1404,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         onReloadLatest={discardAndReload}
         onDeleteReview={reviewDelete}
         onCancelOccurrenceReview={reviewOccurrenceCancel}
+        onMoveOccurrence={moveEditorOccurrence}
         onRestoreOccurrenceReview={reviewOccurrenceRestore}
         onDeleteCancel={() => setEditor({
           ...editor,

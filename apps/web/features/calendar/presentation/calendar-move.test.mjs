@@ -4,11 +4,14 @@ import { Temporal } from "@js-temporal/polyfill";
 import { expandCalendarRecurrence } from "../domain/recurrence.ts";
 import {
   calendarMinuteAtPointer,
+  calendarMoveScope,
   calendarMoveSnapMinutes,
+  calendarOccurrenceMoveSource,
   moveCalendarEventDraft,
   resizeCalendarEventDraft,
+  updateCalendarOccurrenceMoveDraft,
 } from "./calendar-move.ts";
-import { validateCalendarEventDraft } from "./calendar-model.ts";
+import { buildEventDraft, validateCalendarEventDraft } from "./calendar-model.ts";
 
 function timedEvent({
   id = "event-1",
@@ -62,6 +65,97 @@ test("timed movement preserves duration and the event timezone", () => {
   assert.equal(moved.draft.endLocal, "2026-06-16T11:45");
   assert.equal(moved.draft.title, event.title);
   assert.equal(moved.draft.reminderChoice, event.reminderChoice);
+});
+
+test("recurring occurrence movement uses the selected instance and exposes its scope", () => {
+  const series = timedEvent({
+    date: "2026-10-25",
+    start: "01:30",
+    end: "02:30",
+    recurrenceRule: { frequency: "weekly", interval: 1, count: 2 },
+  });
+  const occurrence = {
+    id: "event-1:2026-10-25T01:30",
+    seriesId: series.id,
+    occurrenceKey: "2026-10-25T01:30",
+    title: series.title,
+    details: series.details,
+    revision: series.revision,
+    createdAt: series.createdAt,
+    updatedAt: series.updatedAt,
+    series,
+    kind: "timed",
+    startLocal: "2026-10-25T01:30",
+    endLocal: "2026-10-25T02:30",
+    timeZone: series.timeZone,
+    startsAt: "2026-10-25T05:30:00Z",
+    endsAt: "2026-10-25T06:30:00Z",
+  };
+  const source = calendarOccurrenceMoveSource(occurrence);
+  const draft = source ? buildEventDraft(source) : null;
+
+  assert.equal(calendarMoveScope(occurrence), "occurrence");
+  assert.equal(calendarMoveScope(series), "series");
+  assert.equal(calendarMoveScope(timedEvent()), "event");
+  assert.notEqual(source, null);
+  assert.equal(source.startLocal, occurrence.startLocal);
+  assert.equal(source.endLocal, occurrence.endLocal);
+  assert.equal(source.recurrenceRule, series.recurrenceRule);
+  assert.equal(source.timeZone, occurrence.timeZone);
+  assert.equal(source.startsAt, occurrence.startsAt);
+  assert.equal(draft?.startLocal, occurrence.startLocal);
+  assert.equal(draft?.startDisambiguation, "");
+  assert.equal(series.startLocal, "2026-10-25T01:30");
+  assert.equal(calendarOccurrenceMoveSource({ ...occurrence, kind: "all-day" }), null);
+
+  const changedFold = updateCalendarOccurrenceMoveDraft(draft, occurrence, "startLocal", "2026-11-01T01:30");
+  assert.equal(changedFold.startDisambiguation, "");
+  assert.match(validateCalendarEventDraft(changedFold, series.timeZone).errors.startDisambiguation, /Choose the earlier or later/u);
+  const laterFold = updateCalendarOccurrenceMoveDraft(changedFold, occurrence, "startDisambiguation", "later");
+  assert.equal(laterFold.endLocal, "2026-11-01T02:30");
+  assert.equal(validateCalendarEventDraft(laterFold, series.timeZone).ok, true);
+
+  const gap = updateCalendarOccurrenceMoveDraft(draft, occurrence, "startLocal", "2026-03-08T02:30");
+  assert.match(validateCalendarEventDraft(gap, series.timeZone).errors.startLocal, /does not exist/u);
+});
+
+test("moving an all-day occurrence shifts the end date by the original duration", () => {
+  const series = {
+    id: "all-day-series",
+    kind: "all-day",
+    title: "Study block",
+    details: null,
+    revision: 4,
+    recurrenceRule: { frequency: "weekly", interval: 1, count: 2 },
+    reminderChoice: "none",
+    reminderTimeZone: null,
+    startDate: "2026-03-01",
+    endDate: "2026-03-03",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+  const occurrence = {
+    id: "all-day-series:2026-03-08",
+    seriesId: series.id,
+    occurrenceKey: "2026-03-08",
+    title: series.title,
+    details: series.details,
+    revision: series.revision,
+    createdAt: series.createdAt,
+    updatedAt: series.updatedAt,
+    series,
+    kind: "all-day",
+    startDate: "2026-03-08",
+    endDate: "2026-03-10",
+  };
+  const source = calendarOccurrenceMoveSource(occurrence);
+  const draft = source ? buildEventDraft(source) : null;
+  assert.notEqual(draft, null);
+  const moved = updateCalendarOccurrenceMoveDraft(draft, occurrence, "startDate", "2026-03-15");
+
+  assert.equal(moved.startDate, "2026-03-15");
+  assert.equal(moved.endDate, "2026-03-17");
+  assert.equal(series.startDate, "2026-03-01");
 });
 
 test("month movement keeps the visible clock across different time zones", () => {

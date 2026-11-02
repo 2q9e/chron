@@ -1,4 +1,5 @@
 import { useEffect, useRef, type FormEvent, type RefObject } from "react";
+import { inspectLocalDateTime } from "../domain/time";
 import type {
   CalendarConflict,
   CalendarEvent,
@@ -53,17 +54,19 @@ type Props = {
   onReloadLatest: () => void;
   onDeleteReview: () => void;
   onCancelOccurrenceReview: () => void;
+  onMoveOccurrence: () => void;
   onRestoreOccurrenceReview: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   onSave: () => void;
 };
 
-export function CalendarEditor({ editor, eventCategoriesAvailable, busy, error, stale, retryOnly, reauthRequired, onChange, onSeriesScopeChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
+export function CalendarEditor({ editor, eventCategoriesAvailable, busy, error, stale, retryOnly, reauthRequired, onChange, onSeriesScopeChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onMoveOccurrence, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   const locked = busy || stale || retryOnly;
   const movementOnly = editor.purpose === "move-occurrence";
   const errorPanel = useRef<HTMLDivElement | null>(null);
   const seriesReviewHeading = useRef<HTMLHeadingElement | null>(null);
+  const moveStartField = useRef<HTMLInputElement | null>(null);
   const reminderOptions = editor.draft.kind === "timed"
     ? timedCalendarReminderChoices.map((value) => ({
         value,
@@ -104,6 +107,10 @@ export function CalendarEditor({ editor, eventCategoriesAvailable, busy, error, 
   }, [editor.seriesDraft]);
 
   useEffect(() => {
+    if (editor.purpose === "move-occurrence") moveStartField.current?.focus();
+  }, [editor.purpose, editor.generation]);
+
+  useEffect(() => {
     if (Object.keys(editor.errors).length === 0) return;
     document.querySelector<HTMLElement>("#calendar-event-editor [aria-invalid='true']")?.focus();
   }, [editor.errors]);
@@ -117,14 +124,14 @@ export function CalendarEditor({ editor, eventCategoriesAvailable, busy, error, 
       {(editor.purpose === "move" || editor.purpose === "move-occurrence" || editor.purpose === "resize") && (
         <p className={styles.moveReviewNote}>
           {editor.purpose === "move-occurrence"
-            ? "Only the occurrence you dragged will move. Its original series identity and duration stay the same; review the new time and any overlaps before approving."
+            ? "Only this occurrence will move. Its original series identity and duration stay the same; review the new time and any overlaps before approving."
             : editor.purpose === "move"
             ? editor.event?.recurrenceRule
               ? "This proposes moving the entire repeating series, not only the occurrence you dragged. Nothing is saved until you review the affected occurrences and approve the proposal."
               : "This proposed move is not saved yet. Review its dates, reminder, and conflicts before approving it."
             : "This proposed duration change is not saved yet. Review its end time, reminder, and conflicts before approving it."}
-          {editor.draft.kind === "timed" && (
-            <> The drop used {editor.reviewCalendarTimeZone ?? editor.zone}; this event remains in {editor.zone}.</>
+          {editor.draft.kind === "timed" && editor.reviewCalendarTimeZone && (
+            <> Calendar placement used {editor.reviewCalendarTimeZone}; event times remain in {editor.zone}.</>
           )}
         </p>
       )}
@@ -307,30 +314,37 @@ export function CalendarEditor({ editor, eventCategoriesAvailable, busy, error, 
             <p>Event time zone: {editor.zone}</p>
             {(["startLocal", "endLocal"] as const).map((field) => {
               const disambiguation = field === "startLocal" ? "startDisambiguation" : "endDisambiguation";
+              let ambiguous = false;
+              try {
+                ambiguous = inspectLocalDateTime(editor.draft[field], editor.zone).kind === "ambiguous";
+              } catch {
+                ambiguous = false;
+              }
               return (
                 <div key={field}>
                   <label>
                     {field === "startLocal" ? "Start" : "End"}
-                    <input disabled={locked} type="datetime-local" required value={editor.draft[field]}
+                    <input ref={field === "startLocal" ? moveStartField : undefined} disabled={locked || (movementOnly && field === "endLocal")} type="datetime-local" required value={editor.draft[field]}
                       onChange={(e) => onChange(field, e.target.value)} aria-invalid={!!editor.errors[field]}
                       aria-describedby={editor.errors[field] ? `${field}-error` : undefined} />
                   </label>
                   {editor.errors[field] && <p id={`${field}-error`} className={styles.fieldError}>{editor.errors[field]}</p>}
-                  {editor.errors[disambiguation] && (
+                  {(ambiguous || editor.errors[disambiguation]) && (
                     <label>
                       This time occurs twice. Choose an occurrence
-                      <select id={`${field}-disambiguation`} disabled={locked} required value={editor.draft[disambiguation]} onChange={(e) => onChange(disambiguation, e.target.value)}
-                        aria-invalid="true" aria-describedby={`${disambiguation}-error`}>
-                        <option value="">Choose</option>
+                      <select id={`${field}-disambiguation`} disabled={locked || (movementOnly && field === "endLocal")} required value={editor.draft[disambiguation]} onChange={(e) => onChange(disambiguation, e.target.value)}
+                        aria-invalid={!!editor.errors[disambiguation]} aria-describedby={editor.errors[disambiguation] ? `${disambiguation}-error` : undefined}>
+                        {!editor.draft[disambiguation] && <option value="">Choose</option>}
                         <option value="earlier">Earlier</option>
                         <option value="later">Later</option>
                       </select>
-                      <span id={`${disambiguation}-error`} className={styles.fieldError}>{editor.errors[disambiguation]}</span>
+                      {editor.errors[disambiguation] && <span id={`${disambiguation}-error`} className={styles.fieldError}>{editor.errors[disambiguation]}</span>}
                     </label>
                   )}
                 </div>
               );
             })}
+            {movementOnly && <p>The end time moves with the start to preserve the original elapsed duration.</p>}
           </>
         ) : (
           <>
@@ -338,17 +352,19 @@ export function CalendarEditor({ editor, eventCategoriesAvailable, busy, error, 
               <div key={field}>
                 <label>
                   {field === "startDate" ? "First day" : "End date (exclusive)"}
-                  <input disabled={locked} type="date" required value={editor.draft[field]} onChange={(e) => onChange(field, e.target.value)}
+                  <input ref={field === "startDate" ? moveStartField : undefined} disabled={locked || (movementOnly && field === "endDate")} type="date" required value={editor.draft[field]} onChange={(e) => onChange(field, e.target.value)}
                     aria-invalid={!!editor.errors[field]} aria-describedby={editor.errors[field] ? `${field}-error` : undefined} />
                 </label>
                 {editor.errors[field] && <p id={`${field}-error`} className={styles.fieldError}>{editor.errors[field]}</p>}
               </div>
             ))}
             <p>The end date is the first day outside the event.</p>
+            {movementOnly && <p>The end date moves with the first day to preserve the original duration.</p>}
           </>
         )}
         <div className={styles.actions}>
           <button type="submit" disabled={locked}>{busy ? "Checking calendar…" : "Review changes"}</button>
+          {!movementOnly && editor.event?.recurrenceRule && editor.occurrenceKey && <button type="button" disabled={locked} onClick={onMoveOccurrence}>Move this occurrence</button>}
           {!movementOnly && editor.event?.recurrenceRule && editor.occurrenceKey && <button type="button" disabled={locked} onClick={onCancelOccurrenceReview}>Cancel this occurrence</button>}
           {!movementOnly && editor.event && <button type="button" disabled={locked} onClick={onDeleteReview}>{editor.event.recurrenceRule ? "Delete series" : "Delete event"}</button>}
         </div>
