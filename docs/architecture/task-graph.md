@@ -52,6 +52,40 @@ credentials or private data.
   edit unrelated VPS files or services; keep public and staging endpoints
   HTTPS.
 
+## C1-export1 — preserve event categories in calendar exports
+
+- **Task ID:** C1-export1
+- **Objective:** Preserve a user's explicit academic event category when they
+  export the visible calendar range to iCalendar.
+- **Assigned agent/model:** Primary integration agent; runtime model and effort
+  are not independently attested. Request an independent, read-only source
+  review before closing.
+- **Dependencies:** C1-category1 event categories and C1-export0 snapshot
+  export.
+- **Owned files:** `apps/web/features/calendar/domain/calendar-ics.ts`, its
+  focused test file, and this task/progress/handoff documentation.
+- **Read-only files:** Event/category type definitions, API response
+  validation, and RFC 5545 section 3.8.1.2.
+- **Required skills:** S346 (typed calendar event model), the installed
+  TypeScript guidance, and the existing iCalendar serialization tests. Read
+  and applied.
+- **Security permissions:** Calendar serializer, tests, and project docs only;
+  no credentials, private event data, excluded reference material, VPS,
+  Cloudflare, or other external changes.
+- **Acceptance criteria:** Emit an RFC 5545 `CATEGORIES` text property only
+  for a known, explicit category; use the existing display label; omit
+  missing/uncategorized legacy values without guessing; route the property
+  through the existing text-escaping and line-folding logic.
+- **Tests:** Focused iCalendar serializer cases for every supported category,
+  date-only and timed events, absent/uncategorized values, and content-line
+  folding; calendar domain tests, typecheck, lint, and diff check.
+- **Expected deliverables:** Category-preserving interoperable calendar
+  snapshots with no new dependency, placeholder, or mutation to stored events.
+- **Status:** Serializer and regression tests are implemented. The 67-test
+  calendar-domain suite, typecheck, lint, and diff check pass locally. An
+  independent read-only review found no actionable issue. No source push or
+  staging deploy has occurred yet.
+
 ## C1-focus-return — calendar create-editor focus restoration
 
 - **Task ID:** C1-focus-return
