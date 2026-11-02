@@ -227,11 +227,18 @@ function parseSeriesTarget(value: Record<string, unknown>): Readonly<{
 
 export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesDraftRequest {
   const value = objectRecord(input);
-  if (value.action === "cancel-occurrence") {
+  if (value.action === "cancel-occurrence" || value.action === "restore-occurrence") {
     if (value.scope !== "occurrence") {
       return invalidPayload("Choose one occurrence as the change scope.");
     }
-    assertAllowedFields(value, [
+    assertAllowedFields(value, value.action === "restore-occurrence" ? [
+      "action",
+      "scope",
+      "targetEventId",
+      "targetRevision",
+      "occurrenceKey",
+      "calendarTimeZone",
+    ] : [
       "action",
       "scope",
       "targetEventId",
@@ -244,6 +251,15 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
       || value.occurrenceKey.length > 200
       || /[\u0000-\u001f\u007f]/u.test(value.occurrenceKey)) {
       return invalidPayload("Choose a valid occurrence from this recurring series.");
+    }
+    if (value.action === "restore-occurrence") {
+      return {
+        action: "restore-occurrence",
+        scope: "occurrence",
+        ...target,
+        occurrenceKey: value.occurrenceKey,
+        calendarTimeZone: validateTimeZone(value.calendarTimeZone),
+      };
     }
     return {
       action: "cancel-occurrence",

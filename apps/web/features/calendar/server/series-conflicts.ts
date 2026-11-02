@@ -285,3 +285,55 @@ export function findCalendarSeriesConflicts(
   conflicts.sort(compareConflicts);
   return { occurrences, conflicts };
 }
+
+/** Compare one proposed occurrence with active owner-scoped calendar instances. */
+export function findCalendarOccurrenceConflicts(
+  proposedOccurrence: CalendarRecurrenceOccurrence,
+  existingEvents: readonly CalendarEvent[],
+  calendarTimeZoneValue: string,
+  cancelledOccurrenceKeys: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
+): readonly CalendarSeriesOccurrenceConflict[] {
+  const calendarTimeZone = validateTimeZone(calendarTimeZoneValue);
+  const candidate = occurrenceInterval(proposedOccurrence, calendarTimeZone);
+  const oneOffs: OccurrenceInterval[] = [];
+  const recurring: OccurrenceInterval[] = [];
+  let expandedCount = 0;
+
+  for (const event of existingEvents) {
+    if (event.recurrenceRule) {
+      const occurrences = expandFullCalendarSeries(event, event.recurrenceRule);
+      expandedCount += occurrences.length;
+      if (expandedCount > maximumSeriesProposalExpandedOccurrences) {
+        throw new RangeError("There are too many calendar series to verify this occurrence safely.");
+      }
+      const cancelled = cancelledOccurrenceKeys.get(event.id);
+      recurring.push(...occurrences
+        .filter((occurrence) => !cancelled?.has(occurrence.occurrenceKey))
+        .map((occurrence) => occurrenceInterval(occurrence, calendarTimeZone)));
+    } else {
+      oneOffs.push(occurrenceInterval(singleEventOccurrence(event), calendarTimeZone));
+    }
+  }
+
+  recurring.sort((left, right) => left.start - right.start
+    || left.occurrence.occurrenceKey.localeCompare(right.occurrence.occurrenceKey));
+  const conflicts: CalendarSeriesOccurrenceConflict[] = [];
+  for (const existing of oneOffs) {
+    if (existing.start < candidate.end && existing.end > candidate.start) {
+      addConflict(conflicts, candidate, existing);
+    }
+  }
+
+  const first = firstStartAtOrAfter(
+    recurring,
+    candidate.start - maximumRecurringInstanceDurationLookback,
+  );
+  for (let index = first; index < recurring.length; index += 1) {
+    const existing = recurring[index];
+    if (existing.start >= candidate.end) break;
+    if (existing.end > candidate.start) addConflict(conflicts, candidate, existing);
+  }
+
+  conflicts.sort(compareConflicts);
+  return conflicts;
+}

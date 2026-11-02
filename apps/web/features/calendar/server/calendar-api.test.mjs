@@ -162,6 +162,23 @@ test("normalizes exact create and update series draft scopes", () => {
     () => parseCalendarSeriesDraftRequest({ ...occurrence, occurrenceKey: "x".repeat(201) }),
     (error) => error instanceof CalendarRouteError && error.status === 400,
   );
+
+  const restoration = {
+    ...occurrence,
+    action: "restore-occurrence",
+    calendarTimeZone: "America/Montreal",
+  };
+  assert.deepEqual(parseCalendarSeriesDraftRequest(restoration), restoration);
+  for (const invalid of [
+    { ...restoration, scope: "series" },
+    { ...restoration, calendarTimeZone: "Not/AZone" },
+    { ...restoration, ownerId: "another-user" },
+  ]) {
+    assert.throws(
+      () => parseCalendarSeriesDraftRequest(invalid),
+      (error) => error instanceof CalendarRouteError || error instanceof CalendarTimeError,
+    );
+  }
 });
 
 test("requires a finite supported rule, exact series scope, and current target revision", () => {
@@ -416,6 +433,23 @@ test("search route authenticates a JSON body and uses private no-store responses
   assert.doesNotMatch(route, /searchParams|URLSearchParams|console\.(?:log|info|debug)/u);
 
   const response = calendarJson({ events: [] });
+  assert.equal(response.headers.get("cache-control"), "private, no-store");
+});
+
+test("cancelled occurrence lookup is authenticated, exact-range, and private", () => {
+  const route = readFileSync(
+    new URL("../../../app/api/calendar/events/cancelled/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(route, /requireCalendarUser/u);
+  assert.match(route, /exactQueryValues/u);
+  assert.match(route, /\["from", "to", "timeZone"\]/u);
+  assert.match(route, /repository\.listCancelledOccurrences/u);
+  assert.match(route, /calendarJson\(\{ occurrences \}\)/u);
+  assert.match(route, /withCalendarErrors/u);
+  assert.doesNotMatch(route, /console\.(?:log|info|debug)/u);
+
+  const response = calendarJson({ occurrences: [] });
   assert.equal(response.headers.get("cache-control"), "private, no-store");
 });
 

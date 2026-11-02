@@ -48,6 +48,14 @@ export type CalendarSeriesDraftRequest =
       targetEventId: string;
       targetRevision: number;
       occurrenceKey: string;
+    }>
+  | Readonly<{
+      action: "restore-occurrence";
+      scope: "occurrence";
+      targetEventId: string;
+      targetRevision: number;
+      occurrenceKey: string;
+      calendarTimeZone: string;
     }>;
 
 export type CalendarSeriesOccurrenceSnapshot = Readonly<{

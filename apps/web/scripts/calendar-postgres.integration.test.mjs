@@ -136,10 +136,11 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     assert.deepEqual(await repository.getPreferences(accountA), preferences);
     assert.deepEqual(await repository.getPreferences(accountB), null);
 
-    const cancelledOccurrenceKey = `${eventA}:2026-11-09`;
+    const cancelledOccurrenceKey = `${eventA}:2098-11-09`;
     await databasePool.query(
       `UPDATE calendar_events
-       SET recurrence_frequency = 'weekly', recurrence_interval = 1, recurrence_count = 3,
+       SET start_date = DATE '2098-11-02', end_date = DATE '2098-11-03',
+           recurrence_frequency = 'weekly', recurrence_interval = 1, recurrence_count = 5,
            reminder_choice = 'event-day-9am', reminder_time_zone = 'UTC'
        WHERE user_id = $1 AND id = $2::uuid`,
       [accountA, eventA],
@@ -149,8 +150,8 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
          id, user_id, event_id, event_revision, occurrence_key, scheduled_at,
          time_zone, next_attempt_at, status
        ) VALUES (
-         $1::uuid, $2, $3::uuid, 1, $4, TIMESTAMPTZ '2026-11-09 09:00:00+00',
-         'UTC', TIMESTAMPTZ '2026-11-09 09:00:00+00', 'pending'
+         $1::uuid, $2, $3::uuid, 1, $4, TIMESTAMPTZ '2098-11-09 09:00:00+00',
+         'UTC', TIMESTAMPTZ '2098-11-09 09:00:00+00', 'pending'
        )`,
       [randomUUID(), accountA, eventA, cancelledOccurrenceKey],
     );
@@ -164,25 +165,140 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     assert.equal(cancellationDraft.beforeOccurrences.length, 1);
     const cancellation = await repository.approveSeriesDraft(accountA, cancellationDraft.id);
     assert.equal(cancellation.outcome, "approved");
+    const cancelledOccurrences = await repository.listCancelledOccurrences(
+      accountA,
+      "2098-11-09",
+      "2098-11-10",
+      "UTC",
+    );
+    assert.deepEqual(cancelledOccurrences.map((event) => event.occurrenceKey), [cancelledOccurrenceKey]);
+    const exceptionClient = await applicationPool.connect();
+    try {
+      await exceptionClient.query("BEGIN");
+      await exceptionClient.query("SELECT set_config('chron.user_id', $1, true)", [accountA]);
+      const ownExceptionsBeforeRestore = await exceptionClient.query(
+        "SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
+        [accountA],
+      );
+      assert.deepEqual(ownExceptionsBeforeRestore.rows, [{
+        event_id: eventA,
+        occurrence_key: cancelledOccurrenceKey,
+      }]);
+      const otherOwnerExceptionsBeforeRestore = await exceptionClient.query(
+        "SELECT event_id FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
+        [accountB],
+      );
+      assert.deepEqual(otherOwnerExceptionsBeforeRestore.rows, []);
+      await exceptionClient.query("COMMIT");
+    } finally {
+      exceptionClient.release();
+    }
     assert.deepEqual(
-      await repository.listEvents(accountA, "2026-11-09", "2026-11-10", "UTC"),
+      await repository.listEvents(accountA, "2098-11-09", "2098-11-10", "UTC"),
       [],
     );
     assert.deepEqual(
       await repository.findConflicts(accountA, {
         kind: "all-day",
         title: "Replacement exam review",
-        startDate: "2026-11-09",
-        endDate: "2026-11-10",
+        startDate: "2098-11-09",
+        endDate: "2098-11-10",
       }, "UTC"),
       [],
     );
     assert.deepEqual(
-      (await repository.listEvents(accountA, "2026-11-02", "2026-11-03", "UTC"))
+      (await repository.listEvents(accountA, "2098-11-02", "2098-11-03", "UTC"))
         .map((event) => event.occurrenceKey),
-      [`${eventA}:2026-11-02`],
+      [`${eventA}:2098-11-02`],
     );
     assert.equal((await repository.getCalendarReminderStatus(accountA, eventA)).cancelled, 1);
+
+    const restorationDraft = await repository.createSeriesDraft(accountA, {
+      action: "restore-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 1,
+      occurrenceKey: cancelledOccurrenceKey,
+      calendarTimeZone: "UTC",
+    }, "postgres-occurrence-restore");
+    assert.deepEqual(restorationDraft.afterOccurrences.map(({ occurrenceKey }) => occurrenceKey), [cancelledOccurrenceKey]);
+    const restoration = await repository.approveSeriesDraft(accountA, restorationDraft.id);
+    assert.equal(restoration.outcome, "approved");
+    assert.deepEqual(
+      (await repository.listEvents(accountA, "2098-11-09", "2098-11-10", "UTC"))
+        .map((event) => event.occurrenceKey),
+      [cancelledOccurrenceKey],
+    );
+    assert.equal((await repository.getCalendarReminderStatus(accountA, eventA)).pending, 1);
+    assert.equal((await repository.getCalendarReminderStatus(accountA, eventA)).cancelled, 0);
+    assert.deepEqual(
+      await repository.listCancelledOccurrences(accountA, "2098-11-09", "2098-11-10", "UTC"),
+      [],
+    );
+
+    const attemptedOccurrenceKey = `${eventA}:2098-11-16`;
+    const attemptedWithoutCurrentJobKey = `${eventA}:2098-11-23`;
+    const noReminderHistoryKey = `${eventA}:2098-11-30`;
+    await databasePool.query(
+      `UPDATE calendar_events SET revision = 2 WHERE user_id = $1 AND id = $2::uuid`,
+      [accountA, eventA],
+    );
+    await databasePool.query(
+      `INSERT INTO calendar_event_occurrence_exceptions (user_id, event_id, occurrence_key)
+       VALUES ($1, $2::uuid, $3), ($1, $2::uuid, $4), ($1, $2::uuid, $5)`,
+      [accountA, eventA, attemptedOccurrenceKey, attemptedWithoutCurrentJobKey, noReminderHistoryKey],
+    );
+    await databasePool.query(
+      `INSERT INTO calendar_event_reminders (
+         id, user_id, event_id, event_revision, occurrence_key, scheduled_at,
+         time_zone, next_attempt_at, status, attempt_count
+       ) VALUES
+         ($1::uuid, $4, $5::uuid, 1, $6, TIMESTAMPTZ '2098-11-16 09:00:00+00',
+          'UTC', TIMESTAMPTZ '2098-11-16 09:00:00+00', 'cancelled', 1),
+         ($2::uuid, $4, $5::uuid, 2, $6, TIMESTAMPTZ '2098-11-16 09:00:00+00',
+          'UTC', TIMESTAMPTZ '2098-11-16 09:00:00+00', 'cancelled', 0),
+         ($3::uuid, $4, $5::uuid, 1, $7, TIMESTAMPTZ '2098-11-23 09:00:00+00',
+          'UTC', TIMESTAMPTZ '2098-11-23 09:00:00+00', 'cancelled', 1)`,
+      [randomUUID(), randomUUID(), randomUUID(), accountA, eventA, attemptedOccurrenceKey, attemptedWithoutCurrentJobKey],
+    );
+    const priorAttemptDraft = await repository.createSeriesDraft(accountA, {
+      action: "restore-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 2,
+      occurrenceKey: attemptedOccurrenceKey,
+      calendarTimeZone: "UTC",
+    }, "postgres-restore-prior-attempt");
+    assert.equal((await repository.approveSeriesDraft(accountA, priorAttemptDraft.id)).outcome, "approved");
+    let currentReminderStatus = await repository.getCalendarReminderStatus(accountA, eventA);
+    assert.equal(currentReminderStatus.pending, 0);
+    assert.equal(currentReminderStatus.cancelled, 1);
+
+    const noCurrentJobDraft = await repository.createSeriesDraft(accountA, {
+      action: "restore-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 2,
+      occurrenceKey: attemptedWithoutCurrentJobKey,
+      calendarTimeZone: "UTC",
+    }, "postgres-restore-prior-attempt-no-current-job");
+    assert.equal((await repository.approveSeriesDraft(accountA, noCurrentJobDraft.id)).outcome, "approved");
+    currentReminderStatus = await repository.getCalendarReminderStatus(accountA, eventA);
+    assert.equal(currentReminderStatus.pending, 0);
+    assert.equal(currentReminderStatus.cancelled, 1);
+
+    const freshReminderDraft = await repository.createSeriesDraft(accountA, {
+      action: "restore-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 2,
+      occurrenceKey: noReminderHistoryKey,
+      calendarTimeZone: "UTC",
+    }, "postgres-restore-without-reminder-history");
+    assert.equal((await repository.approveSeriesDraft(accountA, freshReminderDraft.id)).outcome, "approved");
+    currentReminderStatus = await repository.getCalendarReminderStatus(accountA, eventA);
+    assert.equal(currentReminderStatus.pending, 1);
+    assert.equal(currentReminderStatus.cancelled, 1);
 
     const appRole = await adminPool.query(
       "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1",
@@ -232,10 +348,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
         "SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
         [accountA],
       );
-      assert.deepEqual(ownExceptions.rows, [{
-        event_id: eventA,
-        occurrence_key: cancelledOccurrenceKey,
-      }]);
+      assert.deepEqual(ownExceptions.rows, []);
       const crossOwnerExceptions = await client.query(
         "SELECT event_id FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
         [accountB],

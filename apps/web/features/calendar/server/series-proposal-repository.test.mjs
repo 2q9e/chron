@@ -36,6 +36,8 @@ function allDayRow({
   recurrence_frequency = "weekly",
   recurrence_interval = 1,
   recurrence_count = 3,
+  reminder_choice = "none",
+  reminder_time_zone = null,
 } = {}) {
   return {
     id,
@@ -54,6 +56,8 @@ function allDayRow({
     recurrence_frequency,
     recurrence_interval,
     recurrence_count,
+    reminder_choice,
+    reminder_time_zone,
     created_at: fixedNow,
     updated_at: fixedNow,
   };
@@ -107,6 +111,7 @@ class SeriesProposalPool {
             events: new Map([...this.events].map(([id, row]) => [id, { ...row }])),
             drafts: new Map([...this.drafts].map(([id, row]) => [id, cloneDraft(row)])),
             exceptions: new Set(this.exceptions),
+            reminderJobs: this.reminderJobs.map((job) => ({ ...job })),
           };
           return { rows: [] };
         }
@@ -119,6 +124,7 @@ class SeriesProposalPool {
             this.events = snapshot.events;
             this.drafts = snapshot.drafts;
             this.exceptions = snapshot.exceptions;
+            this.reminderJobs = snapshot.reminderJobs;
             snapshot = undefined;
           }
           return { rows: [] };
@@ -241,7 +247,7 @@ class SeriesProposalPool {
             if (!draft || draft.user_id !== queryOwner || queryOwner !== owner || draft.outcome !== "pending") {
               return { rows: [] };
             }
-            if (["delete", "cancel-occurrence"].includes(draft.action)) {
+            if (["delete", "cancel-occurrence", "restore-occurrence"].includes(draft.action)) {
               draft.outcome = "approved";
               draft.normalized_payload = null;
               if (draft.action === "delete") draft.payload_hash = null;
@@ -353,8 +359,36 @@ class SeriesProposalPool {
                 Object.assign(job, { status: "cancelled", lease_token: null, lease_expires_at: null });
               }
             }
+          } else if (statement.includes("occurrence_key = $4")) {
+            const [queryOwner, eventId, revision, occurrenceKey, scheduledAt] = values;
+            const occurrenceWasAttempted = this.reminderJobs.some((job) =>
+              job.user_id === queryOwner && job.event_id === eventId
+                && job.occurrence_key === occurrenceKey && job.attempt_count > 0
+            );
+            for (const job of this.reminderJobs) {
+              if (job.user_id === queryOwner && job.event_id === eventId
+                && job.event_revision === revision && job.occurrence_key === occurrenceKey
+                && job.status === "cancelled" && job.attempt_count === 0
+                && !occurrenceWasAttempted
+                && new Date(job.scheduled_at) > new Date()) {
+                Object.assign(job, {
+                  status: "pending",
+                  scheduled_at: scheduledAt,
+                  next_attempt_at: scheduledAt,
+                  lease_token: null,
+                  lease_expires_at: null,
+                  sent_at: null,
+                  last_error_code: null,
+                });
+              }
+            }
           }
           return { rows: [] };
+        }
+        if (statement.startsWith("DELETE FROM calendar_event_occurrence_exceptions")) {
+          const [queryOwner, eventId, occurrenceKey] = values;
+          const key = `${queryOwner}\u0000${eventId}\u0000${occurrenceKey}`;
+          return this.exceptions.delete(key) ? { rows: [{ occurrence_key: occurrenceKey }] } : { rows: [] };
         }
         if (statement.startsWith("INSERT INTO calendar_event_occurrence_exceptions")) {
           const [queryOwner, eventId, occurrenceKey] = values;
@@ -364,7 +398,24 @@ class SeriesProposalPool {
           return { rows: [{ occurrence_key: occurrenceKey }] };
         }
         if (statement.startsWith("INSERT INTO calendar_event_reminders")) {
-          this.reminderJobs.push(...JSON.parse(values[3]));
+          if (statement.includes("jsonb_to_recordset")) {
+            this.reminderJobs.push(...JSON.parse(values[3]));
+          } else {
+            const [id, user_id, event_id, event_revision, occurrence_key, scheduled_at, time_zone] = values;
+            const occurrenceWasAttempted = this.reminderJobs.some((job) =>
+              job.user_id === user_id && job.event_id === event_id
+                && job.occurrence_key === occurrence_key && job.attempt_count > 0
+            );
+            if (!occurrenceWasAttempted && !this.reminderJobs.some((job) => job.user_id === user_id
+              && job.event_id === event_id && job.event_revision === event_revision
+              && job.occurrence_key === occurrence_key)) {
+              this.reminderJobs.push({
+                id, user_id, event_id, event_revision, occurrence_key, scheduled_at,
+                time_zone, next_attempt_at: scheduled_at, status: "pending", attempt_count: 0,
+                lease_token: null, lease_expires_at: null, sent_at: null, last_error_code: null,
+              });
+            }
+          }
           return { rows: [] };
         }
         if (statement.startsWith("UPDATE calendar_events") && statement.includes("SET kind = 'all-day'")) {
@@ -662,6 +713,182 @@ test("occurrence proposals reject keys outside the owned series and already-canc
       && error.code === "OCCURRENCE_ALREADY_CANCELLED"
       && error.status === 409,
   );
+});
+
+test("restores one cancelled occurrence after exact review and re-arms only a future untouched reminder", async () => {
+  const pool = new SeriesProposalPool();
+  const repository = new CalendarRepository(pool);
+  pool.addEvent(allDayRow({
+    id: seriesId,
+    start_date: "2027-01-04",
+    end_date: "2027-01-05",
+    recurrence_count: 2,
+    reminder_choice: "event-day-9am",
+    reminder_time_zone: "America/Montreal",
+  }));
+  const occurrenceKey = `${seriesId}:2027-01-11`;
+  pool.exceptions.add(`${ownerId}\u0000${seriesId}\u0000${occurrenceKey}`);
+  pool.reminderJobs.push({
+    user_id: ownerId,
+    event_id: seriesId,
+    event_revision: 1,
+    occurrence_key: occurrenceKey,
+    scheduled_at: "2027-01-11T14:00:00.000Z",
+    status: "cancelled",
+    attempt_count: 0,
+    lease_token: null,
+    lease_expires_at: null,
+    sent_at: null,
+    last_error_code: null,
+  });
+  const request = parseCalendarSeriesDraftRequest({
+    action: "restore-occurrence",
+    scope: "occurrence",
+    targetEventId: seriesId,
+    targetRevision: 1,
+    occurrenceKey,
+    calendarTimeZone: "America/Montreal",
+  });
+
+  const draft = await repository.createSeriesDraft(ownerId, request, "restore-occurrence-1");
+  assert.equal(draft.action, "restore-occurrence");
+  assert.deepEqual(draft.beforeOccurrences, []);
+  assert.deepEqual(draft.afterOccurrences.map(({ occurrenceKey: key }) => key), [occurrenceKey]);
+  assert.equal(pool.exceptions.size, 1);
+  assert.equal(pool.reminderJobs[0].status, "cancelled");
+
+  const approval = await repository.approveSeriesDraft(ownerId, draft.id);
+  assert.deepEqual(approval, {
+    id: draft.id,
+    action: "restore-occurrence",
+    outcome: "approved",
+    event: null,
+  });
+  assert.equal(pool.exceptions.size, 0);
+  assert.equal(pool.reminderJobs[0].status, "pending");
+  assert.equal(pool.reminderJobs[0].attempt_count, 0);
+  assert.equal((await repository.approveSeriesDraft(ownerId, draft.id)).outcome, "approved");
+  const replay = await repository.createSeriesDraft(ownerId, request, "restore-occurrence-1");
+  assert.equal(replay.outcome, "approved");
+  assert.equal(replay.replayed, true);
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, parseCalendarSeriesDraftRequest({
+      ...request,
+      occurrenceKey: `${seriesId}:2027-01-04`,
+    }), "restore-occurrence-1"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "IDEMPOTENCY_KEY_REUSED"
+      && error.status === 409,
+  );
+});
+
+test("restoration leaves an attempted reminder cancelled and detects overlaps before approval", async () => {
+  const pool = new SeriesProposalPool();
+  const repository = new CalendarRepository(pool);
+  pool.addEvent(allDayRow({
+    id: seriesId,
+    start_date: "2027-01-04",
+    end_date: "2027-01-05",
+    recurrence_count: 2,
+    reminder_choice: "event-day-9am",
+    reminder_time_zone: "America/Montreal",
+  }));
+  const occurrenceKey = `${seriesId}:2027-01-11`;
+  pool.exceptions.add(`${ownerId}\u0000${seriesId}\u0000${occurrenceKey}`);
+  pool.reminderJobs.push({
+    user_id: ownerId,
+    event_id: seriesId,
+    event_revision: 1,
+    occurrence_key: occurrenceKey,
+    scheduled_at: "2027-01-11T14:00:00.000Z",
+    status: "cancelled",
+    attempt_count: 1,
+    lease_token: null,
+    lease_expires_at: null,
+    sent_at: null,
+    last_error_code: null,
+  });
+  const request = parseCalendarSeriesDraftRequest({
+    action: "restore-occurrence",
+    scope: "occurrence",
+    targetEventId: seriesId,
+    targetRevision: 1,
+    occurrenceKey,
+    calendarTimeZone: "America/Montreal",
+  });
+  const draft = await repository.createSeriesDraft(ownerId, request, "restore-occurrence-attempted");
+  assert.equal(draft.conflicts.length, 0);
+
+  pool.addEvent(allDayRow({
+    id: conflictingEventId,
+    title: "Exam",
+    start_date: "2027-01-11",
+    end_date: "2027-01-12",
+    recurrence_frequency: null,
+    recurrence_interval: null,
+    recurrence_count: null,
+  }));
+  const approval = await repository.approveSeriesDraft(ownerId, draft.id);
+  assert.equal(approval.outcome, "stale");
+  assert.equal(pool.exceptions.size, 1);
+  assert.equal(pool.reminderJobs[0].status, "cancelled");
+  assert.equal(pool.reminderJobs[0].attempt_count, 1);
+});
+
+test("restoration does not requeue a reminder attempted before a series revision", async () => {
+  const pool = new SeriesProposalPool();
+  const repository = new CalendarRepository(pool);
+  pool.addEvent(allDayRow({
+    id: seriesId,
+    start_date: "2027-01-04",
+    end_date: "2027-01-05",
+    revision: 2,
+    recurrence_count: 2,
+    reminder_choice: "event-day-9am",
+    reminder_time_zone: "America/Montreal",
+  }));
+  const occurrenceKey = `${seriesId}:2027-01-11`;
+  pool.exceptions.add(`${ownerId}\u0000${seriesId}\u0000${occurrenceKey}`);
+  pool.reminderJobs.push(
+    {
+      user_id: ownerId,
+      event_id: seriesId,
+      event_revision: 1,
+      occurrence_key: occurrenceKey,
+      scheduled_at: "2027-01-10T14:00:00.000Z",
+      status: "cancelled",
+      attempt_count: 1,
+      sent_at: "2027-01-10T14:00:01.000Z",
+    },
+    {
+      user_id: ownerId,
+      event_id: seriesId,
+      event_revision: 2,
+      occurrence_key: occurrenceKey,
+      scheduled_at: "2027-01-11T14:00:00.000Z",
+      status: "cancelled",
+      attempt_count: 0,
+      sent_at: null,
+    },
+  );
+  const request = parseCalendarSeriesDraftRequest({
+    action: "restore-occurrence",
+    scope: "occurrence",
+    targetEventId: seriesId,
+    targetRevision: 2,
+    occurrenceKey,
+    calendarTimeZone: "America/Montreal",
+  });
+  const draft = await repository.createSeriesDraft(ownerId, request, "restore-after-revision");
+
+  const approval = await repository.approveSeriesDraft(ownerId, draft.id);
+
+  assert.equal(approval.outcome, "approved");
+  assert.equal(pool.exceptions.size, 0);
+  assert.equal(pool.reminderJobs.length, 2);
+  assert.equal(pool.reminderJobs[0].status, "cancelled");
+  assert.equal(pool.reminderJobs[1].status, "cancelled");
+  assert.equal(pool.reminderJobs[1].attempt_count, 0);
 });
 
 test("series updates cannot move or remove an already-cancelled scheduled date", async () => {

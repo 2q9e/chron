@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   expandFullCalendarSeries,
+  findCalendarOccurrenceConflicts,
   findCalendarSeriesConflicts,
 } from "./series-conflicts.ts";
 
@@ -165,6 +166,32 @@ test("a cancelled recurring occurrence no longer blocks a proposed series", () =
     cancelled,
   );
   assert.deepEqual(result.conflicts, []);
+});
+
+test("restoration checks only the selected occurrence against active instances", () => {
+  const rule = { frequency: "daily", interval: 1, count: 2 };
+  const series = allDayEvent("series-restore", "2026-11-02", "2026-11-04", rule);
+  const [candidate] = expandFullCalendarSeries(series, rule);
+  const cancelled = new Map([[series.id, new Set([candidate.occurrenceKey])]]);
+
+  const conflicts = findCalendarOccurrenceConflicts(
+    candidate,
+    [series],
+    "America/Montreal",
+    cancelled,
+  );
+  assert.equal(conflicts.length, 1);
+  assert.equal(conflicts[0].candidateOccurrenceKey, candidate.occurrenceKey);
+  assert.equal(conflicts[0].conflictingOccurrence.occurrenceKey, `${series.id}:2026-11-03`);
+
+  const allCancelled = new Map([[
+    series.id,
+    new Set([candidate.occurrenceKey, `${series.id}:2026-11-03`]),
+  ]]);
+  assert.deepEqual(
+    findCalendarOccurrenceConflicts(candidate, [series], "America/Montreal", allCancelled),
+    [],
+  );
 });
 
 test("fails instead of returning a partial snapshot when the conflict set exceeds its cap", () => {
