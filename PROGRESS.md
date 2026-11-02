@@ -3,48 +3,33 @@
 ## Current verified state — 2026-11-02
 
 C1 — calendar — remains the active milestone; landing-page work is paused.
-The public repository uses one branch, main. The PostgreSQL verification fix,
-occurrence cancellation, and reviewed occurrence restoration are pushed on
-main in commits 559aed2 and 31a80b0 by the normal 2q9e account. The Git
-remote uses HTTPS.
+The public repository has one branch, `main`, with 661 commits, pushed as
+2q9e over HTTPS. Occurrence cancellation, restoration, and reviewed movement
+for timed and all-day recurring events are pushed. Movement preserves the
+original occurrence identity and duration, checks conflicts, updates eligible
+reminders, and requires proposal review and approval.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41397817608 passed on the prior
-main head. It applied the ordered calendar migrations through 0009 to
-PostgreSQL 16 and passed the tenant-isolation integration checks. Run
-https://github.com/2q9e/chron/actions/runs/41400318323 also passed, including
-migration 0010, PostgreSQL integration, lint, typecheck, and the production
-build.
+https://github.com/2q9e/chron/actions/runs/41404738609 passed, including
+PostgreSQL 16 integration and the production build. Run
+https://github.com/2q9e/chron/actions/runs/41404967855 also passed on the
+latest main head. Local calendar time (42), API (108), layout (56), and
+recovery (5) tests pass, along with lint and typecheck. PostgreSQL integration
+skips locally because `CHRON_TEST_DATABASE_URL` is unset.
 
-The pushed restoration increment adds reviewed restoration of one cancelled
-recurrence occurrence, including migration 0010, a bounded owner-scoped
-cancelled-occurrence read, exact conflict revalidation, keyboard focus
-transitions, and reminder history checks across revisions. Local calendar API
-tests pass (103), calendar layout tests pass (55),
-calendar time tests pass (39), recovery tests pass (5), and typecheck and lint
-pass. The PostgreSQL integration test skips locally because no test database is
-configured. The local production build compiled and generated the new route,
-but Turbopack reported a cache write failure from the full workspace volume
-during shutdown. GitHub Actions completed a clean production build.
+https://testing.uwu.markets/sign-in was checked over HTTPS and returned 200
+with HSTS. Staging still serves the prior release; this change is not
+deployed. The session's deployment path is unavailable, so no VPS or Cloudflare
+resources were changed. Authenticated calendar actions remain unverified
+because no test account is configured.
 
-https://testing.uwu.markets was checked over HTTPS: `/sign-in` returned 200,
-and unauthenticated `/calendar` returned a relative redirect to `/sign-in`;
-both had valid TLS and HSTS. The root redirected to `/calendar`. Release
-b01cbfe built successfully and was staged, and migration 0009 was applied and
-catalog-verified on the Chron database with TLS verification. Activation is
-not verified because the saved SSH password was rejected and no authorized
-key is available in this environment. The pushed restoration increment is not
-active on staging. No other VPS service or Cloudflare resource was changed. No
-test account is configured, so authenticated calendar actions remain
-unverified.
+The latest remote tree has no AGENTS.md; local instructions remain untracked.
+No reference folder was inspected or used. Commits continue on `main` only,
+with author 2q9e.
 
-The latest remote tree has no AGENTS.md; the local root instructions remain
-ignored. No reference folder was inspected or used. Commits continue on main
-only, with author 2q9e.
-
-Occurrence restoration is implemented, pushed, and verified by CI. Occurrence
-movement and split-series behavior remain open. SMTP delivery, scheduler
-deployment, external calendar synchronization, and authenticated browser verification
+Occurrence movement is implemented, pushed, and verified by CI. Split-series
+behavior, SMTP delivery, scheduler deployment, external calendar
+synchronization, staging activation, and authenticated browser verification
 remain open.
 
 The previously pushed cancellation slice binds the occurrence's original key
@@ -54,8 +39,8 @@ from listing and conflict checks. The current restore slice keeps exact-key
 review and approval, compares only the selected occurrence against active
 events and siblings, and refuses to queue a reminder if any revision already
 attempted it. Migration 0010 and its PostgreSQL integration coverage passed in
-CI. The staged release remains the previous b01cbfe build;
-activation requires restored authorized SSH access.
+CI. The staged release remains the previous b01cbfe build; activation remains
+open.
 
 ## Prior implementation checkpoints
 

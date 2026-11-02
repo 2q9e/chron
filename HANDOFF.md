@@ -3,42 +3,26 @@
 ## Current state
 
 Chron is a standalone public repository on GitHub. The only remote branch is
-main, and changes are pushed by 2q9e with short commit titles. Occurrence
-cancellation, its PostgreSQL savepoint fix, and restoration are pushed on
-main; restoration is split between 559aed2 and 31a80b0. The Git remote uses
-HTTPS. The current public tree contains no AGENTS.md; local operating
-instructions remain ignored. No old calendar reference folder was inspected
-or used.
+`main`, and commits are pushed by 2q9e with short titles over HTTPS. The branch
+contains occurrence cancellation, restoration, and reviewed movement of one
+timed or all-day recurrence instance. The public tree contains no AGENTS.md;
+local operating instructions remain untracked. No old calendar reference
+folder was inspected or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41397817608 passed on the prior
-main head. It applied all ordered migrations through 0009 to PostgreSQL 16 and
-passed the calendar tenant-isolation integration checks. Run
-https://github.com/2q9e/chron/actions/runs/41400318323 passed the restoration
-increment, including migration 0010, the PostgreSQL integration cases, lint,
-typecheck, and the production build.
+https://github.com/2q9e/chron/actions/runs/41404738609 passed with PostgreSQL
+16 integration, lint, typecheck, and production build. Run
+https://github.com/2q9e/chron/actions/runs/41404967855 passed on the latest
+main head. Local calendar time (42), API (108), layout (56), and recovery (5)
+tests pass. PostgreSQL integration skips locally because
+`CHRON_TEST_DATABASE_URL` is unset.
 
-The pushed restoration increment adds reviewed restoration of one cancelled
-recurrence occurrence. It includes migration 0010, bounded owner-scoped
-discovery, exact occurrence conflict revalidation, reminder attempt checks
-across all revisions, and keyboard focus recovery.
-Calendar API (103), layout (55), time (39), and recovery (5) tests pass, as do
-typecheck and lint. PostgreSQL integration skips locally because no database
-is configured. The local build compiled and listed the new route but reported
-a Turbopack cache write failure at shutdown due to the full workspace volume;
-the clean GitHub Actions build and PostgreSQL 16 verification passed.
-
-The public staging site at https://testing.uwu.markets was checked over HTTPS:
-`/sign-in` returned 200 and unauthenticated `/calendar` redirected to
-`/sign-in`, with valid TLS and HSTS. The protected `/calendar` request returned
-a relative redirect to `/sign-in` over HTTPS. The b01cbfe release built
-successfully and was staged, and migration 0009 was applied and
-catalog-verified on the Chron database using TLS verification. The pushed
-restore increment is not active on staging. Activating a new release is not
-verified: the saved SSH password was rejected and no authorized key is
-available in this environment.
-No other VPS service or Cloudflare resource was changed. Authenticated
-calendar interactions remain unverified because no test account is available.
+The testing site at https://testing.uwu.markets/sign-in was checked over HTTPS;
+it returned 200 with valid TLS and HSTS. It still serves the previous release,
+so the occurrence-movement change is not deployed. Deployment access is
+unavailable in this session. No VPS or Cloudflare resources were changed.
+Authenticated calendar interactions remain unverified because no test account
+is available.
 
 ## Current milestone
 
@@ -46,8 +30,9 @@ C1 — calendar — is active. Landing-page work remains paused. The calendar ha
 owner-scoped persisted events and preferences, four views, create/edit/delete,
 search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
-interactions. Single-occurrence cancellation and reviewed restoration are
-pushed on main. Moving occurrences and split-series edits remain open.
+interactions. Single-occurrence cancellation, reviewed restoration, and
+reviewed per-occurrence movement are pushed on main. Split-series edits remain
+open.
 
 The reminder schema, migrations, repositories, and route contracts were
 executed by CI; live mail delivery, scheduler deployment, and inbox receipt
@@ -91,13 +76,14 @@ not implemented.
   Migration 0009 was also applied and catalog-verified on the Chron staging
   database. Do not simulate a session or claim authenticated persistence.
 - The b01cbfe release is built and staged; activation remains pending because
-  SSH authentication to the named target is currently rejected. HTTPS
-  sign-in and unauthenticated `/calendar` both render the sign-in view with
-  certificate validation and HSTS. No other VPS service was changed.
-- Restore is pushed on main and verified by run 41400318323. The new release
-  cannot be activated until authorized SSH access is available.
-- Recurrence move and split edits, authenticated browser walkthrough, SMTP
-  delivery, scheduler deployment, and Google calendar sync remain open.
+  deployment access is unavailable. HTTPS `/sign-in` returns 200 with HSTS;
+  the occurrence-movement change is not active there. No other VPS service
+  was changed.
+- Occurrence movement is pushed on main and verified by run 41404738609,
+  including PostgreSQL 16 integration. The latest main head passed run
+  41404967855.
+- Split edits, authenticated browser walkthrough, SMTP delivery, scheduler
+  deployment, and Google calendar sync remain open.
 
 ## Prior landing checkpoint
 
@@ -215,8 +201,8 @@ awaits narrow and zoom browser checks.
    TLS and HSTS. Keep authenticated browser verification open until a test
    account is available.
 3. Keep AGENTS.md excluded and preserve the one-branch public history on `main`.
-4. Continue with recurrence move exceptions and split-series edits
-   through the existing owner-scoped proposal and approval pipeline.
+4. Continue with split-series edits through the existing owner-scoped proposal
+   and approval pipeline.
 5. Keep the authenticated browser walkthrough open until a disposable account
    can be configured without exposing private credentials.
 6. Continue email delivery and scheduler work only when the authorized
