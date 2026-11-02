@@ -54,6 +54,9 @@ jobs:
       - name: Test calendar create recovery
         run: npm run test:calendar-recovery --workspace @chron/web
 
+      - name: Test HTTPS reminder scheduler
+        run: npm run test:reminder-scheduler --workspace @chron/web
+
       - name: Audit dependencies
         run: npm audit --audit-level=moderate
 
