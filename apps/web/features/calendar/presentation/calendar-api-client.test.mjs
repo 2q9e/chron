@@ -191,6 +191,80 @@ test("restoration proposals bind the exact occurrence, timezone, and user approv
   }
 });
 
+test("single-occurrence moves bind the stable key and exact proposed schedule", async () => {
+  const request = {
+    action: "move-occurrence",
+    scope: "occurrence",
+    targetEventId: seriesId,
+    targetRevision: 2,
+    occurrenceKey: `${seriesId}:2026-06-08T09:00`,
+    calendarTimeZone: "America/Montreal",
+    movement: {
+      kind: "timed",
+      startLocal: "2026-06-08T11:00",
+      endLocal: "2026-06-08T12:00",
+      timeZone: "America/Montreal",
+    },
+  };
+  const draft = {
+    id: "74953a92-52d7-4bb1-b623-1c5e18371490",
+    action: request.action,
+    scope: request.scope,
+    outcome: "pending",
+    replayed: false,
+    targetEventId: seriesId,
+    targetRevision: 2,
+    event: null,
+    recurrenceRule: null,
+    calendarTimeZone: request.calendarTimeZone,
+    beforeOccurrences: [{
+      occurrenceKey: request.occurrenceKey,
+      kind: "timed",
+      startLocal: "2026-06-08T09:00",
+      endLocal: "2026-06-08T10:00",
+      timeZone: "America/Montreal",
+      startsAt: "2026-06-08T13:00:00.000Z",
+      endsAt: "2026-06-08T14:00:00.000Z",
+    }],
+    afterOccurrences: [{
+      occurrenceKey: request.occurrenceKey,
+      kind: "timed",
+      startLocal: request.movement.startLocal,
+      endLocal: request.movement.endLocal,
+      timeZone: request.movement.timeZone,
+      startsAt: "2026-06-08T15:00:00.000Z",
+      endsAt: "2026-06-08T16:00:00.000Z",
+    }],
+    conflicts: [],
+    expiresAt: "2026-06-01T12:15:00.000Z",
+  };
+  let captured;
+  globalThis.fetch = async (url, init) => {
+    captured = { url, init };
+    return response({ draft }, 201);
+  };
+  try {
+    const created = await createCalendarSeriesDraft(request, "move-one-occurrence");
+    assert.equal(created.action, "move-occurrence");
+    assert.deepEqual(JSON.parse(captured.init.body), request);
+    assert.equal(captured.init.headers["Idempotency-Key"], "move-one-occurrence");
+
+    globalThis.fetch = async () => response({
+      approval: {
+        id: draft.id,
+        action: "move-occurrence",
+        outcome: "approved",
+        event: null,
+      },
+    });
+    const approval = await approveCalendarSeriesDraft(draft.id, "move-occurrence", created);
+    assert.equal(approval.outcome, "approved");
+    assert.equal(approval.event, null);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("reminder status uses a same-origin no-store read and validates persisted state counts", async () => {
   const status = {
     total: 2,

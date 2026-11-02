@@ -155,10 +155,13 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
   if (!isRecord(value)
     || !isNonEmptyString(value.id)
     || (value.action !== "create" && value.action !== "update" && value.action !== "delete"
-      && value.action !== "cancel-occurrence" && value.action !== "restore-occurrence")
-    || !(((value.action === "cancel-occurrence" || value.action === "restore-occurrence")
+      && value.action !== "cancel-occurrence" && value.action !== "restore-occurrence"
+      && value.action !== "move-occurrence")
+    || !(((value.action === "cancel-occurrence" || value.action === "restore-occurrence"
+      || value.action === "move-occurrence")
       && value.scope === "occurrence")
-      || ((value.action !== "cancel-occurrence" && value.action !== "restore-occurrence")
+      || ((value.action !== "cancel-occurrence" && value.action !== "restore-occurrence"
+        && value.action !== "move-occurrence")
         && value.scope === "series"))
     || !["pending", "approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     || typeof value.replayed !== "boolean"
@@ -206,6 +209,17 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
             && value.calendarTimeZone !== null
           : value.beforeOccurrences.length > 0 && value.afterOccurrences.length === 0);
   }
+  if (value.action === "move-occurrence") {
+    return value.scope === "occurrence"
+      && value.targetEventId !== null
+      && value.targetRevision !== null
+      && value.event === null
+      && value.recurrenceRule === null
+      && value.calendarTimeZone !== null
+      && value.beforeOccurrences.length === 1
+      && value.afterOccurrences.length === 1
+      && value.beforeOccurrences[0].occurrenceKey === value.afterOccurrences[0].occurrenceKey;
+  }
   return (value.action === "create"
       ? value.targetEventId === null && value.targetRevision === null && value.beforeOccurrences.length === 0
       : value.targetEventId !== null && value.targetRevision !== null && value.beforeOccurrences.length > 0)
@@ -218,7 +232,8 @@ function isCalendarSeriesApproval(value: unknown): value is CalendarSeriesApprov
   return isRecord(value)
     && isNonEmptyString(value.id)
     && (value.action === "create" || value.action === "update" || value.action === "delete"
-      || value.action === "cancel-occurrence" || value.action === "restore-occurrence")
+      || value.action === "cancel-occurrence" || value.action === "restore-occurrence"
+      || value.action === "move-occurrence")
     && ["approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     && (value.event === null || isCalendarEvent(value.event));
 }
@@ -263,6 +278,24 @@ function matchesSeriesDraftRequest(
       && draft.afterOccurrences.length === 1
       && draft.afterOccurrences[0].occurrenceKey === request.occurrenceKey;
   }
+  if (request.action === "move-occurrence") {
+    const before = draft.beforeOccurrences[0];
+    const after = draft.afterOccurrences[0];
+    return draft.event === null
+      && draft.recurrenceRule === null
+      && draft.calendarTimeZone === request.calendarTimeZone
+      && before?.occurrenceKey === request.occurrenceKey
+      && after?.occurrenceKey === request.occurrenceKey
+      && request.movement.kind === after.kind
+      && (request.movement.kind === "timed"
+        ? after.kind === "timed"
+          && after.startLocal === request.movement.startLocal
+          && after.endLocal === request.movement.endLocal
+          && after.timeZone === request.movement.timeZone
+        : after.kind === "all-day"
+          && after.startDate === request.movement.startDate
+          && after.endDate === request.movement.endDate);
+  }
   if (request.action === "delete") {
     return draft.event === null
       && draft.recurrenceRule === null
@@ -285,7 +318,7 @@ function matchesApprovedEvent(
   if (approval.id !== draft.id || approval.action !== draft.action) return false;
   if (approval.outcome !== "approved") return approval.event === null;
   if (draft.action === "delete" || draft.action === "cancel-occurrence"
-    || draft.action === "restore-occurrence") {
+    || draft.action === "restore-occurrence" || draft.action === "move-occurrence") {
     return approval.event === null;
   }
   if (!approval.event || !draft.event || !draft.recurrenceRule) return false;
@@ -971,7 +1004,7 @@ export async function approveCalendarSeriesDraft(
   const outcomeMatchesAction = payload.approval.outcome !== "approved"
     ? payload.approval.event === null
     : expectedAction === "delete" || expectedAction === "cancel-occurrence"
-      || expectedAction === "restore-occurrence"
+      || expectedAction === "restore-occurrence" || expectedAction === "move-occurrence"
       ? payload.approval.event === null
       : payload.approval.event !== null;
   if (response.status !== expectedStatus
