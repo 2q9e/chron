@@ -4,21 +4,22 @@
 
 C1 — calendar — remains the active milestone; landing-page work is paused.
 The public repository uses one branch, main. The PostgreSQL verification
-change was pushed as 1785c06 by the normal 2q9e account.
+fix and occurrence cancellation are pushed on main as d717a12, 9b1c85e, and
+b01cbfe by the normal 2q9e account. The Git remote uses HTTPS.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41392185432 passed. The workflow
-ran the calendar migrations on an ephemeral PostgreSQL 16 service, then
-verified forced RLS, owner separation, transaction-local owner context,
-cross-owner read/write rejection, and account deletion cascades. This is real
-PostgreSQL integration coverage; it does not verify the staging database or an
-authenticated browser session.
+https://github.com/2q9e/chron/actions/runs/41396381582 passed. It applied the
+ordered calendar migrations, including 0009, to PostgreSQL 16 and passed the
+tenant-isolation integration checks.
 
-The current staging release remains 52d8efd at
-https://testing.uwu.markets. HTTPS sign-in returned 200 and the protected
-calendar route redirected to sign-in with valid TLS and HSTS. No test account
-is configured, so authenticated calendar actions remain unverified. This
-CI-only change did not modify the VPS or Cloudflare configuration.
+https://testing.uwu.markets serves the sign-in view for both `/sign-in` and
+unauthenticated `/calendar`; both HTTPS requests returned 200 with valid TLS
+and HSTS. Release b01cbfe built successfully and was staged, and migration
+0009 was applied and catalog-verified on the Chron database with TLS
+verification. Activation is not verified because the saved SSH password was
+rejected and no authorized key is available in this environment. No other VPS
+service or Cloudflare resource was changed. No test account is configured, so
+authenticated calendar actions remain unverified.
 
 The latest remote tree has no AGENTS.md; the local root instructions remain
 ignored. No reference folder was inspected or used. Commits continue on main
@@ -35,8 +36,8 @@ cancels pending or leased reminders, stales competing proposals, and hides the
 date from listing and conflict checks. Moving/restoring occurrences and
 this-and-following splits remain unfinished. Local typecheck, lint, calendar
 API tests (97), calendar layout tests (53), and the production build pass.
-PostgreSQL CI for migration 0009 and HTTPS staging deployment for this
-increment are pending; do not describe it as released yet.
+PostgreSQL CI passed and migration 0009 is applied to the Chron database. The
+new release is staged but not confirmed active; SSH access needs to be restored.
 
 ## Prior implementation checkpoints
 

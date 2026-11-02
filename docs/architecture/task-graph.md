@@ -48,9 +48,12 @@ Full-series recurring controls are connected to persisted proposals, conflict
 review, and explicit approval. The current editor does not offer individual
 occurrence or following-occurrence changes; those require the C1-rec6 work
 below.
-GitHub Actions run 41392185432 applied migrations and passed the PostgreSQL
-tenant-isolation checks on an ephemeral PostgreSQL 16 service. This does not
-provide a staging account; authenticated browser verification remains gated.
+GitHub Actions run 41396381582 applied migrations, including 0009, and passed
+the PostgreSQL tenant-isolation checks on an ephemeral PostgreSQL 16 service.
+Migration 0009 was also applied and catalog-verified on the Chron database.
+The b01cbfe app release is built and staged but not confirmed active because
+SSH authentication is currently unavailable. Authenticated browser
+verification remains gated on a test account.
 
 ### C1-rec0 — freeze recurrence semantics and build the domain engine
 
@@ -219,9 +222,10 @@ provide a staging account; authenticated browser verification remains gated.
   available
 - **Current slice:** migration, owner-scoped cancellation proposal/approval,
   calendar filtering, conflict exclusion, reminder cancellation, UI review,
-  deterministic tests, and PostgreSQL integration coverage are implemented in
-  the current working tree. The production build passed locally; PostgreSQL CI
-  for migration 0009 remains pending.
+  deterministic tests, and PostgreSQL integration coverage are implemented
+  and pushed on main. The production build passed locally and in the staged
+  release; PostgreSQL CI and the Chron database migration passed. Release
+  activation and authenticated browser review remain open.
 - **Remaining deliverables:** move/restore exceptions, split-series behavior,
   authenticated browser review, and final handoff evidence
 

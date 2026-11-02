@@ -4,24 +4,26 @@
 
 Chron is a standalone public repository on GitHub. The only remote branch is
 main, and changes are pushed by 2q9e with short commit titles. The current
-main baseline is c62404c; occurrence cancellation is committed locally as
-d717a12 and is waiting for its HTTPS push and CI run.
-The current public tree contains no AGENTS.md; local operating instructions
-remain ignored. No old calendar reference folder was inspected or used.
+main head is b01cbfe. Occurrence cancellation and the PostgreSQL savepoint
+fix are pushed on main as d717a12, 9b1c85e, and b01cbfe. The Git remote uses
+HTTPS. The current public tree contains no AGENTS.md; local operating
+instructions remain ignored. No old calendar reference folder was inspected
+or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41392185432 passed. CI applied the
-ordered migrations to an ephemeral PostgreSQL 16 service and verified forced
-RLS, owner-separated repository results, transaction-local context reset,
-cross-owner read/write rejection, and deletion cascades. This confirms the
-migration and isolation behavior in CI only; it is not a configured staging or
-production database.
+https://github.com/2q9e/chron/actions/runs/41396381582 passed. CI applied all
+ordered migrations, including 0009, to PostgreSQL 16 and passed the calendar
+tenant-isolation integration checks.
 
-The app's latest staged release is 52d8efd at
-https://testing.uwu.markets. HTTPS sign-in returned 200; the protected
-calendar route redirected to sign-in. TLS verification and HSTS passed. No
-test account is available, so authenticated calendar interactions are not
-verified. The CI-only change made no VPS or Cloudflare edits.
+The public staging site at https://testing.uwu.markets serves the sign-in view
+for both `/sign-in` and unauthenticated `/calendar`; both HTTPS requests
+returned 200 with valid TLS and HSTS. The b01cbfe release built successfully
+and was staged, and migration 0009 was applied and catalog-verified on the
+Chron database using TLS verification. Activating the staged release is not
+verified: the saved SSH password was rejected and no authorized key is
+available in this environment. No other VPS service or Cloudflare resource was
+changed. Authenticated calendar interactions remain unverified because no
+test account is available.
 
 ## Current milestone
 
@@ -29,7 +31,7 @@ C1 — calendar — is active. Landing-page work remains paused. The calendar ha
 owner-scoped persisted events and preferences, four views, create/edit/delete,
 search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
-interactions. The current local increment adds reviewed single-occurrence
+interactions. The current increment adds reviewed single-occurrence
 cancellation. Moving/restoring occurrences and split-series edits remain open.
 
 The reminder schema, migrations, repositories, and route contracts were
@@ -53,7 +55,7 @@ not implemented.
   controls belong in the product.
 - The source-available license permits viewing but prohibits reuse. No
   prohibited reference folder was inspected or copied.
-- GitHub quality run 41392185432 passed, including PostgreSQL 16 integration.
+- GitHub quality run 41396381582 passed, including PostgreSQL 16 integration.
   The workflow uses pinned actions and read-only repository permissions.
 - Runtime tooling does not enforce per-agent filesystem/network isolation.
   Never provide secrets or private data to an agent; do not claim model
@@ -70,11 +72,12 @@ not implemented.
 - Database migrations are in apps/web/db/migrations/. The CI integration
   script is apps/web/scripts/calendar-postgres.integration.test.mjs.
 - PostgreSQL migrations and RLS behavior passed on an ephemeral CI database.
-  There is no staging database or authenticated test account. Do not simulate
-  a session or claim authenticated persistence in the running app.
-- The current staging release is 52d8efd. HTTPS sign-in and the protected
-  route redirect were checked with certificate validation; no VPS resource was
-  changed during the latest CI-only iteration.
+  Migration 0009 was also applied and catalog-verified on the Chron staging
+  database. Do not simulate a session or claim authenticated persistence.
+- The b01cbfe release is built and staged; activation remains pending because
+  SSH authentication to the named target is currently rejected. HTTPS
+  sign-in and unauthenticated `/calendar` both render the sign-in view with
+  certificate validation and HSTS. No other VPS service was changed.
 - Recurrence move/restore and split edits, authenticated browser walkthrough,
   SMTP delivery, scheduler deployment, and Google calendar sync remain open.
 
@@ -177,21 +180,24 @@ awaits narrow and zoom browser checks.
   `DATABASE_URL`. Build output was placed temporarily in `/tmp`, then the
   previous `.next` directory was restored and the temporary artifacts removed.
 - At the 2026-11-01 checkpoint, the HTTPS staging DNS lookup failed. The current 2026-11-02 HTTPS route and TLS verification passed as recorded in Current state. Keep using HTTPS and do not edit unrelated VPS configuration.
-- For the local occurrence-cancellation increment, calendar API (97) and
+- For the occurrence-cancellation increment, calendar API (97) and
   layout (53) tests, typecheck, lint, `git diff --check`, and the production
   build passed. The build used Webpack and a temporary `/tmp` output directory
-  because the workspace volume was low on space. Migration 0009 has not yet run
-  in PostgreSQL CI; the staging URL still serves 52d8efd.
+  because the workspace volume was low on space. PostgreSQL CI run
+  41396381582 passed; migration 0009 was applied to the Chron database. The
+  staged release has not been switched active because SSH authentication is
+  unavailable. HTTPS endpoints, TLS, and HSTS were verified publicly.
 
 ## Next actions
 
-1. Push the verified occurrence-cancellation source and handoff/docs on `main`
-   through the HTTPS Git remote. Keep AGENTS.md excluded.
-2. Wait for GitHub Actions to apply migration 0009 and run the PostgreSQL
-   integration checks. Fix and repush if they fail.
-3. After CI passes, deploy the verified app increment to
-   https://testing.uwu.markets over HTTPS, touching only Chron-specific VPS
-   resources, then check TLS, sign-in, and the protected calendar redirect.
+1. Restore authorized SSH access using the saved Contabo handoff, then activate
+   the already-built b01cbfe Chron release by changing only Chron's release
+   pointer and restarting only `chron-web.service`.
+2. Verify the active release and test
+   https://testing.uwu.markets/sign-in and `/calendar` over HTTPS with valid
+   TLS and HSTS. Keep authenticated browser verification open until a test
+   account is available.
+3. Keep AGENTS.md excluded and preserve the one-branch public history on `main`.
 4. Continue with recurrence move/restore exceptions and split-series edits
    through the existing owner-scoped proposal and approval pipeline.
 5. Keep the authenticated browser walkthrough open until a disposable account
