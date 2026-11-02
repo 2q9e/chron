@@ -4,7 +4,7 @@
 
 C1 — calendar — remains active and the landing page remains paused. The first
 R1 source-reader slice is implemented on the single `main` branch through
-7217f34. Commits 2019687 and 054f060 added the bounded HTTPS reader, session-
+6ddcaf1. Commits 2019687 and 054f060 added the bounded HTTPS reader, session-
 protected same-origin API, owner-scoped quota, and migration 0016. Commit
 b71d104 added the Research route and calendar entry; 7217f34 added retrieval
 documentation and the dedicated CI step. This is direct URL reading only, not
@@ -13,27 +13,32 @@ complete research agent.
 
 GitHub Actions run 41422411142 passed on b71d104, including migration 0016
 PostgreSQL integration checks, lint, typecheck, dependency audit, and build.
-Run 41423159092 for 7217f34 also passed, including the dedicated 21-test
-Research step. Locally, `npm run test:research --workspace @chron/web` passes
-all 21 tests, typecheck and lint pass, and production compilation listed `/research`
-and `/api/research/web/read`. The local build process emitted a Turbopack cache
-write warning on shutdown; hosted build succeeded. Local PostgreSQL integration
-skips because `CHRON_TEST_DATABASE_URL` is unset.
+Run 41423159092 for 7217f34 passed, including the dedicated 21-test Research
+step; run 41423649691 also passed on 6ddcaf1. Locally, the 21 Research tests,
+typecheck, and lint pass. Local production compilation listed `/research` and
+`/api/research/web/read` but emitted a Turbopack cache-write warning during
+shutdown. The VPS release passed all 21 Research tests, a production dependency
+audit with zero vulnerabilities, and a clean production build. Local PostgreSQL
+integration skips because `CHRON_TEST_DATABASE_URL` is unset.
 
-The active staging release is still e6f43d4 at `/opt/chron/releases/e6f43d4`;
-the new Research feature is not deployed yet. Next steps are to apply migration
-0016 and the minimum Chron-only runtime grant, deploy the app to
-https://testing.uwu.markets, then check TLS/HSTS and the signed-out Research
-redirect. No authenticated test account is available, so signed-in browser
-behavior and live retrieval cannot yet be verified. Prior release work changed
-only the Chron release symlink and `chron-web.service`; no unrelated VPS
-service, environment file, or Cloudflare resource was changed.
+The active staging release is 6ddcaf1 at `/opt/chron/releases/6ddcaf1`.
+Migration 0016 and the four table grants were applied atomically on the live
+Chron database over verified PostgreSQL TLS. The migration and runtime roles
+are separate, non-superuser, and lack `BYPASSRLS`; forced RLS, owner policy,
+and account-deletion cascade were verified. HTTPS `/sign-in` returns 200 with
+valid TLS and HSTS, `/research` redirects signed-out users to `/sign-in`, and
+an unauthenticated API POST returns 401. The in-app browser rendered the
+sign-in page and Research redirect. No authenticated test account is available,
+so source retrieval and signed-in Research behavior remain unverified. Only
+the Chron release directory, database migration/grants, release symlink, and
+`chron-web.service` changed; no environment file, unrelated VPS service, or
+Cloudflare resource was changed.
 
 The Codex Security diff review examined all 20 changed files from e6f43d4 to
 b71d104 and found no reportable candidates. It ran sequentially because the
 runtime does not enforce filesystem isolation for delegated agents. Runtime DB
-role attributes, proxy/firewall configuration, and network egress remain open
-deployment questions.
+role attributes were verified during deployment; proxy/firewall configuration
+and network egress remain unverified.
 
 External services, Git remotes, and staging or production hosts use HTTPS.
 HTTP appears only in loopback development and negative rejection tests. The
@@ -57,7 +62,8 @@ from listing and conflict checks. The current restore slice keeps exact-key
 review and approval, compares only the selected occurrence against active
 events and siblings, and refuses to queue a reminder if any revision already
 attempted it. Migration 0010 and its PostgreSQL integration coverage passed in
-CI. The current release is `e6f43d4`; the previous `b01cbfe` deployment history
+CI. Release `e6f43d4` was active at that historical checkpoint; the previous
+`b01cbfe` deployment history
 is retained in later checkpoints.
 
 ## Prior implementation checkpoints

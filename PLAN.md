@@ -39,23 +39,31 @@ single main branch. Commits 2019687, 054f060, and b71d104 add URL validation,
 pinned HTTPS retrieval, an authenticated same-origin route, per-account quota,
 and a signed-in Research screen. This is not web search, source evaluation,
 citations, AI analysis, or a complete research agent. Commit 7217f34 adds the
-focused test to CI and records the retrieval boundary. Deployment of the reader
-and authenticated browser verification remain pending.
+focused test to CI and records the retrieval boundary. Commit 6ddcaf1 passed
+GitHub Actions run 41423649691 and is active on HTTPS staging after migration
+0016 and the owner-scoped runtime grant were applied.
 
 GitHub Actions run 41392185432 passed after applying all migrations to an
 ephemeral PostgreSQL 16 database and checking tenant isolation, RLS, transaction
 context reset, cross-owner access rejection, and account-deletion cascades.
-This verifies PostgreSQL behavior in CI, not a staging user session. Commit
-`e6f43d4` is deployed at https://testing.uwu.markets. HTTPS sign-in returns 200
-with valid TLS and HSTS; `/calendar` redirects to sign-in. No test account is
-available, so authenticated calendar actions and the new iCalendar download
-remain unverified in-browser. Only the Chron service was restarted.
+This verifies PostgreSQL behavior in CI, not a staging user session. At the
+preceding calendar checkpoint, `e6f43d4` was deployed at
+https://testing.uwu.markets and only the Chron service was restarted. Current
+staging status and Research verification are recorded below. No test account is
+available, so authenticated calendar actions and the iCalendar download remain
+unverified in-browser.
 
-GitHub Actions run 41423159092 passed on commit 7217f34. It includes all
-numbered migrations through 0016 on PostgreSQL 16, the 21 focused Research
-tests, lint, typecheck, dependency audit, and production build. The Research
-reader is not yet deployed; migration 0016 and a least-privilege runtime grant
-must be applied to the Chron database before activating it.
+GitHub Actions run 41423159092 passed on commit 7217f34, including migrations
+through 0016 on PostgreSQL 16, the 21 focused Research tests, lint, typecheck,
+dependency audit, and production build. Run 41423649691 also passed on 6ddcaf1.
+The live staging database has migration 0016 and the minimal Chron runtime
+grants; forced RLS, its owner policy, and account-deletion cascade were
+catalog-verified. The 6ddcaf1 VPS release passed its 21 Research tests, zero-
+vulnerability production dependency audit, and production build. Over HTTPS,
+sign-in returns 200, signed-out Research redirects to sign-in, and an
+unauthenticated API POST returns 401. The browser rendered the sign-in page and
+Research redirect. Authenticated source reading remains unverified because no
+test account is available; do not fabricate one.
 
 Recurrence exceptions and split-series edits are implemented and pushed;
 migration 0013 and the split behavior passed PostgreSQL CI. Next calendar work

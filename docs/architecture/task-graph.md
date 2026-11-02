@@ -140,7 +140,11 @@ and authenticated browser behavior remain separate deployment gates.
   route responds over HTTPS.
 - **Tests:** Post-migration application health and HTTPS/TLS/HSTS checks.
 - **Expected deliverables:** Active release and exact deployment record.
-- **Status:** Pending.
+- **Status:** Completed. 6ddcaf1 is active; migration 0016 and the minimum
+  Chron-only grants were applied with a separate restricted migration role.
+  Forced RLS, the owner policy, and account-deletion cascade were verified.
+  The service returned healthy responses over HTTPS after switching only the
+  Chron release symlink and restarting `chron-web.service`.
 
 ### R1f — browser verification
 
@@ -160,7 +164,11 @@ and authenticated browser behavior remain separate deployment gates.
   sign-out, keyboard flow, and responsive layout verified in a real browser.
 - **Tests:** Real browser interaction and screenshots if account access exists.
 - **Expected deliverables:** Browser findings and verified walkthrough.
-- **Status:** Open; no test account is available.
+- **Status:** Partially verified. The real HTTPS sign-in page rendered and the
+  signed-out Research route redirected to sign-in in the browser; sign-in
+  returned 200, the Research redirect returned 307, and unauthenticated API
+  access returned 401. Authenticated source reading, mobile behavior, and the
+  full signed-in flow remain open because no test account is available.
 
 ## Foundation and landing-page graph (historical; landing page paused)
 
@@ -215,9 +223,9 @@ the PostgreSQL tenant-isolation checks on an ephemeral PostgreSQL 16 service.
 Run 41400318323 passed migration 0010 and the occurrence-restoration
 integration tests, along with the full CI build, lint, and typecheck.
 Migration 0009 was also applied and catalog-verified on the Chron database.
-The current `e6f43d4` app release is active on the HTTPS test host; only the
-Chron release symlink and `chron-web.service` were changed. Authenticated
-browser verification remains gated on a test account.
+At that historical checkpoint, release `e6f43d4` was active on the HTTPS test
+host; only the Chron release symlink and `chron-web.service` were changed.
+Authenticated browser verification remained gated on a test account.
 
 ### C1-rec0 — freeze recurrence semantics and build the domain engine
 

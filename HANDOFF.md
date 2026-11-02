@@ -23,19 +23,28 @@ compilation listed both new routes but emitted a Turbopack cache-write warning
 during shutdown; hosted build passed. Local PostgreSQL integration skips
 because `CHRON_TEST_DATABASE_URL` is unset.
 
-The staging host is still running e6f43d4 at `/opt/chron/releases/e6f43d4`; the
-Research slice is not deployed. Prior deployment changed only the Chron release
-symlink and `chron-web.service`. No other VPS service, environment file, or
-Cloudflare resource was changed. Public HTTPS sign-in previously returned 200
-with valid TLS/HSTS, and `/calendar` redirected to sign-in. No test account is
-available for authenticated browser verification.
+GitHub Actions run 41423649691 passed on 6ddcaf1. The release fetched from
+`https://github.com/2q9e/chron.git` passed the 21 Research tests, production
+dependency audit (zero vulnerabilities), and production build on the VPS.
+
+Staging now runs 6ddcaf1 at `/opt/chron/releases/6ddcaf1`. Migration 0016 and
+the four table grants were applied atomically on the live Chron database over
+verified PostgreSQL TLS, using the separate restricted migration role. Forced
+RLS, the owner policy, and account-deletion cascade were verified. The deploy
+changed only the Chron release directory, database migration/grant, release
+symlink, and `chron-web.service`; no environment file, other VPS service, or
+Cloudflare resource was changed. HTTPS `/sign-in` returns 200 with valid TLS
+and HSTS; `/research` redirects to `/sign-in`; an unauthenticated same-origin
+API POST returns 401. The actual HTTPS sign-in page and signed-out Research
+redirect rendered in the in-app browser. No test account is available for
+authenticated Research or source-fetch verification.
 
 The Codex Security scan reviewed all 20 changed files from e6f43d4 to b71d104
 and found zero reportable candidates. Review was sequential because this
-runtime cannot enforce filesystem isolation for delegated agents. Verify the
-live DB role/grants, migration 0016, HTTPS/HSTS, and signed-out route gate after
-deployment; authenticated UI verification still needs an authorized test
-account.
+runtime cannot enforce filesystem isolation for delegated agents. The live
+runtime and migration roles were verified as separate, non-superuser, and
+without `BYPASSRLS`; authenticated UI verification still needs an authorized
+test account.
 
 ## Current milestone
 
@@ -108,12 +117,14 @@ docs/research/web-retrieval.md. No source text is saved or sent to AI.
   `apps/web/features/research/server/`, `apps/web/app/research/`, and
   `apps/web/features/research/presentation/`; migration 0016 persists the
   owner-scoped quota. See `docs/research/web-retrieval.md`.
-- Run 41423159092 passed on 7217f34, including all migrations through 0016,
-  Research unit tests, PostgreSQL isolation/deletion checks, dependency audit,
-  and production build. The Research feature remains undeployed until 0016 and
-  the minimum Chron-only runtime grant are applied.
-- The `e6f43d4` release is active. HTTPS sign-in, calendar redirect, valid TLS,
-  and HSTS were verified after restarting only `chron-web.service`.
+- Run 41423649691 passed on 6ddcaf1. The VPS release passed the 21 Research
+  tests, zero-vulnerability production dependency audit, and production build.
+- The `6ddcaf1` release is active. Migration 0016 and the minimal runtime
+  grants were applied and catalog-verified on the live Chron database. HTTPS
+  sign-in returns 200 with valid TLS/HSTS, `/research` redirects to sign-in,
+  and the unauthenticated API returns 401. The real sign-in page rendered in a
+  browser. Authenticated Research and live source-fetch verification remain
+  open because no test account is available.
 - Occurrence movement and following-series splitting are pushed on `main`;
   calendar source at `23606fc` passed run 41412546906, including PostgreSQL
   16 integration and the production build.
