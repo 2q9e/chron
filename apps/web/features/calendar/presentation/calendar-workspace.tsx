@@ -7,7 +7,7 @@ import { calendarEventSeries, type CalendarEventEntry, type CalendarPreferences,
 import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
-import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, navigateDate, newEventDraft, validateCalendarEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
+import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, navigateDate, newEventDraft, updateEventDraft, validateCalendarEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
 import { CalendarEditor, type Editor } from "./calendar-editor";
 import { CalendarSearch } from "./calendar-search";
 import { CalendarPreferencesForm } from "./calendar-preferences";
@@ -235,7 +235,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     else rememberEditorOpener();
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
-    setEditor({ generation: editorGeneration.current, event, operationKey: event.recurrenceRule ? crypto.randomUUID() : null, operationAction: event.recurrenceRule ? "update" : null, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false, seriesDraft: null }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
+    setEditor({ generation: editorGeneration.current, event, operationKey: event.recurrenceRule ? crypto.randomUUID() : null, operationAction: event.recurrenceRule ? "update" : null, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : event.reminderTimeZone ?? preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false, seriesDraft: null }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
   function changeDraft(field: keyof EventDraft, value: string) {
     if (editorStale || calendarLocked) return;
@@ -244,7 +244,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       ...current,
       operationKey: !current.event || current.event.recurrenceRule ? nextOperationKey : current.operationKey,
       operationAction: !current.event ? "create" : current.event.recurrenceRule ? "update" : null,
-      draft: { ...current.draft, [field]: value },
+      draft: updateEventDraft(current.draft, field, value),
       errors: {},
       review: null,
       conflicts: [],

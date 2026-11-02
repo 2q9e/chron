@@ -524,17 +524,17 @@
 .review h3 {
   margin-top: 0;
 }
-.recurrence {
+.recurrence, .reminder {
   border: 1px solid var(--line);
   padding: .75rem 1rem 1rem;
   display: grid;
   gap: .75rem;
 }
-.recurrence legend {
+.recurrence legend, .reminder legend {
   font-weight: 700;
   padding: 0 .35rem;
 }
-.recurrence p {
+.recurrence p, .reminder p {
   margin: 0;
   color: var(--muted);
   font-size: .875rem;

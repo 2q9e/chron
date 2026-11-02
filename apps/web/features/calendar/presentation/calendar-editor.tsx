@@ -5,7 +5,11 @@ import type {
   CalendarEventMutation,
   CalendarSeriesDraft,
 } from "../domain/types";
-import type { EventDraft, EventDraftField } from "./calendar-model";
+import { reminderReviewText, type EventDraft, type EventDraftField } from "./calendar-model";
+import {
+  allDayCalendarReminderChoices,
+  timedCalendarReminderChoices,
+} from "../domain/reminders.ts";
 import styles from "./calendar.module.css";
 
 export type Editor = {
@@ -43,6 +47,23 @@ type Props = {
 export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   const locked = busy || stale || retryOnly;
   const errorPanel = useRef<HTMLDivElement | null>(null);
+  const reminderOptions = editor.draft.kind === "timed"
+    ? timedCalendarReminderChoices.map((value) => ({
+        value,
+        label: value === "none" ? "No reminder"
+          : value === "at-start" ? "At event start"
+            : value === "one-local-day-before" ? "One local day before, at the same time"
+              : `${value.split("-")[0]} minutes before`,
+      }))
+    : allDayCalendarReminderChoices.map((value) => ({
+        value,
+        label: value === "none" ? "No reminder"
+          : value === "event-day-9am" ? "9:00 AM on the first day"
+            : "9:00 AM on the previous day",
+      }));
+  const reminderNote = editor.draft.reminderChoice === "none"
+    ? "No email reminder is scheduled."
+    : `Reminders go to your verified Chron email address. ${editor.draft.kind === "all-day" ? `All-day reminder time zone: ${editor.zone}.` : `Timed reminders use ${editor.zone}.`}`;
 
   useEffect(() => {
     if (error && !busy) errorPanel.current?.focus();
@@ -81,6 +102,24 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
             <option value="all-day">All day</option>
           </select>
         </label>
+        <fieldset className={styles.reminder}>
+          <legend>Email reminder</legend>
+          <label htmlFor="reminder-choice">Timing
+            <select
+              id="reminder-choice"
+              disabled={locked}
+              value={editor.draft.reminderChoice}
+              onChange={(e) => onChange("reminderChoice", e.target.value)}
+              aria-invalid={!!editor.errors.reminderChoice}
+              aria-describedby={editor.errors.reminderChoice ? "reminder-choice-error" : "reminder-choice-note"}
+            >
+              {reminderOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
+          </label>
+          {editor.errors.reminderChoice
+            ? <p id="reminder-choice-error" className={styles.fieldError}>{editor.errors.reminderChoice}</p>
+            : <p id="reminder-choice-note" aria-live="polite">{reminderNote}</p>}
+        </fieldset>
         {(!editor.event || editor.event.recurrenceRule) && (
           <fieldset className={styles.recurrence}>
             <legend>{editor.event ? "Repeating series" : "Repeat"}</legend>
@@ -262,6 +301,9 @@ function SeriesDraftReview({
       {draft.action === "create" && draft.event && (
         <p><strong>Proposed:</strong> {describeSeries(draft.event, draft.recurrenceRule)} · Calendar time zone {draft.calendarTimeZone}</p>
       )}
+      {draft.action !== "delete" && draft.event && (
+        <p aria-live="polite">{reminderReviewText(draft.event, draft.afterOccurrences[0])}</p>
+      )}
       {draft.action === "update" && currentEvent && draft.event && (
         <dl className={styles.seriesSummary}>
           <div><dt>Current</dt><dd>{describeSeries(currentEvent, currentEvent.recurrenceRule ?? null)}</dd></div>
@@ -331,6 +373,7 @@ function EventReview({ event, conflicts, busy, retryOnly, onSave }: { event: Cal
       <p>{event.kind === "timed"
         ? `${event.startLocal}${occurrence(event.startDisambiguation)} to ${event.endLocal}${occurrence(event.endDisambiguation)} · ${event.timeZone}`
         : `${event.startDate} through the day before ${event.endDate} · All day`}</p>
+      <p aria-live="polite">{reminderReviewText(event)}</p>
       {event.details && <p className={styles.details}>{event.details}</p>}
       <ConflictSummary conflicts={conflicts} />
       <button type="button" disabled={busy} onClick={onSave}>{busy ? "Saving…" : retryOnly ? "Retry approved save" : "Approve and save"}</button>
