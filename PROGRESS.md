@@ -2,21 +2,23 @@
 
 ## Current checkpoint — 2026-11-02
 
-Month view now shows two events per date and keeps the remainder reachable in
-a native disclosure. Each disclosure includes its date in its accessible
-name. The expanded date survives event-editor reloads, and focus returns to
-the source event, disclosure, or date cell after saves and drag moves. Drag
-callbacks retain the actual source handle and date; delayed close events cannot
-collapse a different day's disclosure.
+Calendar users can start moving a repeating occurrence from its editor using
+the keyboard. The selected occurrence's schedule and series identity seed the
+existing review-and-approve flow. Duration is preserved across timed and
+all-day moves, including daylight-saving gaps and repeated local times. The
+editor refuses to discard unfinished changes, and move announcements specify
+whether an event, occurrence, or full series is being moved.
 
-Commits `aa47c2f` (`improve`) and `2c63245` (`fix`), authored as `2q9e`, are
-pushed to the only GitHub branch, `main`, over HTTPS. Calendar presentation
-tests (71), lint, typecheck, and `git diff --check` pass. A read-only independent re-review found no
-remaining issue in disclosure state or focus recovery. The HTTPS staging page
-opens to sign-in; no authorized test account is available, so the signed-in
-calendar has not been browser-verified. The local production build was not run
-with 97 MB free. The non-test app source scan found no `http://` URL. Staging
-remains on release `6ddcaf1`; the documented SSH preflight was rejected, so no
+Commit `cafeccf` (`improve`), authored as `2q9e`, is pushed to the only GitHub
+branch, `main`, over HTTPS; it contains the latest calendar move refinement.
+Calendar layout tests (73), calendar time tests (66), lint, typecheck, and
+`git diff --check` pass. Independent source re-review found the previously
+identified move-flow issues resolved. A request to
+`https://testing.uwu.markets/calendar` verified TLS and redirected to sign-in;
+no authorized test account is available, so the signed-in calendar has not
+been browser-verified. The production build was not run with 96 MB free. The
+non-test app source scan found no non-TLS absolute URL. Staging remains on
+release `6ddcaf1`; the documented SSH preflight was rejected earlier, so no
 deployment, VPS, or Cloudflare changes were made.
 
 ## Current checkpoint — 2026-11-02

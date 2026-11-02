@@ -2,27 +2,28 @@
 
 ## Current checkpoint — 2026-11-02
 
-The calendar month view caps each date at two visible events and exposes all
-remaining events through a native disclosure. Screen-reader names include the
-date. The open date persists while the editor reloads data; saves and drag
-moves restore focus to the source event or its date's disclosure/date button.
-Drag callbacks carry their source handle and date, and delayed disclosure
-toggle events are guarded against closing a newly opened date.
+Calendar users can start moving a repeating occurrence from its editor with
+the keyboard. The selected occurrence's exact schedule and series identity
+seed the existing review-and-approve flow. Timed and all-day duration is
+preserved, including daylight-saving transitions. Unfinished edits are not
+discarded, and announcements identify whether the move affects an event, an
+occurrence, or the full series.
 
-Commits `aa47c2f` (`improve`) and `2c63245` (`fix`) are pushed by `2q9e` to the
-single GitHub `main` branch over HTTPS. Calendar presentation tests (71), lint,
-typecheck, and diff checks pass. Independent read-only review found no remaining issue in these
-focus/disclosure changes. The HTTPS staging route currently redirects to
-sign-in; signed-in browser verification is pending an authorized test account.
-The local build was not attempted with 97 MB free. Staging remains on release
-`6ddcaf1`; the documented SSH preflight was rejected, so no VPS or Cloudflare
-change was made. Non-test app source contains no `http://` URL.
+Commit `cafeccf` (`improve`) is pushed by `2q9e` to the single GitHub `main`
+branch over HTTPS. Calendar layout tests (73), calendar time tests (66), lint,
+typecheck, and diff checks pass. Independent source re-review found the
+identified move-flow issues resolved. The HTTPS route
+`https://testing.uwu.markets/calendar` verified TLS and redirected to sign-in;
+there is no authorized test account for signed-in browser verification. The
+production build was not run with 96 MB free. Staging remains on release
+`6ddcaf1`; the documented SSH preflight was rejected earlier, so no VPS or
+Cloudflare change was made. Non-test app source has no non-TLS absolute URL.
 
 Next actions:
 
 1. Continue calendar implementation on `main`; keep the landing page paused.
-2. Deploy only after authorized VPS access succeeds; change only Chron's
-   release and service, then verify at `https://testing.uwu.markets`.
+2. Deploy only after authorized VPS access succeeds; use HTTPS and change only
+   Chron's release and service.
 3. Verify signed-in calendar flows in a browser only with an authorized test
    account.
 
