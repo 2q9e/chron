@@ -19,6 +19,36 @@ export type CalendarRecurrenceRule = Readonly<{
   count: number;
 }>;
 
+export type CalendarOccurrenceMovementRequest =
+  | Readonly<{
+      kind: "timed";
+      startLocal: string;
+      endLocal: string;
+      timeZone: string;
+      startDisambiguation?: "earlier" | "later";
+      endDisambiguation?: "earlier" | "later";
+    }>
+  | Readonly<{
+      kind: "all-day";
+      startDate: string;
+      endDate: string;
+    }>;
+
+export type CalendarOccurrenceMovement =
+  | Readonly<{
+      kind: "timed";
+      startLocal: string;
+      endLocal: string;
+      timeZone: string;
+      startsAt: string;
+      endsAt: string;
+    }>
+  | Readonly<{
+      kind: "all-day";
+      startDate: string;
+      endDate: string;
+    }>;
+
 export type CalendarSeriesDraftRequest =
   | Readonly<{
       action: "create";
@@ -56,6 +86,15 @@ export type CalendarSeriesDraftRequest =
       targetRevision: number;
       occurrenceKey: string;
       calendarTimeZone: string;
+    }>
+  | Readonly<{
+      action: "move-occurrence";
+      scope: "occurrence";
+      targetEventId: string;
+      targetRevision: number;
+      occurrenceKey: string;
+      calendarTimeZone: string;
+      movement: CalendarOccurrenceMovementRequest;
     }>;
 
 export type CalendarSeriesOccurrenceSnapshot = Readonly<{
