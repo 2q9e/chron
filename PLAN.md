@@ -34,6 +34,19 @@ conflict review, finite recurring series with full-series proposals, and
 time-zone-aware reminders. One-off drag movement, time-grid creation, and
 resize interactions open the existing explicit-review flow.
 
+`C1-month1` makes dense month cells compact without hiding events from users:
+two events remain visible per date and the rest are available through a native
+disclosure with a date-specific accessible name. The open date persists while
+the editor reloads events. After a save or drag move, focus returns to the
+source event or its date's disclosure/date button. Drag callbacks retain their
+source handle and date; a delayed close for an older disclosure cannot close
+the newly opened date. This uses S358 (month grid composition), S100
+(progressive disclosure), responsive and accessibility guidance, and the
+independent review findings. Implementation and regression test are pushed in
+`aa47c2f` and `2c63245`; the presentation suite has 71 passing tests, with
+lint and typecheck passing. The authenticated browser flow remains unverified
+without an authorized test account.
+
 `C1-study0` adds deterministic study-time proposals around owner-scoped saved
 events. Each proposal opens in the current event editor for conflict review
 and explicit approval. The planner does not call an AI provider or write

@@ -9,9 +9,9 @@ moves restore focus to the source event or its date's disclosure/date button.
 Drag callbacks carry their source handle and date, and delayed disclosure
 toggle events are guarded against closing a newly opened date.
 
-Commit `aa47c2f` (`improve`) is pushed by `2q9e` to the single GitHub `main`
-branch over HTTPS. Calendar presentation tests (70), lint, typecheck, and diff
-checks pass. Independent read-only review found no remaining issue in these
+Commits `aa47c2f` (`improve`) and `2c63245` (`fix`) are pushed by `2q9e` to the
+single GitHub `main` branch over HTTPS. Calendar presentation tests (71), lint,
+typecheck, and diff checks pass. Independent read-only review found no remaining issue in these
 focus/disclosure changes. The HTTPS staging route currently redirects to
 sign-in; signed-in browser verification is pending an authorized test account.
 The local build was not attempted with 97 MB free. Staging remains on release

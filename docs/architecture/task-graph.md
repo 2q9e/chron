@@ -1600,3 +1600,46 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   single-service rollout and pending-draft rollback constraints. The
   documented SSH login was rejected during read-only preflight; no deploy
   command or VPS/Cloudflare change ran.
+
+### C1-month1 — compact month cells and focus recovery
+
+- **Task ID:** C1-month1
+- **Objective:** Keep month cells compact while preserving access to every
+  event, meaningful disclosure labels, and the user's place after event edits
+  or drag moves.
+- **Assigned agent:** Main integration owner; a read-only independent review
+  examined the disclosure and focus behavior. Runtime model identity and
+  reasoning effort were not independently attested.
+- **Dependencies:** Existing persisted month view, event controls, editor
+  reload flow, and calendar month-grid helpers.
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-model.ts`,
+  `calendar-model.test.mjs`, `calendar-views.tsx`, `calendar-event-control.tsx`,
+  `calendar-workspace.tsx`, and `calendar.module.css`; project plan, progress,
+  handoff, and task graph.
+- **Read-only files:** Calendar event domain types, shared theme tokens,
+  authentication boundary, and existing user-scoped event mutation flow.
+- **Required skills:** S358 (month grid composition), S100 (progressive
+  disclosure), installed responsive-design and accessibility guidance,
+  frontend-design-review, and anti-slop review. The relevant guidance was
+  read and applied.
+- **Security permissions:** Calendar presentation source, focused tests, and
+  project documentation only. No credentials, private user data, reference
+  materials, external network retrieval, deployment, or unrelated VPS/
+  Cloudflare changes.
+- **Acceptance criteria:** Show at most two events inline per date and keep
+  overflow events operable in the native disclosure; include the full date in
+  its accessible name; keep only the selected disclosure open; preserve that
+  state across editor reload; restore focus to the event or date after save or
+  drag; guard stale close events; retain all event data in input order.
+- **Tests:** Calendar presentation suite (71), lint, typecheck, and diff checks
+  pass. An independent read-only reviewer found no remaining issue. HTTPS
+  staging opens to sign-in, but the authenticated calendar was not tested
+  without an authorized account. The local production build was not run with
+  97 MB free.
+- **Expected deliverables:** Compact month cells, date-labeled accessible
+  disclosure, stable editor/drag focus return, deterministic regression tests,
+  and updated handoff.
+- **Status:** Source is pushed to the only HTTPS GitHub branch, `main`, as
+  `aa47c2f improve` and `2c63245 fix`, authored by `2q9e`. Staging remains on
+  `6ddcaf1`; the documented SSH preflight was rejected, so no deploy, VPS, or
+  Cloudflare change ran.

@@ -9,9 +9,9 @@ the source event, disclosure, or date cell after saves and drag moves. Drag
 callbacks retain the actual source handle and date; delayed close events cannot
 collapse a different day's disclosure.
 
-Commit `aa47c2f` (`improve`), authored as `2q9e`, is pushed to the only GitHub
-branch, `main`, over HTTPS. Calendar presentation tests (70), lint, typecheck,
-and `git diff --check` pass. A read-only independent re-review found no
+Commits `aa47c2f` (`improve`) and `2c63245` (`fix`), authored as `2q9e`, are
+pushed to the only GitHub branch, `main`, over HTTPS. Calendar presentation
+tests (71), lint, typecheck, and `git diff --check` pass. A read-only independent re-review found no
 remaining issue in disclosure state or focus recovery. The HTTPS staging page
 opens to sign-in; no authorized test account is available, so the signed-in
 calendar has not been browser-verified. The local production build was not run
