@@ -4,7 +4,9 @@ import {
   allDayEventsForDate,
   buildEventDraft,
   newEventDraft,
+  reminderReviewText,
   timedEventSegmentsForDate,
+  updateEventDraft,
   validateCalendarEventDraft,
 } from "./calendar-model.ts";
 
@@ -152,6 +154,7 @@ test("the spring-forward day keeps event positions mapped to elapsed time", () =
 test("new event drafts default to one-off and accept a finite weekly series", () => {
   const draft = newEventDraft("2026-06-15");
   assert.equal(draft.repeatFrequency, "");
+  assert.equal(draft.reminderChoice, "none");
 
   const reviewed = validateCalendarEventDraft({
     ...draft,
@@ -167,6 +170,70 @@ test("new event drafts default to one-off and accept a finite weekly series", ()
     interval: 2,
     count: 5,
   });
+  assert.equal(reviewed.mutation.reminderChoice, "none");
+});
+
+test("all-day reminder choices persist the calendar zone and reject timed choices", () => {
+  const draft = newEventDraft("2026-06-15");
+  const event = validateCalendarEventDraft({
+    ...draft,
+    kind: "all-day",
+    title: "Exam",
+    reminderChoice: "previous-day-9am",
+  }, "America/Montreal");
+  assert.equal(event.ok, true);
+  assert.deepEqual(event.mutation, {
+    kind: "all-day",
+    title: "Exam",
+    startDate: "2026-06-15",
+    endDate: "2026-06-16",
+    reminderChoice: "previous-day-9am",
+    reminderTimeZone: "America/Montreal",
+  });
+
+  const invalid = validateCalendarEventDraft({
+    ...draft,
+    kind: "all-day",
+    title: "Exam",
+    reminderChoice: "15-minutes-before",
+  }, "America/Montreal");
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.errors.reminderChoice, /all-day event/u);
+});
+
+test("changing event type clears an incompatible reminder and accepts only known types", () => {
+  const timed = { ...newEventDraft("2026-06-15"), reminderChoice: "15-minutes-before" };
+  const allDay = updateEventDraft(timed, "kind", "all-day");
+  assert.equal(allDay.kind, "all-day");
+  assert.equal(allDay.reminderChoice, "none");
+  assert.equal(updateEventDraft(allDay, "kind", "invalid"), allDay);
+});
+
+test("timed event reminder review shows the exact local delivery time", () => {
+  const draft = newEventDraft("2026-11-10");
+  const event = validateCalendarEventDraft({
+    ...draft,
+    title: "Exam",
+    startLocal: "2026-11-10T09:00",
+    endLocal: "2026-11-10T10:00",
+    reminderChoice: "15-minutes-before",
+  }, "America/Montreal");
+  assert.equal(event.ok, true);
+  assert.equal(event.mutation.reminderChoice, "15-minutes-before");
+  assert.match(reminderReviewText(event.mutation), /8:45 AM \(America\/Montreal\)/u);
+});
+
+test("all-day reminder review uses the captured zone and previous calendar date", () => {
+  const text = reminderReviewText({
+    kind: "all-day",
+    title: "Exam",
+    startDate: "2026-11-10",
+    endDate: "2026-11-11",
+    reminderChoice: "previous-day-9am",
+    reminderTimeZone: "America/Montreal",
+  });
+  assert.match(text, /Monday, November 9, 2026 at 9:00 AM/u);
+  assert.match(text, /America\/Montreal/u);
 });
 
 test("recurrence validation enforces the finite horizon and seven-day event cap", () => {
@@ -204,6 +271,8 @@ test("editing a recurring root retains its original series dates and rule", () =
     revision: 2,
     startDate: "2026-06-15",
     endDate: "2026-06-16",
+    reminderChoice: "previous-day-9am",
+    reminderTimeZone: "America/Montreal",
     recurrenceRule: { frequency: "weekly", interval: 1, count: 8 },
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -213,4 +282,5 @@ test("editing a recurring root retains its original series dates and rule", () =
   assert.equal(draft.endDate, "2026-06-16");
   assert.equal(draft.repeatFrequency, "weekly");
   assert.equal(draft.repeatCount, "8");
+  assert.equal(draft.reminderChoice, "previous-day-9am");
 });

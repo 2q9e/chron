@@ -13,9 +13,17 @@ import type {
   CalendarEventMutation,
   CalendarPreferences,
   CalendarRecurrenceRule,
+  CalendarSeriesOccurrenceSnapshot,
   CreateAllDayCalendarEvent,
   CreateTimedCalendarEvent,
 } from "../domain/types";
+import {
+  allDayCalendarReminderChoices,
+  scheduleCalendarReminder,
+  timedCalendarReminderChoices,
+  type AllDayCalendarReminderChoice,
+  type TimedCalendarReminderChoice,
+} from "../domain/reminders.ts";
 
 export type CalendarView = "day" | "week" | "month" | "agenda";
 export type CalendarRange = Readonly<{ from: string; to: string }>;
@@ -33,6 +41,7 @@ export type EventDraft = Readonly<{
   repeatFrequency: "" | "daily" | "weekly";
   repeatInterval: string;
   repeatCount: string;
+  reminderChoice: TimedCalendarReminderChoice | AllDayCalendarReminderChoice;
 }>;
 
 export type EventDraftField =
@@ -46,7 +55,8 @@ export type EventDraftField =
   | "endDisambiguation"
   | "repeatFrequency"
   | "repeatInterval"
-  | "repeatCount";
+  | "repeatCount"
+  | "reminderChoice";
 
 export type EventDraftValidation =
   | Readonly<{ ok: true; mutation: CalendarEventMutation }>
@@ -261,6 +271,7 @@ export function buildEventDraft(
       repeatFrequency: event.recurrenceRule?.frequency ?? "",
       repeatInterval: String(event.recurrenceRule?.interval ?? 1),
       repeatCount: String(event.recurrenceRule?.count ?? 2),
+      reminderChoice: event.reminderChoice ?? "none",
     };
   }
 
@@ -290,6 +301,7 @@ export function buildEventDraft(
     repeatFrequency: event.recurrenceRule?.frequency ?? "",
     repeatInterval: String(event.recurrenceRule?.interval ?? 1),
     repeatCount: String(event.recurrenceRule?.count ?? 2),
+    reminderChoice: event.reminderChoice ?? "none",
   };
 }
 
@@ -307,7 +319,21 @@ export function newEventDraft(selectedDate: string): EventDraft {
     repeatFrequency: "",
     repeatInterval: "1",
     repeatCount: "2",
+    reminderChoice: "none",
   };
+}
+
+export function updateEventDraft(
+  draft: EventDraft,
+  field: keyof EventDraft,
+  value: string,
+): EventDraft {
+  if (field === "kind") {
+    if (value !== "timed" && value !== "all-day") return draft;
+    if (value === draft.kind) return draft;
+    return { ...draft, kind: value, reminderChoice: "none" };
+  }
+  return { ...draft, [field]: value };
 }
 
 export function validateCalendarEventDraft(
@@ -385,14 +411,28 @@ export function validateEventDraft(
 
   try {
     if (draft.kind === "all-day") {
+      if (!allDayCalendarReminderChoices.includes(
+        draft.reminderChoice as AllDayCalendarReminderChoice,
+      )) {
+        return { ok: false, errors: { reminderChoice: "Choose a reminder for an all-day event." } };
+      }
       const range = resolveAllDayRange(draft.startDate, draft.endDate);
+      const reminderChoice = draft.reminderChoice as AllDayCalendarReminderChoice;
       const mutation: CreateAllDayCalendarEvent = {
         kind: "all-day",
         title,
         ...(draft.details.trim() ? { details: draft.details.trim() } : {}),
         ...range,
+        reminderChoice,
+        ...(reminderChoice === "none" ? {} : { reminderTimeZone: timeZone }),
       };
       return { ok: true, mutation };
+    }
+
+    if (!timedCalendarReminderChoices.includes(
+      draft.reminderChoice as TimedCalendarReminderChoice,
+    )) {
+      return { ok: false, errors: { reminderChoice: "Choose a reminder for a timed event." } };
     }
 
     const startResolution = inspectLocalDateTime(draft.startLocal, timeZone);
@@ -437,6 +477,7 @@ export function validateEventDraft(
       startLocal: start.local,
       endLocal: end.local,
       timeZone: start.timeZone,
+      reminderChoice: draft.reminderChoice as TimedCalendarReminderChoice,
       ...(draft.startDisambiguation ? { startDisambiguation: draft.startDisambiguation } : {}),
       ...(draft.endDisambiguation ? { endDisambiguation: draft.endDisambiguation } : {}),
     };
@@ -446,6 +487,53 @@ export function validateEventDraft(
     const field = draft.kind === "all-day" ? "startDate" : "startLocal";
     return { ok: false, errors: { [field]: message } };
   }
+}
+
+export function reminderReviewText(
+  event: CalendarEventMutation,
+  occurrence?: CalendarSeriesOccurrenceSnapshot,
+): string {
+  const reminderChoice = event.reminderChoice ?? "none";
+  if (reminderChoice === "none") return "No email reminder.";
+
+  const schedule = event.kind === "timed"
+    ? (() => {
+        const isMatchingOccurrence = occurrence?.kind === "timed";
+        const startLocal = isMatchingOccurrence && occurrence.startLocal
+          ? occurrence.startLocal
+          : event.startLocal;
+        const timeZone = isMatchingOccurrence && occurrence.timeZone
+          ? occurrence.timeZone
+          : event.timeZone;
+        const startsAt = isMatchingOccurrence && occurrence.startsAt
+          ? occurrence.startsAt
+          : resolveLocalDateTime(startLocal, timeZone, event.startDisambiguation).instant;
+        return scheduleCalendarReminder(
+          reminderChoice as TimedCalendarReminderChoice,
+          { occurrenceKey: occurrence?.occurrenceKey ?? "review", kind: "timed", startLocal, startsAt, timeZone },
+        );
+      })()
+    : (() => {
+        const isMatchingOccurrence = occurrence?.kind === "all-day";
+        const startDate = isMatchingOccurrence && occurrence.startDate
+          ? occurrence.startDate
+          : event.startDate;
+        const reminderTimeZone = event.reminderTimeZone;
+        if (!reminderTimeZone) return null;
+        return scheduleCalendarReminder(
+          reminderChoice as AllDayCalendarReminderChoice,
+          { occurrenceKey: occurrence?.occurrenceKey ?? "review", kind: "all-day", startDate },
+          reminderTimeZone,
+        );
+      })();
+
+  if (!schedule) return "No email reminder.";
+  const formatted = new Intl.DateTimeFormat(undefined, {
+    dateStyle: "full",
+    timeStyle: "short",
+    timeZone: schedule.timeZone,
+  }).format(new Date(schedule.scheduledAt));
+  return `Email reminder at ${formatted} (${schedule.timeZone}), sent to your verified email.`;
 }
 
 export type TimedEventSegment = Readonly<{
