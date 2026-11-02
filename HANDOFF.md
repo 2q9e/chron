@@ -12,28 +12,29 @@ The public tree contains no AGENTS.md; local operating instructions remain
 untracked. No old calendar reference folder was inspected or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41414536143 passed on commit
-`dc031a3`, including PostgreSQL 16 migration and tenant-isolation checks, lint,
+https://github.com/2q9e/chron/actions/runs/41415622291 passed on commit
+`1752ddb`, including PostgreSQL 16 migration and tenant-isolation checks, lint,
 typecheck, calendar policy/auth/time/API/layout/recovery checks, HTTPS reminder
 checks, dependency audit, and production build. Local calendar API (111),
-layout/API client (60), and time/domain (48) suites pass; typecheck and lint
+layout/API client (61), and time/domain (48) suites pass; typecheck and lint
 pass. PostgreSQL integration skips locally because `CHRON_TEST_DATABASE_URL`
 is unset.
 
 The testing site at https://testing.uwu.markets/sign-in was checked over HTTPS;
 it returned 200 with valid TLS and HSTS in the earlier check. On 2026-11-02,
 the HTTPS `/calendar` route redirected to `/sign-in`, and the sign-in interface
-rendered in a real browser. The accent preference flow could not be tested
-without an authenticated account. The `dc031a3` change is not deployed because
-the private key path in the local login notes is unavailable in this
-environment. No VPS or Cloudflare resources were changed.
+rendered in a real browser. The accent and reduced-motion preference flows
+could not be tested without an authenticated account. The `1752ddb` change is
+not deployed because the private key path in the local login notes is
+unavailable in this environment. No VPS or Cloudflare resources were changed.
 
 ## Current milestone
 
 C1 — calendar — is active. Landing-page work remains paused. The calendar has
 owner-scoped persisted events and preferences, including a validated custom
-accent color with contrast correction, four views, create/edit/delete,
-search, conflict review, finite recurrence with full-series proposals and
+accent color with contrast correction and a reduced-motion preference, four
+views, create/edit/delete, search, conflict review, finite recurrence with
+full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
 interactions. Single-occurrence cancellation, reviewed restoration, and
 reviewed per-occurrence movement are pushed on main. Migration 0012 gives

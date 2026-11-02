@@ -1238,12 +1238,12 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
 - **Status:** Source is pushed as `d122d05 update`. Live SMTP, database, and
   staging delivery remain unverified.
 
-### C1-pref1 — persisted accent customization
+### C1-pref1 — persisted appearance and motion customization
 
 - **Task ID:** C1-pref1
-- **Objective:** Add a per-account accent color to calendar preferences,
-  preview it immediately across the active theme, and maintain readable
-  contrast.
+- **Objective:** Add per-account accent and reduced-motion preferences, preview
+  changes immediately, and maintain readable contrast while honoring the
+  operating-system motion setting.
 - **Assigned agent:** Main integration owner.
 - **Required model:** Runtime model identity was not attested; no model claim.
 - **Required reasoning level:** Runtime reasoning configuration was not
@@ -1252,29 +1252,32 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   calendar themes.
 - **Owned files:** `apps/web/features/calendar/domain/calendar-accent.ts`,
   `apps/web/features/calendar/domain/calendar-accent.test.mjs`, migration
-  `0014_calendar_accent.sql`, calendar preference schema/API/repository and
-  tests, `calendar-preferences.tsx`, `calendar-workspace.tsx`, the calendar CSS
-  module, and related API client tests.
+  `0014_calendar_accent.sql`, migration
+  `0015_calendar_motion_preference.sql`, calendar preference schema/API/
+  repository and tests, `calendar-preferences.tsx`, `calendar-workspace.tsx`,
+  the calendar CSS module, and related API client tests.
 - **Read-only files:** Shared authentication, unrelated calendar operations,
   and deployment configuration.
-- **Required skills:** S087, S089, S110, S111, S370, S470, and the installed
-  TypeScript, design-system, CSS, form-validation, and accessibility guidance.
-  The entries were reviewed and applied.
+- **Required skills:** S087, S089, S110, S111, S370, S470, S473, and the
+  installed TypeScript, design-system, CSS, form-validation, motion-accessibility,
+  and accessibility guidance. The entries were reviewed and applied.
 - **Security permissions:** Accept only exact six-digit hexadecimal values;
   validate at client, server, and database boundaries; preserve owner-scoped
-  preference access; never put color values in URLs or logs.
+  preference access; never put color values in URLs or logs. Persist a boolean
+  motion choice and never override the system's reduced-motion setting.
 - **Acceptance criteria:** Users can choose an accent, preview it across the
   selected theme, save it per account, and restore the theme default.
   Insufficient contrast is corrected to at least 4.5:1 against the theme
-  surface.
-- **Tests:** Calendar API (111), layout/API client (60), and time/domain (48)
-  tests pass; typecheck and lint pass. CI run 41414536143 passed PostgreSQL 16
-  integration and the production build. Local PostgreSQL integration skips
+  surface. Enabling reduced motion removes calendar animations and smooth
+  scrolling immediately; the operating-system preference remains honored.
+- **Tests:** Calendar API (111), layout/API client (61), and time/domain (48)
+  tests pass; typecheck and lint pass. CI run 41415622291 passed PostgreSQL
+  16 integration and the production build. Local PostgreSQL integration skips
   because no test database is configured.
 - **Expected deliverables:** Validated preference migration and persistence,
   interactive color control, live preview, regression tests, and updated
   handoff evidence.
 - **Status:** Pushed to the only branch as `96d0f3a improve`, `a3e4364 update`,
-  and `dc031a3 update`. Authenticated browser verification and HTTPS staging
-  deployment remain open because no test account or usable deployment key is
-  available.
+  `dc031a3 update`, `1085894 tweak`, and `1752ddb refine`. Authenticated
+  browser verification and HTTPS staging deployment remain open because no
+  test account or usable deployment key is available.

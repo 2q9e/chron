@@ -379,3 +379,18 @@ these scores do not establish rendered quality or persistence.
   the production build, 91-test calendar API suite, 14-test auth suite,
   typecheck, and lint pass without auth/database settings. Staging and real
   authenticated database behavior remain unverified.
+
+## Preference customization follow-up — 2026-11-02
+
+Migration 0014 adds a validated per-account accent override. The calendar
+previews it across the selected theme and adjusts low-contrast colors to meet
+4.5:1 against the theme surface. Migration 0015 persists a per-account
+reduced-motion choice; opting in removes calendar transitions, animations, and
+smooth scrolling. The existing operating-system preference remains honored
+when the saved choice is off.
+
+The API, persistence, contrast, and client response checks pass in source and
+CI. Scores above are unchanged because the authenticated controls were not
+rendered in this session: HTTPS `/calendar` redirects to sign-in, and no test
+account or deployment key is available. Desktop/mobile visual parity and the
+saved-preference reload path remain open browser checks.
