@@ -284,3 +284,71 @@ invent successful results.
   assertions; include both DST fold choices and the spring-forward transition.
 - **Status:** Open. The 46-test presentation suite, typecheck, and lint pass;
   no database-backed browser session is available.
+
+## Timed-event duration resize review (2026-11-01)
+
+This source-level visual and interaction review covers commits `590331f` and
+`c1d7647`. Resize controls appear only on one-off timed segments that end on
+the displayed date, occupy at least 75% of their lane, and are at least 5.5rem
+tall. Pointer input chooses a 15-minute end slot; keyboard activation opens the
+existing editor. The proposal uses the existing conflict check and explicit
+save flow. No authenticated browser or database session was available, so
+these scores do not establish rendered quality or persistence.
+
+| Category | Score | Evidence and limits |
+| --- | ---: | --- |
+| Visual originality | 8/10 | The control uses Chron's event and theme tokens and adds no generic AI decoration; rendered theme parity is unverified. |
+| Typography | 8/10 | Existing event type hierarchy remains and the editor names the proposed duration change; rendered sizing is unverified. |
+| Layout | 7/10 | The end handle is gated by event height and lane width, with 44px targets; overlap and narrow-screen rendering need browser inspection. |
+| Color | 8/10 | Surfaces and accents use existing theme variables; contrast was not measured in a browser. |
+| Animation | 9/10 | No decorative animation was added; pointer feedback remains immediate. |
+| Content | 9/10 | Labels distinguish moving from resizing and say the proposed end is not saved before review. |
+| Interaction | 7/10 | The proposal reaches the shared editor and conflict flow; pointer capture, hit targets, and persistence remain untested live. |
+| Accessibility | 8/10 | Buttons have explicit labels, keyboard activation opens the editor, and drag state is announced; assistive-technology checks remain open. |
+| Functionality | 8/10 | The helper covers timezone conversion, DST folds, min/max duration, and recurring-event rejection; no database-backed save was tested. |
+| Code quality | 9/10 | Resize calculation is a focused typed helper; presentation (51), API (89), time (39), typecheck, and lint pass. |
+| Performance | 8/10 | The interaction adds no animation loop or external dependency; dense-calendar profiling was not run. |
+| Security | 8/10 | Changes reuse authenticated event update and review paths without a direct write route; runtime ownership checks remain unverified. |
+| Product identity | 8/10 | Control labels and visuals follow the calendar's existing language and use no emoji; browser consistency remains to be checked. |
+
+### C-19 — Propose timed-event end changes from the time grid
+
+- **Issue:** Users had to open the editor to adjust the duration of a timed
+  event.
+- **Severity:** P2
+- **Affected files:** `calendar-event-control.tsx`, `calendar-move.ts`,
+  `calendar-views.tsx`, `calendar-workspace.tsx`, `calendar-editor.tsx`, and
+  `calendar.module.css`.
+- **Why it is a problem:** Repeatedly opening the editor adds friction to
+  schedule adjustments and hides the end-time affordance from the time grid.
+- **Recommended correction:** Add a dedicated end handle for usable, one-off
+  timed blocks and open the existing conflict-review editor with the proposed
+  value.
+- **Assigned agent:** Main integration owner.
+- **Verification method:** DST-safe unit tests, API suite, typecheck, lint, and
+  review of the existing conflict/save path; follow with an authenticated
+  browser workflow.
+- **Status:** Fixed in source and pushed as `590331f update` and
+  `c1d7647 improve`. The 51-test presentation suite, 89-test API suite,
+  39-test calendar-time suite, typecheck, and lint pass. Authenticated browser
+  and persisted-save behavior remain unverified.
+
+### C-20 — Verify timed-event resize in an authenticated browser
+
+- **Issue:** The new handle, drag target feedback, editor review, and persisted
+  save have source-level checks only.
+- **Severity:** P2, verification gap
+- **Affected files:** `calendar-event-control.tsx`, `calendar-views.tsx`,
+  `calendar-workspace.tsx`, `calendar-editor.tsx`, and `calendar.module.css`.
+- **Why it is a problem:** Unit tests cannot prove pointer capture, keyboard
+  access, mobile layout, conflict presentation, or saved event duration.
+- **Recommended correction:** Test a disposable account in day/week views on
+  desktop and mobile; cover empty and occupied targets, conflict and clear
+  cases, keyboard use, repeat-hour changes, save/reload, and event ownership.
+- **Assigned agent:** Main integration owner.
+- **Verification method:** Real authenticated browser walkthrough and
+  database assertions; use HTTPS for staging and inspect only the Chron
+  staging route.
+- **Status:** Open. No PostgreSQL service/account is configured and
+  `https://testing.uwu.markets` does not resolve. The build was skipped with
+  56 MB free. No HTTP staging fallback or unrelated VPS change was made.
