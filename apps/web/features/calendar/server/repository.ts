@@ -75,6 +75,42 @@ type EventRow = QueryResultRow & {
   updated_at: Date | string;
 };
 
+type CalendarReminderClaimRow = QueryResultRow & {
+  id: string;
+  event_id: string;
+  event_revision: number;
+  occurrence_key: string;
+  time_zone: string;
+  attempt_count: number;
+  lease_token: string;
+  email: string | null;
+  email_verified: boolean;
+};
+
+export type CalendarReminderClaim = Readonly<{
+  id: string;
+  eventId: string;
+  eventRevision: number;
+  occurrenceKey: string;
+  timeZone: string;
+  attemptCount: number;
+  leaseToken: string;
+  recipient: string | null;
+  recipientVerified: boolean;
+}>;
+
+export type CalendarReminderDeliveryContext = Readonly<{
+  eventKind: "timed" | "all-day";
+  eventStart: string;
+  timeZone: string;
+}>;
+
+export type CalendarReminderOutcome =
+  | Readonly<{ kind: "sent" }>
+  | Readonly<{ kind: "cancelled" }>
+  | Readonly<{ kind: "failed"; errorCode: string }>
+  | Readonly<{ kind: "retry"; errorCode: string; delaySeconds: number }>;
+
 type PreferencesRow = QueryResultRow & {
   theme: CalendarPreferences["theme"];
   density: CalendarPreferences["density"];
@@ -1560,6 +1596,201 @@ export class CalendarRepository {
 
   constructor(pool: Pick<Pool, "connect">) {
     this.pool = pool;
+  }
+
+  claimCalendarReminderJobs(
+    ownerId: string,
+    limit = 5,
+  ): Promise<readonly CalendarReminderClaim[]> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 25) {
+      throw new RangeError("Calendar reminder claim limit must be between 1 and 25.");
+    }
+    const leaseToken = randomUUID();
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      await client.query(
+        `UPDATE calendar_event_reminders reminder
+         SET status = 'cancelled',
+             lease_token = NULL,
+             lease_expires_at = NULL,
+             updated_at = clock_timestamp()
+         FROM calendar_events event
+         WHERE reminder.user_id = $1
+           AND event.user_id = $1
+           AND event.id = reminder.event_id
+           AND event.revision <> reminder.event_revision
+           AND reminder.status IN ('pending', 'leased')`,
+        [ownerId],
+      );
+      await client.query(
+        `UPDATE calendar_event_reminders
+         SET status = 'failed',
+             lease_token = NULL,
+             lease_expires_at = NULL,
+             last_error_code = 'ATTEMPTS_EXHAUSTED',
+             updated_at = clock_timestamp()
+         WHERE user_id = $1
+           AND status = 'leased'
+           AND lease_expires_at <= clock_timestamp()
+           AND attempt_count >= 5`,
+        [ownerId],
+      );
+      const result = await client.query<CalendarReminderClaimRow>(
+        `WITH claimable AS (
+           SELECT reminder.id
+           FROM calendar_event_reminders reminder
+           JOIN calendar_events event
+             ON event.user_id = reminder.user_id
+            AND event.id = reminder.event_id
+            AND event.revision = reminder.event_revision
+           WHERE reminder.user_id = $1
+             AND reminder.attempt_count < 5
+             AND (
+               (reminder.status = 'pending'
+                AND reminder.next_attempt_at <= clock_timestamp())
+               OR
+               (reminder.status = 'leased'
+                AND reminder.lease_expires_at <= clock_timestamp())
+             )
+           ORDER BY reminder.next_attempt_at, reminder.id
+           FOR UPDATE OF reminder SKIP LOCKED
+           LIMIT $2
+         )
+         UPDATE calendar_event_reminders reminder
+         SET status = 'leased',
+             attempt_count = reminder.attempt_count + 1,
+             lease_token = $3::uuid,
+             lease_expires_at = clock_timestamp() + interval '5 minutes',
+             updated_at = clock_timestamp()
+         FROM claimable, "user" account
+         WHERE reminder.id = claimable.id
+           AND account."id" = reminder.user_id
+         RETURNING reminder.id,
+                   reminder.event_id,
+                   reminder.event_revision,
+                   reminder.occurrence_key,
+                   reminder.time_zone,
+                   reminder.attempt_count,
+                   reminder.lease_token,
+                   account.email,
+                   account."emailVerified" AS email_verified`,
+        [ownerId, limit, leaseToken],
+      );
+      return result.rows.map((row) => ({
+        id: row.id,
+        eventId: row.event_id,
+        eventRevision: row.event_revision,
+        occurrenceKey: row.occurrence_key,
+        timeZone: row.time_zone,
+        attemptCount: row.attempt_count,
+        leaseToken: row.lease_token,
+        recipient: row.email,
+        recipientVerified: row.email_verified,
+      }));
+    }, true);
+  }
+
+  calendarReminderLeaseIsCurrent(
+    ownerId: string,
+    claim: CalendarReminderClaim,
+  ): Promise<boolean> {
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const result = await client.query(
+        `SELECT 1
+         FROM calendar_event_reminders reminder
+         JOIN calendar_events event
+           ON event.user_id = reminder.user_id
+          AND event.id = reminder.event_id
+          AND event.revision = reminder.event_revision
+         JOIN "user" account
+           ON account."id" = reminder.user_id
+          AND account.email = $4
+          AND account."emailVerified" IS TRUE
+         WHERE reminder.user_id = $1
+           AND reminder.id = $2::uuid
+           AND reminder.event_revision = $5
+           AND reminder.status = 'leased'
+           AND reminder.lease_token = $3::uuid
+           AND reminder.lease_expires_at > clock_timestamp()`,
+        [ownerId, claim.id, claim.leaseToken, claim.recipient, claim.eventRevision],
+      );
+      return result.rows.length === 1;
+    });
+  }
+
+  calendarReminderDeliveryContext(
+    ownerId: string,
+    claim: CalendarReminderClaim,
+  ): Promise<CalendarReminderDeliveryContext | null> {
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const result = await client.query<EventRow>(
+        `SELECT ${eventColumns}
+         FROM calendar_events
+         WHERE user_id = $1 AND id = $2::uuid AND revision = $3`,
+        [ownerId, claim.eventId, claim.eventRevision],
+      );
+      const row = result.rows[0];
+      if (!row) return null;
+      const event = toCalendarEvent(row);
+      if (event.reminderChoice === "none") return null;
+      const occurrence = reminderOccurrences(event)
+        .find((candidate) => candidate.occurrenceKey === claim.occurrenceKey);
+      if (!occurrence) return null;
+      return occurrence.kind === "timed"
+        ? {
+            eventKind: "timed",
+            eventStart: occurrence.startsAt,
+            timeZone: occurrence.timeZone,
+          }
+        : {
+            eventKind: "all-day",
+            eventStart: occurrence.startDate,
+            timeZone: claim.timeZone,
+          };
+    });
+  }
+
+  recordCalendarReminderOutcome(
+    ownerId: string,
+    claim: CalendarReminderClaim,
+    outcome: CalendarReminderOutcome,
+  ): Promise<boolean> {
+    const status = outcome.kind === "retry" ? "pending" : outcome.kind;
+    const errorCode = outcome.kind === "sent" ? null
+      : outcome.kind === "cancelled" ? "EVENT_STALE"
+        : outcome.errorCode;
+    if (errorCode !== null && !/^[A-Z0-9_]{1,64}$/u.test(errorCode)) {
+      throw new RangeError("Calendar reminder error codes must be sanitized categories.");
+    }
+    const delaySeconds = outcome.kind === "retry" ? outcome.delaySeconds : 0;
+    if (!Number.isInteger(delaySeconds) || delaySeconds < 0 || delaySeconds > 86_400) {
+      throw new RangeError("Calendar reminder retry delay must be bounded to one day.");
+    }
+
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const result = await client.query(
+        `UPDATE calendar_event_reminders
+         SET status = $4,
+             lease_token = NULL,
+             lease_expires_at = NULL,
+             next_attempt_at = CASE
+               WHEN $4 = 'pending'
+                 THEN clock_timestamp() + ($7::integer * interval '1 second')
+               ELSE next_attempt_at
+             END,
+             sent_at = CASE WHEN $4 = 'sent' THEN clock_timestamp() ELSE NULL END,
+             last_error_code = $5,
+             updated_at = clock_timestamp()
+         WHERE user_id = $1
+           AND id = $2::uuid
+           AND event_revision = $6
+           AND status = 'leased'
+           AND lease_token = $3::uuid
+           AND lease_expires_at > clock_timestamp()
+         RETURNING id`,
+        [ownerId, claim.id, claim.leaseToken, status, errorCode, claim.eventRevision, delaySeconds],
+      );
+      return result.rows.length === 1;
+    }, true);
   }
 
   listEvents(
