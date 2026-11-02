@@ -2,6 +2,28 @@
 
 ## Current checkpoint — 2026-11-02
 
+The official Meta Model API review now records the first-party service at
+`https://api.meta.ai/v1` and the current documented tool/structured-output
+constraints. This confirms the API exists; it does not authorize Chron to
+receive and store individual user keys. BYOK intake and inference remain
+disabled pending written Meta clarification or permission for the exact flow
+and qualified legal review. 18+ eligibility, geographic restrictions, and
+attribution approval also remain launch gates. The documentation notes
+conflicting Meta statements about reasoning replay and file expiry. No account
+or key was used and no API request was made.
+
+Commit `81838e5 update` is pushed to the single GitHub `main` branch over
+HTTPS as `2q9e`. The production auth configuration requires an HTTPS public
+origin; the app server requires certificate/key files and binds to loopback. The
+calendar staging route was checked with HTTPS and returned a sign-in redirect
+plus HSTS. No deployment or VPS/Cloudflare change was made. Browser testing is
+unavailable in this session.
+
+Next: continue calendar-first work on `main`, keep the landing page paused,
+and use HTTPS for Git and staging.
+
+## Current checkpoint — 2026-11-02
+
 Visible-range `.ics` exports now preserve each known explicit event category:
 class, assignment, exam, study, personal, and other. Missing, null, and
 unrecognized legacy values are omitted. Tests cover all category mappings,

@@ -2,6 +2,26 @@
 
 ## Current checkpoint — 2026-11-02
 
+Refreshed the official Meta Model API review. Meta documents its direct API at
+`https://api.meta.ai/v1`, confirming that the required inference service
+exists. Chron's per-user key intake and inference remain disabled until written
+permission for the exact server-side BYOK flow and legal review. The 18+,
+geography, and attribution gates also remain. No account, key, or live API call
+was used. The update records strict-schema defaults and two conflicting
+statements in Meta's protocol and file documentation.
+
+Commit `81838e5 update` is on the single GitHub `main` branch, authored as
+`2q9e` and pushed over HTTPS. The project configuration requires HTTPS for
+production authentication; the app server binds TLS locally behind the edge.
+An HTTPS request to `https://testing.uwu.markets/calendar` returned a sign-in
+redirect and HSTS. No source change was deployed, and no VPS or Cloudflare
+resources were changed. Browser use remains unavailable in this session.
+
+Next: continue the calendar-first roadmap on `main`, keep the landing page
+paused, and use HTTPS for all public, Git, and staging endpoints.
+
+## Current checkpoint — 2026-11-02
+
 Visible-range iCalendar exports now carry the event's explicit category for
 class, assignment, exam, study, personal, and other events. Missing, null, and
 unrecognized legacy categories are omitted. The focused cases cover all-day,

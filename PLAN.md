@@ -228,6 +228,11 @@ credentials or user data. Worktree separation is not an OS security sandbox.
 
 ## Current external gates
 
+- Meta's official Model API is documented at `https://api.meta.ai/v1`. This
+  confirms the required first-party inference service exists, but does not
+  verify access for a specific account or authorize Chron's proposed BYOK
+  handling. Use an authorized account to verify models, billing and limits
+  only after the separate key-flow permission gate is resolved.
 - Meta's current Terms require API users and integrated-product end users to
   be 18 or older, bar products targeted at minors, restrict API-key sharing
   outside an issuing team, and grant no trademark license. The exact
