@@ -413,7 +413,10 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
         "SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
         [accountA],
       );
-      assert.deepEqual(ownExceptions.rows, []);
+      assert.deepEqual(ownExceptions.rows, [{
+        event_id: eventA,
+        occurrence_key: movedOccurrenceKey,
+      }]);
       const crossOwnerExceptions = await client.query(
         "SELECT event_id FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
         [accountB],
