@@ -1808,3 +1808,40 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   `aa47c2f improve` and `2c63245 fix`, authored by `2q9e`. Staging remains on
   `6ddcaf1`; the documented SSH preflight was rejected, so no deploy, VPS, or
   Cloudflare change ran.
+
+### C1-theme-fix — calendar theme contrast and mobile density
+
+- **Task ID:** C1-theme-fix
+- **Objective:** Fix two source-level calendar theme defects found by an
+  independent review: custom accents can miss text contrast on event fills,
+  and compact month cells retain desktop height on mobile.
+- **Assigned agent:** `/root/calendar_theme_fix`, configured as GPT-6 Luna MAX.
+- **Required reasoning level:** MAX.
+- **Dependencies:** Existing five persisted calendar themes, C1-pref1 accent
+  handling, and compact-density styles; independent findings from
+  `/root/calendar_theme_audit`.
+- **Owned files:** `apps/web/features/calendar/domain/calendar-accent.ts`,
+  `apps/web/features/calendar/domain/calendar-accent.test.mjs`,
+  `apps/web/features/calendar/presentation/calendar.module.css`, and a focused
+  CSS regression test if needed.
+- **Read-only files:** `AGENTS.md`, `apps/web/AGENTS.md`, `SKILLS.md`, calendar
+  preference/workspace/types, package scripts, and this task contract.
+- **Required skills:** S109, S110, S111, S112, S113, S470, S473, installed
+  TypeScript/CSS/accessibility/frontend-testing guidance, and antislop-human.
+- **Security permissions:** Calendar source and tests only. No network,
+  credentials, user data, old reference folder, deployment, VPS/Cloudflare
+  access, or other repository files. The detached worktree is a coordination
+  boundary, not an OS sandbox; no branch or commit is created by the agent.
+- **Acceptance criteria:** Adjust a user-selected accent to maintain at least
+  4.5:1 contrast against both the theme surface and event surface for all five
+  themes; prove the reported `#767676` Minimal Light case; and add an equal or
+  greater-specificity compact mobile override after the desktop rule so month
+  cells use `min-height: 0` at the mobile breakpoint.
+- **Tests:** Calendar accent/domain and presentation suites, typecheck, lint,
+  and a CSS cascade regression check. Browser rendering is unavailable and
+  must remain explicitly unverified.
+- **Expected deliverables:** Narrow source diff, focused regression coverage,
+  uncommitted handoff patch from the isolated worktree, and verified results
+  for main-agent review before integration.
+- **Status:** Implementation is in progress; an independent source-only review
+  identified both issues. No code change has been integrated or deployed.
