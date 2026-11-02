@@ -790,6 +790,55 @@ test("upserts preferences on the actual user key", async () => {
   ]);
 });
 
+test("updates study defaults without replacing newer preferences from another view", async () => {
+  const currentRow = {
+    theme: "minimal-light",
+    accent_color: null,
+    density: "comfortable",
+    reduce_motion: false,
+    week_starts_on: 0,
+    time_zone: "America/Montreal",
+    study_weekdays: [2, 4],
+    study_day_start: "08:15:00",
+    study_day_end: "19:45:00",
+    study_session_minutes: 75,
+    study_event_buffer_minutes: 30,
+    study_session_break_minutes: 0,
+  };
+  const { pool, calls } = createPool((sql) => ({
+    rows: sql.startsWith("INSERT INTO calendar_preferences") ? [currentRow] : [],
+  }));
+  const repository = new CalendarRepository(pool);
+  const saved = await repository.setStudyPlannerPreferences(ownerId, {
+    theme: "premium-dark",
+    accentColor: "#c36b8e",
+    density: "compact",
+    reduceMotion: true,
+    weekStartsOn: 1,
+    timeZone: "UTC",
+    studyPlanner: {
+      weekdays: [2, 4],
+      dayStart: "08:15",
+      dayEnd: "19:45",
+      sessionMinutes: 75,
+      eventBufferMinutes: 30,
+      sessionBreakMinutes: 0,
+    },
+  });
+
+  assert.equal(saved.theme, "minimal-light");
+  assert.equal(saved.accentColor, null);
+  assert.equal(saved.density, "comfortable");
+  assert.equal(saved.reduceMotion, false);
+  assert.equal(saved.weekStartsOn, 0);
+  assert.equal(saved.timeZone, "America/Montreal");
+  const query = calls.find(({ sql }) => sql.includes("INSERT INTO calendar_preferences"));
+  assert.ok(query);
+  const conflictUpdate = query.sql.split("DO UPDATE SET")[1]?.split("RETURNING")[0] ?? "";
+  assert.match(conflictUpdate, /study_weekdays = EXCLUDED\.study_weekdays/u);
+  assert.doesNotMatch(conflictUpdate, /(?:theme|accent_color|density|reduce_motion|week_starts_on|time_zone)\s*=/u);
+});
+
 test("expires a bounded owner-scoped proposal batch and clears retained payload references", async () => {
   const { pool, calls } = createPool((sql) => (
     sql.includes("WITH expired_rows")

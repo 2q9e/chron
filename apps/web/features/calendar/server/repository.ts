@@ -4216,19 +4216,19 @@ export class CalendarRepository {
     });
   }
 
-  async setPreferences(
+  private async upsertPreferences(
     ownerId: string,
     preferences: CalendarPreferences,
+    updateScope: "all" | "study-planner",
   ): Promise<CalendarPreferences> {
-    return withOwnerTransaction(this.pool, ownerId, async (client) => {
-      const result = await client.query<PreferencesRow>(
-        `INSERT INTO calendar_preferences (
-         user_id, theme, accent_color, density, reduce_motion, week_starts_on, time_zone,
-         study_weekdays, study_day_start, study_day_end, study_session_minutes,
-         study_event_buffer_minutes, study_session_break_minutes
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::time, $10::time, $11, $12, $13)
-         ON CONFLICT (user_id) DO UPDATE SET
-           theme = EXCLUDED.theme,
+    const conflictAssignments = updateScope === "study-planner"
+      ? `study_weekdays = EXCLUDED.study_weekdays,
+           study_day_start = EXCLUDED.study_day_start,
+           study_day_end = EXCLUDED.study_day_end,
+           study_session_minutes = EXCLUDED.study_session_minutes,
+           study_event_buffer_minutes = EXCLUDED.study_event_buffer_minutes,
+           study_session_break_minutes = EXCLUDED.study_session_break_minutes`
+      : `theme = EXCLUDED.theme,
            accent_color = EXCLUDED.accent_color,
            density = EXCLUDED.density,
            reduce_motion = EXCLUDED.reduce_motion,
@@ -4239,7 +4239,16 @@ export class CalendarRepository {
            study_day_end = EXCLUDED.study_day_end,
            study_session_minutes = EXCLUDED.study_session_minutes,
            study_event_buffer_minutes = EXCLUDED.study_event_buffer_minutes,
-           study_session_break_minutes = EXCLUDED.study_session_break_minutes,
+           study_session_break_minutes = EXCLUDED.study_session_break_minutes`;
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const result = await client.query<PreferencesRow>(
+        `INSERT INTO calendar_preferences (
+         user_id, theme, accent_color, density, reduce_motion, week_starts_on, time_zone,
+         study_weekdays, study_day_start, study_day_end, study_session_minutes,
+         study_event_buffer_minutes, study_session_break_minutes
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::time, $10::time, $11, $12, $13)
+         ON CONFLICT (user_id) DO UPDATE SET
+           ${conflictAssignments},
            updated_at = CURRENT_TIMESTAMP
          RETURNING theme, accent_color, density, reduce_motion, week_starts_on, time_zone,
                    study_weekdays, study_day_start, study_day_end, study_session_minutes,
@@ -4264,5 +4273,19 @@ export class CalendarRepository {
       if (!row) throw new Error("Calendar preferences update returned no row.");
       return preferencesFromRow(row);
     }, true);
+  }
+
+  async setPreferences(
+    ownerId: string,
+    preferences: CalendarPreferences,
+  ): Promise<CalendarPreferences> {
+    return this.upsertPreferences(ownerId, preferences, "all");
+  }
+
+  async setStudyPlannerPreferences(
+    ownerId: string,
+    preferences: CalendarPreferences,
+  ): Promise<CalendarPreferences> {
+    return this.upsertPreferences(ownerId, preferences, "study-planner");
   }
 }

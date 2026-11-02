@@ -9,6 +9,7 @@ import {
   fetchCalendarPreferences,
   fetchCalendarReminderStatus,
   saveCalendarPreferences,
+  saveStudyPlannerPreferences,
 } from "./calendar-api.ts";
 
 const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
@@ -81,12 +82,15 @@ test("loads and saves the complete per-account calendar preference contract", as
   try {
     assert.deepEqual(await fetchCalendarPreferences(), preferences);
     assert.deepEqual(await saveCalendarPreferences(preferences), preferences);
+    assert.deepEqual(await saveStudyPlannerPreferences(preferences), preferences);
     assert.equal(calls[0].url, "/api/calendar/preferences");
     assert.equal(calls[0].init.method, "GET");
     assert.equal(calls[0].init.cache, "no-store");
     assert.equal(calls[0].init.credentials, "same-origin");
     assert.equal(calls[1].init.method, "PUT");
     assert.deepEqual(JSON.parse(calls[1].init.body), preferences);
+    assert.equal(calls[2].init.method, "PATCH");
+    assert.deepEqual(JSON.parse(calls[2].init.body), preferences);
   } finally {
     globalThis.fetch = originalFetch;
   }

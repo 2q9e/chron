@@ -8,6 +8,7 @@ import {
   StudyPlannerError,
   studyPlannerDefaultsErrors,
   studyPlannerInputErrors,
+  studyPlannerNumberInputValue,
 } from "./study-planner.ts";
 
 const weekdays = [1, 2, 3, 4, 5];
@@ -222,6 +223,18 @@ test("study planning defaults accept bounded values and reject malformed input",
   assert.equal(isStudyPlannerDefaults({
     ...defaultStudyPlannerDefaults,
     topic: "unexpected",
+  }), false);
+});
+
+test("planner number inputs preserve zero but reject empty and non-finite values", () => {
+  assert.equal(studyPlannerNumberInputValue("0"), 0);
+  assert.equal(studyPlannerNumberInputValue("15.0"), 15);
+  assert.equal(studyPlannerNumberInputValue(""), null);
+  assert.equal(studyPlannerNumberInputValue("  "), null);
+  assert.equal(studyPlannerNumberInputValue("Infinity"), null);
+  assert.equal(isStudyPlannerDefaults({
+    ...defaultStudyPlannerDefaults,
+    eventBufferMinutes: studyPlannerNumberInputValue("") ?? Number.NaN,
   }), false);
 });
 

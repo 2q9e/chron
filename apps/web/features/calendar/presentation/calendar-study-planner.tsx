@@ -6,7 +6,7 @@ import type { StudyPlannerDefaults } from "../domain/types";
 import { formatDateOnly, formatInstant } from "./calendar-model";
 import { fetchCalendarEvents } from "./calendar-api";
 import { resolveCalendarRange } from "../domain/time";
-import { planStudyTime, studyPlannerDefaultsErrors, studyPlannerInputErrors, type StudyPlan, type StudyPlanSession, type StudyPlannerField, type StudyPlannerInput } from "../domain/study-planner";
+import { planStudyTime, studyPlannerDefaultsErrors, studyPlannerInputErrors, studyPlannerNumberInputValue, type StudyPlan, type StudyPlanSession, type StudyPlannerField, type StudyPlannerInput } from "../domain/study-planner";
 import styles from "./calendar-study-planner.module.css";
 
 type Fields = Readonly<{
@@ -132,9 +132,9 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
       weekdays,
       dayStart: fields.dayStart,
       dayEnd: fields.dayEnd,
-      sessionMinutes: Number(fields.sessionMinutes),
-      eventBufferMinutes: Number(fields.eventBufferMinutes),
-      sessionBreakMinutes: Number(fields.sessionBreakMinutes),
+      sessionMinutes: studyPlannerNumberInputValue(fields.sessionMinutes) ?? Number.NaN,
+      eventBufferMinutes: studyPlannerNumberInputValue(fields.eventBufferMinutes) ?? Number.NaN,
+      sessionBreakMinutes: studyPlannerNumberInputValue(fields.sessionBreakMinutes) ?? Number.NaN,
     };
     const errors = studyPlannerDefaultsErrors(defaults);
     setFieldErrors(errors);

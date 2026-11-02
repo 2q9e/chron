@@ -9,7 +9,7 @@ import { buildCalendarIcs } from "../domain/calendar-ics";
 import { accessibleCalendarAccent } from "../domain/calendar-accent";
 import { expandCalendarRecurrenceRange } from "../domain/recurrence-range";
 import type { CalendarRecurrenceOccurrence } from "../domain/recurrence.ts";
-import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
+import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, saveStudyPlannerPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
 import {
@@ -1123,7 +1123,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     if (!preferences || calendarLocked) throw new Error("The calendar is busy. Try saving your study defaults again.");
     setBusy(true);
     try {
-      const saved = await saveCalendarPreferences({ ...preferences, studyPlanner });
+      const saved = await saveStudyPlannerPreferences({ ...preferences, studyPlanner });
       setPreferences(saved);
       setSettings((current) => current ? { ...current, studyPlanner: saved.studyPlanner } : saved);
     } finally {

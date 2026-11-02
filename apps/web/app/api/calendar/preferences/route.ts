@@ -29,3 +29,14 @@ export async function PUT(request: Request): Promise<Response> {
     return calendarJson({ preferences: saved });
   });
 }
+
+export async function PATCH(request: Request): Promise<Response> {
+  return withCalendarErrors(async () => {
+    requireSameOriginMutation(request, process.env.BETTER_AUTH_URL);
+    const userId = await requireCalendarUser(request);
+    const preferences = parseCalendarPreferences(await readCalendarJson(request));
+    const repository = await getCalendarRepository();
+    const saved = await repository.setStudyPlannerPreferences(userId, preferences);
+    return calendarJson({ preferences: saved });
+  });
+}

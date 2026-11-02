@@ -841,11 +841,12 @@ export async function fetchCalendarPreferences(signal?: AbortSignal): Promise<Ca
   return payload.preferences;
 }
 
-export async function saveCalendarPreferences(
+async function writeCalendarPreferences(
   preferences: CalendarPreferences,
+  method: "PUT" | "PATCH",
 ): Promise<CalendarPreferences> {
   const response = await fetch("/api/calendar/preferences", {
-    method: "PUT",
+    method,
     cache: "no-store",
     credentials: "same-origin",
     headers: {
@@ -864,6 +865,18 @@ export async function saveCalendarPreferences(
     );
   }
   return payload.preferences;
+}
+
+export function saveCalendarPreferences(
+  preferences: CalendarPreferences,
+): Promise<CalendarPreferences> {
+  return writeCalendarPreferences(preferences, "PUT");
+}
+
+export function saveStudyPlannerPreferences(
+  preferences: CalendarPreferences,
+): Promise<CalendarPreferences> {
+  return writeCalendarPreferences(preferences, "PATCH");
 }
 
 export async function createCalendarEvent(

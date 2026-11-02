@@ -24,6 +24,12 @@ export const defaultStudyPlannerDefaults: StudyPlannerDefaults = Object.freeze({
   sessionBreakMinutes: 15,
 });
 
+export function studyPlannerNumberInputValue(value: string): number | null {
+  if (value.trim() === "") return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export type StudyPlannerInput = Readonly<{
   topic: string;
   totalMinutes: number;
