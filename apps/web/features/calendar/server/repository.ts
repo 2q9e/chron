@@ -54,6 +54,12 @@ type CreateRequestRow = QueryResultRow & {
   state: "pending" | "complete" | "deleted" | "abandoned";
 };
 
+type OwnerTransactionLimits = Readonly<{
+  lockTimeout?: string;
+  statementTimeout?: string;
+  idleTransactionTimeout?: string;
+}>;
+
 export type CalendarEventCreateResult = Readonly<{
   event: CalendarEvent;
   responseBody: string;
@@ -87,6 +93,7 @@ async function withOwnerTransaction<T>(
   ownerId: string,
   operation: (client: PoolClient) => Promise<T>,
   serializeOwnerWrites = false,
+  limits?: OwnerTransactionLimits,
 ): Promise<T> {
   const client = await pool.connect();
   let transactionOpen = false;
@@ -95,6 +102,18 @@ async function withOwnerTransaction<T>(
     await client.query("BEGIN");
     transactionOpen = true;
     await client.query("SELECT set_config('chron.user_id', $1, true)", [ownerId]);
+    if (limits?.lockTimeout) {
+      await client.query("SELECT set_config('lock_timeout', $1, true)", [limits.lockTimeout]);
+    }
+    if (limits?.statementTimeout) {
+      await client.query("SELECT set_config('statement_timeout', $1, true)", [limits.statementTimeout]);
+    }
+    if (limits?.idleTransactionTimeout) {
+      await client.query(
+        "SELECT set_config('idle_in_transaction_session_timeout', $1, true)",
+        [limits.idleTransactionTimeout],
+      );
+    }
     if (serializeOwnerWrites) {
       await client.query(
         "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))",
@@ -859,6 +878,48 @@ export class CalendarRepository {
       );
       throwMissingOrStale(current.rows[0]?.revision);
     }, true);
+  }
+
+  expirePendingSeriesDrafts(ownerId: string, limit = 100): Promise<number> {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 500) {
+      throw new RangeError("Series proposal expiry limit must be between 1 and 500.");
+    }
+
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const expired = await client.query(
+        `WITH expired_rows AS (
+           SELECT id, GREATEST(clock_timestamp(), expires_at) AS resolution_time
+           FROM calendar_event_series_proposal_drafts
+           WHERE user_id = $1
+             AND outcome = 'pending'
+             AND expires_at <= clock_timestamp()
+           ORDER BY expires_at, id
+           LIMIT $2
+           FOR UPDATE SKIP LOCKED
+         )
+         UPDATE calendar_event_series_proposal_drafts AS proposal
+         SET outcome = 'expired',
+             normalized_payload = NULL,
+             payload_hash = NULL,
+             conflict_snapshot = NULL,
+             target_event_id = NULL,
+             target_revision = NULL,
+             result_event_id = NULL,
+             resolved_at = expired_rows.resolution_time,
+             updated_at = expired_rows.resolution_time
+         FROM expired_rows
+         WHERE proposal.user_id = $1
+           AND proposal.id = expired_rows.id
+           AND proposal.outcome = 'pending'
+         RETURNING proposal.id`,
+        [ownerId, limit],
+      );
+      return expired.rowCount ?? expired.rows.length;
+    }, true, {
+      lockTimeout: "500ms",
+      statementTimeout: "2500ms",
+      idleTransactionTimeout: "5000ms",
+    });
   }
 
   async getPreferences(ownerId: string): Promise<CalendarPreferences | null> {

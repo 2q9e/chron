@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { CalendarRouteError } from "./errors.ts";
 import { CalendarRepository } from "./repository.ts";
@@ -463,4 +464,56 @@ test("upserts preferences on the actual user key", async () => {
     timeZone: "UTC",
   });
   assert.equal(query.values[0], ownerId);
+});
+
+test("expires a bounded owner-scoped proposal batch and clears retained payload references", async () => {
+  const { pool, calls } = createPool((sql) => (
+    sql.includes("WITH expired_rows")
+      ? { rows: [{ id: "de305d54-75b4-431b-adb2-eb6b9e546014" }], rowCount: 1 }
+      : { rows: [] }
+  ));
+  const repository = new CalendarRepository(pool);
+
+  assert.equal(await repository.expirePendingSeriesDrafts(ownerId, 25), 1);
+  assert.deepEqual(calls.slice(0, 2).map(({ sql }) => sql), [
+    "BEGIN",
+    "SELECT set_config('chron.user_id', $1, true)",
+  ]);
+  assert.equal(calls[1].values[0], ownerId);
+  assert.match(calls[2].sql, /set_config\('lock_timeout'/u);
+  assert.match(calls[3].sql, /set_config\('statement_timeout'/u);
+  assert.match(calls[4].sql, /idle_in_transaction_session_timeout/u);
+  assert.match(calls[5].sql, /pg_advisory_xact_lock/u);
+  const expiry = calls[6];
+  assert.match(expiry.sql, /WHERE user_id = \$1[\s\S]*outcome = 'pending'[\s\S]*expires_at <= clock_timestamp\(\)/u);
+  assert.match(expiry.sql, /LIMIT \$2\s+FOR UPDATE SKIP LOCKED/u);
+  assert.match(expiry.sql, /normalized_payload = NULL/u);
+  assert.match(expiry.sql, /payload_hash = NULL/u);
+  assert.match(expiry.sql, /conflict_snapshot = NULL/u);
+  assert.match(expiry.sql, /target_event_id = NULL/u);
+  assert.match(expiry.sql, /target_revision = NULL/u);
+  assert.match(expiry.sql, /result_event_id = NULL/u);
+  assert.match(expiry.sql, /resolved_at = expired_rows\.resolution_time/u);
+  assert.deepEqual(expiry.values, [ownerId, 25]);
+  assert.equal(calls.at(-1).sql, "COMMIT");
+});
+
+test("rejects unbounded proposal expiry batches before connecting", async () => {
+  const { pool, calls } = createPool(() => ({ rows: [] }));
+  const repository = new CalendarRepository(pool);
+
+  assert.throws(() => repository.expirePendingSeriesDrafts(ownerId, 501), RangeError);
+  assert.deepEqual(calls, []);
+});
+
+test("keeps the worker cursor across account deletion and describes its RLS guard accurately", () => {
+  const migration = readFileSync(
+    new URL("../../../db/migrations/0006_calendar_series_expiry_worker.sql", import.meta.url),
+    "utf8",
+  );
+  assert.match(migration, /last_user_id text,/u);
+  assert.doesNotMatch(migration, /last_user_id text REFERENCES/u);
+  assert.doesNotMatch(migration, /ON DELETE SET NULL/u);
+  assert.match(migration, /not a boundary against connections using the trusted application database role/u);
+  assert.match(migration, /current_setting\('chron\.series_expiry_worker', true\) = 'enabled'/u);
 });
