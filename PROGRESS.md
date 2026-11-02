@@ -1,5 +1,28 @@
 # Progress
 
+## Latest checkpoint — 2026-11-02
+
+`C1-study0` is implemented and pushed to the single GitHub `main` branch in
+`d1b123f update`, `1b88ebb update`, `7315413 refine`, and `b11a677 improve`,
+all authored by `2q9e`. The planner reads owner-scoped events over the same-
+origin authenticated API, respects all-day events and padded timed events,
+spreads sessions across the deadline, prevents past-time proposals, caps the
+result at 120 sessions, reports unplaced time, and opens each proposal in the
+existing conflict-review and explicit-save flow. Topic changes produce
+distinct session identities. No AI call or direct database write occurs. The
+calendar remains the active priority; the landing page stays paused.
+
+Local verification: focused study-planner tests (10), calendar domain tests
+(61), calendar presentation/API-client tests (61), full web lint, typecheck, and
+`git diff --check` pass. GitHub run 41428623423 passed on commit b11a677. The
+HTTPS sign-in route returns 200 with HSTS and renders the existing public
+sign-in boundary, but staging still runs 6ddcaf1. The documented VPS login was
+rejected during read-only access checks; no deployment command ran and no VPS
+changes were made. Resume deployment after authorized VPS access is restored,
+changing only Chron's release and service. No authorized test account is
+available, so signed-in planner behavior and event persistence are not browser
+verified.
+
 ## Current verified state — 2026-11-02
 
 C1 — calendar — remains active and the landing page remains paused. The first

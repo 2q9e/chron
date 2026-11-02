@@ -34,6 +34,19 @@ conflict review, finite recurring series with full-series proposals, and
 time-zone-aware reminders. One-off drag movement, time-grid creation, and
 resize interactions open the existing explicit-review flow.
 
+The next calendar increment, `C1-study0`, adds deterministic study-time
+proposals around owner-scoped saved events. Each proposal opens in the current
+event editor for conflict review and explicit approval. The planner does not
+call an AI provider or write directly to storage. Solver tests cover daily
+availability, event buffers, all-day blocks, DST gaps/folds, past-date entry,
+topic-specific session identity, a 120-session limit, and unscheduled time.
+Source is pushed to `main` in `d1b123f`, `1b88ebb`, `7315413`, and `b11a677`;
+GitHub run 41428623423 passed. The HTTPS sign-in endpoint is healthy, but
+staging remains on release 6ddcaf1 because the documented VPS login was
+rejected; no server changes were made. Resume deployment only after authorized
+VPS access is restored, and record signed-in browser verification as
+unavailable without an authorized test account.
+
 The first R1 implementation is a direct public HTTPS source reader on the
 single main branch. Commits 2019687, 054f060, and b71d104 add URL validation,
 pinned HTTPS retrieval, an authenticated same-origin route, per-account quota,

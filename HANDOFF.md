@@ -1,5 +1,45 @@
 # Handoff
 
+## Latest checkpoint — 2026-11-02
+
+Current source is pushed to HTTPS GitHub `main` through `b11a677 improve`, in
+four small commits (`d1b123f`, `1b88ebb`, `7315413`, and `b11a677`) authored by
+`2q9e`. This adds a deterministic study-time planner to the existing calendar.
+It reads owner-scoped events through the same-origin API and proposes
+time-zone-aware sessions around timed/all-day events, buffers, breaks, and
+weekly availability. It rejects past start dates, keeps today's sessions after
+the current instant, limits the result to 120 proposals, and distinguishes
+saved markers by topic. Each proposed session goes to the existing event
+editor; nothing is persisted until the owner reviews conflicts and explicitly
+saves. No AI request is made.
+
+The focused solver tests (10), calendar domain suite (61), calendar
+presentation/API-client suite (61), full web lint, typecheck, and
+`git diff --check` pass locally. GitHub Actions run 41428623423 passed on
+b11a677. HTTPS `https://testing.uwu.markets/sign-in` returns 200 with HSTS and
+the browser displays the existing sign-in boundary. Staging still runs release
+6ddcaf1; the new planner is not deployed. Read-only SSH authentication using
+the documented VPS credentials failed, so no deployment command ran and no
+VPS changes were made. Do not retry guessed credentials. The user requires
+HTTPS; deploy only Chron's release, existing migration/grant if required (none
+added here), release symlink, and `chron-web.service` after authorized access
+is restored. Do not edit other VPS files or services, and do not touch
+Cloudflare. No authorized account is available, so do not simulate login or
+claim signed-in planner/persistence testing.
+
+Next actions:
+
+1. Ask the user to refresh the private VPS access file or establish an
+   authorized shell session; do not request credentials in chat or retry the
+   rejected login.
+2. Once access is restored, fetch `main` over HTTPS, build the release, switch
+   only Chron's release symlink/service, and verify HTTPS health.
+3. Open `https://testing.uwu.markets` in the actual browser. Verify the
+   signed-in planner only with an authorized test account; do not claim the
+   planner is deployed or visually verified before that.
+4. Update this handoff with the actual release ID and checks; keep C1 active
+   and landing-page work paused.
+
 ## Current state
 
 Chron is a standalone public repository on GitHub. The only branch is `main`,

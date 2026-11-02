@@ -1450,3 +1450,56 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   `dc031a3 update`, `1085894 tweak`, and `1752ddb refine`. Authenticated
   browser verification and HTTPS staging deployment remain open because no
   test account or usable deployment key is available.
+
+### C1-study0 — deterministic study-time planner
+
+- **Task ID:** C1-study0
+- **Objective:** Propose study sessions that fit a user's date range, weekday
+  availability, daily window, session length, breaks, saved calendar events,
+  and time zone; open every session in Chron's existing review-before-save
+  event editor.
+- **Assigned agent:** Main integration owner.
+- **Required model:** Runtime model identity was not attested; no model claim.
+- **Required reasoning level:** Runtime reasoning configuration was not
+  attested; no level claim.
+- **Dependencies:** Existing owner-scoped event read API, calendar event
+  conflict review, S364 study-time blocking, and S369 draft/approved edits.
+- **Owned files:** `apps/web/features/calendar/domain/study-planner.ts`,
+  `study-planner.test.mjs`, `apps/web/features/calendar/presentation/
+  calendar-study-planner.tsx`, `calendar-study-planner.module.css`,
+  `calendar-workspace.tsx`, `calendar-editor.tsx`, and project progress,
+  handoff, and task records.
+- **Read-only files:** Existing calendar time-zone helpers, event API and
+  server policy, review/approval flow, authentication, and database schema.
+- **Required skills:** S364 and S369; installed frontend architecture,
+  React, TypeScript, responsive design, accessibility, forms, data fetching,
+  testing, and anti-slop form guidance. The skill text and selected guidance
+  were read and applied; no AI inference is involved.
+- **Security permissions:** Source files and the existing same-origin,
+  authenticated, owner-scoped event read and event create/review APIs only. No
+  direct database write, credentials, external provider, external network, or
+  reference-folder access. Every proposal remains in the existing editor until
+  explicit user approval.
+- **Acceptance criteria:** Validate a bounded planning horizon and
+  15-minute-aligned constraints; account for recurring event instances,
+  all-day events, timed-event buffers, daylight-saving gaps and folds; spread
+  sessions across the available window; report unscheduled minutes; and let a
+  signed-in user review, adjust, and save each session through the existing
+  overlap check and explicit save. Do not use AI or persist a plan directly.
+- **Tests:** Calendar domain (61), presentation/API-client (61), lint, and
+  typecheck pass locally. Ten focused solver cases cover spreading, event
+  buffers, quarter-hour alignment, all-day blocks, invalid inputs, DST
+  gaps/folds, topic-specific session identity, no past sessions, and bounded
+  result count. `git diff --check` passes. GitHub Actions run `41428623423`
+  passed on `b11a677`. The HTTPS sign-in route returns 200 with HSTS and the
+  browser renders the signed-out boundary. Staging remains on `6ddcaf1` because
+  documented VPS authentication was rejected during read-only checks; no
+  deployment command ran and no server changes were made. Authenticated
+  browser use remains open because no test account is available.
+- **Expected deliverables:** Pure deterministic solver, responsive planner
+  controls and proposal list, existing-editor integration, focused tests, and
+  current operational records.
+- **Status:** Source pushed to the single HTTPS GitHub remote on `main` in
+  `d1b123f update`, `1b88ebb update`, `7315413 refine`, and `b11a677 improve`.
+  CI passed. Deployment and signed-in HTTPS staging verification remain open
+  until authorized VPS access and a test account are available.
