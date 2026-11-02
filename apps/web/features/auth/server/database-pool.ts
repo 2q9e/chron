@@ -1,3 +1,4 @@
+import { checkServerIdentity } from "node:tls";
 import { Pool } from "pg";
 import { loadAuthEnvironment } from "./environment.ts";
 
@@ -7,6 +8,7 @@ type AuthGlobal = typeof globalThis & {
 
 const environment = loadAuthEnvironment();
 const authGlobal = globalThis as AuthGlobal;
+const tlsServername = environment.databaseTlsServername;
 
 export const database = authGlobal.__chronAuthPool ?? new Pool({
   connectionString: environment.databaseURL,
@@ -15,8 +17,12 @@ export const database = authGlobal.__chronAuthPool ?? new Pool({
         ssl: {
           rejectUnauthorized: true,
           ...(environment.databaseTlsCA ? { ca: environment.databaseTlsCA } : {}),
-          ...(environment.databaseTlsServername
-            ? { servername: environment.databaseTlsServername }
+          ...(tlsServername
+            ? {
+                servername: tlsServername,
+                checkServerIdentity: (_hostname, certificate) =>
+                  checkServerIdentity(tlsServername, certificate),
+              }
             : {}),
         },
       }
