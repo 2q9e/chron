@@ -49,9 +49,10 @@ approval. Calendar presentation (51), API (89), and time (39) suites, typecheck,
 lint, and `git diff --check` pass. The production build and authenticated
 browser interaction were not verified: the workspace had 56 MB free, no
 database or account was configured, and HTTPS staging DNS is still absent.
-The source commits are on the single public `main` branch. Public history had
-626 non-merge commits immediately before this documentation checkpoint; this
-checkpoint brings it to 627.
+The source commits are on the single public `main` branch. Root `AGENTS.md`
+remains local-only and is ignored; it was removed from the current public tree.
+Public history had 628 non-merge commits immediately before this documentation
+checkpoint; this checkpoint brings it to 629.
 
 The focused Codex Security diff review covered all ten changed files from
 `c7d9771` through `b0395ec` and found no source candidates. It was a sequential

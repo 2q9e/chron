@@ -4,7 +4,7 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 627 non-merge commits at this
+remote branch. Public `main` contains 629 non-merge commits at this
 checkpoint. The latest calendar resize source commits are `590331f update`
 and `c1d7647 improve`; both were pushed over HTTPS to `main`. The reminder
 event and outbox integration was pushed as
@@ -20,7 +20,9 @@ pushed as `521990b` and `8cda070`.
 Secret scanning, push protection, Dependabot alerts and
 security updates, and private vulnerability reporting are enabled. Continue
 reviewing staged paths and scans before every push. Do not commit root
-`AGENTS.md` or any old reference material.
+`AGENTS.md` or any old reference material. Root `AGENTS.md` is local-only and
+ignored; it is absent from the current public tree, though earlier public
+commits retain its prior version.
 
 ## Current milestone
 
@@ -88,9 +90,10 @@ and database-backed verification remains pending.
 
 ## Product and security gates
 
-- Read `AGENTS.md`, `apps/web/AGENTS.md`, `PLAN.md`, `PROGRESS.md`, and
-  `SKILLS.md` before continuing web work. The installed Next.js package is
-  hoisted to root `node_modules/next`; this install does not include
+- Read the local-only `AGENTS.md` if present, `apps/web/AGENTS.md`, `PLAN.md`,
+  `PROGRESS.md`, and `SKILLS.md` before continuing web work. A clean clone
+  cannot fetch root agent rules from the repository. The installed Next.js
+  package is hoisted to root `node_modules/next`; this install does not include
   `dist/docs/`. For version-specific Next APIs, consult official current docs
   and inspect the installed package rather than relying on assumptions.
 - Use only documented official Meta Model API inference if and when the
