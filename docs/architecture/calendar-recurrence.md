@@ -9,16 +9,17 @@ recurrence-aware conflict checking, and exact approval drafts are connected.
 - Frequencies: daily or weekly.
 - Weekly rules repeat on the weekday of the first occurrence.
 - Interval: one through four days or weeks.
-- End condition: required finite occurrence count, from 2 through 366.
+- End condition: required finite occurrence count, from 2 through 366 when
+  creating a series; a reviewed split may create a segment with one occurrence.
 - No unbounded rules, `UNTIL`, arbitrary `BY*`, `RDATE`, or imported RRULE text.
 - The first through last occurrence must fit within 366 calendar dates,
   including skipped generated gap times.
 - A recurring instance may last no longer than seven days.
 - A whole-series update or deletion is explicit. Cancelling one occurrence is
   available through its own persisted, versioned proposal and approval. Moving
-  one occurrence and splitting “this and following” are not implemented.
-  Restoring one cancelled occurrence is available through its own reviewed
-  proposal and approval.
+  one occurrence and restoring one cancelled occurrence are available through
+  their own reviewed proposals and approvals. “This and following” is a
+  separate reviewed split that preserves earlier occurrences.
 
 ## Date and time behavior
 
@@ -37,11 +38,15 @@ choice for user intent; RFC 5545's default for ambiguous local date-times is
 the first occurrence.
 
 The initial DTSTART and each emitted occurrence have stable keys derived from
-the original scheduled local date-time or date. A cancellation exception is
-stored against that original key, so it cannot cancel a different generated
-date after a series edit. A moved exception must retain its original key;
-moving occurrences is not implemented. Expanding a date window includes any
-event instance whose half-open interval overlaps that window.
+the segment ID and original scheduled local date-time or date. A cancellation
+exception is stored against that original key, so it cannot cancel a different
+generated date after a series edit. A moved exception must retain its original
+key. A following-series split truncates the current segment and creates a new
+segment under the same persisted series root. It rekeys moved and cancelled
+exceptions by their position in the finite series and preserves the unchanged
+prefix. The selected occurrence cannot be the first occurrence because there
+would be no prefix to retain. Expanding a date window includes any event
+instance whose half-open interval overlaps that window.
 
 ## Expansion and write bounds
 
@@ -77,6 +82,12 @@ event instance whose half-open interval overlaps that window.
   job can be inserted only when no revision has an attempt. Past, sent,
   failed, leased, or attempted jobs are not replayed because a prior delivery
   may have an ambiguous outcome.
+- Splitting rebinds only pending reminders for active prefix occurrences to the
+  new prefix revision. Pending or leased suffix reminders on the old segment
+  are cancelled; new segment reminders are created for eligible occurrences.
+  Suffix occurrences with any prior reminder attempt are not queued again.
+  Their cancelled or moved occurrence exceptions are transferred by ordinal
+  position, and approvals stale competing proposals against the old segment.
 - Pending series proposals are cleared by the recurring expiry worker in
   bounded owner transactions. It takes one PostgreSQL advisory lock to prevent
   overlapping runs, scans only account IDs from the auth table, then calls the
@@ -103,8 +114,8 @@ is a product decision documented above. Sources:
 - [RFC 5545, Section 3.3.10: Recurrence Rule](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10)
 - [RFC 5545, Section 3.8.5.3: Recurrence Rule](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.5.3)
 
-The recurring calendar currently supports create, whole-series update/delete,
-single-occurrence cancellation, and single-occurrence restoration. It does not
-support moving an occurrence, this-and-following splits, or Google sync.
-Reminder delivery remains a separate worker and a delivery cannot be retracted
-once it has started.
+The recurring calendar currently supports create, whole-segment update/delete,
+single-occurrence cancellation, restoration and movement, and reviewed
+this-and-following splits. Google sync is not implemented. Reminder delivery
+remains a separate worker and a delivery cannot be retracted once it has
+started.

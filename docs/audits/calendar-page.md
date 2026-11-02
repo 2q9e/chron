@@ -349,11 +349,13 @@ these scores do not establish rendered quality or persistence.
 - **Verification method:** Real authenticated browser walkthrough and
   database assertions; use HTTPS for staging and inspect only the Chron
   staging route.
-- **Status:** Open. No PostgreSQL service/account is configured and
-  `https://testing.uwu.markets` does not resolve. The production build now
-  passes with runtime credentials unset, as recorded in C-21; an authenticated
-  browser walkthrough is still unavailable. No HTTP staging fallback or
-  unrelated VPS change was made.
+- **Status:** Open. No PostgreSQL service/account is configured. An earlier
+  staging check did not resolve; on 2026-11-02, HTTPS probes returned
+  redirects from `/` to `/calendar` and from `/calendar` to `/sign-in`, with
+  valid TLS and HSTS. No redirect was followed, so the served app version and
+  authenticated browser behavior remain unverified. The production build
+  passes with runtime credentials unset, as recorded in C-21. No HTTP staging
+  fallback or unrelated VPS change was made.
 
 ### C-21 — Avoid loading runtime authentication secrets during route discovery
 

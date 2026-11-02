@@ -130,9 +130,11 @@ C1-rmd0 time and delivery contract
   only for local development. Calendar API/server (85), auth/email (14), and
   scheduler (2) tests pass with the calendar time/layout/recovery
   suites, lint, and typecheck. PostgreSQL migrations were not applied, SMTP was
-  not contacted, and the scheduler was not deployed. `testing.uwu.markets` has
-  no Cloudflare DNS record, so HTTPS staging cannot resolve. This is source
-  complete only, not operationally verified.
+  not contacted, and the scheduler was not deployed. An earlier DNS check did
+  not resolve `testing.uwu.markets`; an HTTPS probe on 2026-11-02 now reaches
+  the edge with valid TLS and HSTS and returns a redirect. No redirect was
+  followed, so deployment and authenticated runtime behavior remain
+  unverified. This is source complete only, not operationally verified.
 
 ### C1-rmd3 — editor, review and status
 

@@ -34,7 +34,8 @@ route, HTTPS scheduler source, and editor status are implemented. The contract
 and dependency record remain in [calendar-reminders.md](calendar-reminders.md).
 Live SMTP delivery and scheduler deployment are still open. Single-occurrence
 cancellation, restoration, and reviewed movement are implemented. Split-series
-editing remains open.
+editing is implemented locally; PostgreSQL CI for migration 0013 and an
+authenticated browser review remain open.
 
 ```text
 C1-rec0 recurrence contract + pure bounded expansion
@@ -196,7 +197,8 @@ verification remains gated on a test account.
 - **Objective:** Incrementally add explicit single-occurrence cancellation and
   restoration, reviewed movement, and this-and-following series splits without
   changing unrelated occurrences. Cancellation, restoration, and movement
-  are pushed; split behavior remains open.
+  and this-and-following splits are implemented; CI validation is pending for
+  the split migration and its PostgreSQL integration coverage.
 - **Assigned agent:** main integration owner; runtime model identity is fixed
   and not independently attested
 - **Dependencies:** C1-rec0 through C1-rec4; use the passing PostgreSQL CI
@@ -229,14 +231,18 @@ verification remains gated on a test account.
 - **Current slice:** migration, owner-scoped cancellation and restoration
   proposals/approvals, bounded cancelled-occurrence discovery, conflict
   exclusion/revalidation, reminder cancellation/restoration, reviewed movement,
-  stable series-root migration and insertion, UI review, deterministic tests,
-  and PostgreSQL integration coverage are implemented and pushed on main.
-  Run 41406406586 passed PostgreSQL 16 migration/tenant integration, lint,
-  typecheck, dependency audit, and production build. The staged release and
-  authenticated browser review remain open.
-- **Remaining deliverables:** split-series behavior, authenticated browser
-  review, and final handoff evidence. Migration 0012's data backfill passed in
-  run 41406406586.
+  stable series-root migration and insertion, following-series split proposal
+  and approval, exception/reminder transfer, UI review, deterministic tests,
+  and focused PostgreSQL integration coverage are implemented locally. The
+  migration adds one-occurrence finite segments and exact split proposal shape.
+  Earlier cancellation, restoration, movement, and migration 0012 passed run
+  41406406586. Migration 0013 CI validation is pending. Local layout (58),
+  API (111), and time (43) tests, typecheck, and lint pass. On 2026-11-02,
+  HTTPS probes to the staging root and `/calendar` returned redirects to
+  `/calendar` and `/sign-in` with valid TLS and HSTS; redirects were not
+  followed, and the active app version remains unverified.
+- **Remaining deliverables:** validate migration 0013 and split behavior in
+  PostgreSQL CI, authenticated browser review, and final handoff evidence.
 
 ### C1-rec6m — move one recurring occurrence
 

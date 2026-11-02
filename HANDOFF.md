@@ -6,23 +6,28 @@ Chron is a standalone public repository on GitHub. The only remote branch is
 `main`, and commits are pushed by 2q9e with short titles over HTTPS. The branch
 contains occurrence cancellation, restoration, and reviewed movement of one
 timed or all-day recurrence instance. Migration 0012 persists a stable series
-root and backfills existing recurring events; reviewed splitting remains open.
+root and backfills existing recurring events. Following-series splitting is
+implemented locally with migration 0013 and awaits CI.
 The public tree contains no AGENTS.md; local operating instructions remain
 untracked. No old calendar reference folder was inspected or used.
 
 GitHub Actions run
 https://github.com/2q9e/chron/actions/runs/41406406586 passed with PostgreSQL
 16 migration and tenant-isolation integration, lint, typecheck, dependency
-audit, and production build. Local calendar API tests (109), lint, and
-typecheck pass. PostgreSQL integration skips locally because
+audit, and production build. The previous increment's local calendar API tests
+(109), lint, and typecheck passed. The current increment's calendar API (111),
+layout/API client (58), and time/domain (43) tests pass; typecheck and lint
+pass, and GitHub CI is pending. PostgreSQL integration skips locally because
 `CHRON_TEST_DATABASE_URL` is unset.
 
 The testing site at https://testing.uwu.markets/sign-in was checked over HTTPS;
-it returned 200 with valid TLS and HSTS. It still serves the previous release,
-so the occurrence-movement change is not deployed. Deployment access is
-unavailable in this session. No VPS or Cloudflare resources were changed.
-Authenticated calendar interactions remain unverified because no test account
-is available.
+it returned 200 with valid TLS and HSTS in the earlier check. On 2026-11-02,
+HTTPS requests to the root and `/calendar` returned redirects to `/calendar`
+and `/sign-in`, with valid TLS and HSTS. No redirect was followed; this does
+not establish the running app version or authenticated behavior. The split
+change is not deployed. Deployment access is unavailable in this session. No
+VPS or Cloudflare resources were changed. Authenticated calendar interactions
+remain unverified because no test account is available.
 
 ## Current milestone
 
@@ -32,7 +37,8 @@ search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
 interactions. Single-occurrence cancellation, reviewed restoration, and
 reviewed per-occurrence movement are pushed on main. Migration 0012 gives
-recurring segments a stable lineage root. Split-series edits remain open.
+recurring segments a stable lineage root. This-and-following edits are
+implemented locally and await PostgreSQL CI validation for migration 0013.
 
 The reminder schema, migrations, repositories, and route contracts were
 executed by CI; live mail delivery, scheduler deployment, and inbox receipt

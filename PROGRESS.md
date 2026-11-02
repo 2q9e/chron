@@ -4,23 +4,29 @@
 
 C1 — calendar — remains the active milestone; landing-page work is paused.
 The public repository has one branch, `main`, with 664 commits, pushed as
-2q9e over HTTPS. Occurrence cancellation, restoration, and reviewed movement
-for timed and all-day recurring events are pushed. Migration 0012 adds a
-stable series root and backfills existing recurring events; new recurring
-series persist that root. Split-series behavior remains open.
+2q9e over HTTPS. Occurrence cancellation, restoration, reviewed movement, and
+this-and-following split behavior for timed and all-day recurring events are
+implemented. Migration 0012 adds a stable series root and backfills existing
+recurring events; migration 0013 permits a one-occurrence segment and exact
+split proposal outcomes. The split changes are local and await GitHub CI.
 
 GitHub Actions run
 https://github.com/2q9e/chron/actions/runs/41406406586 passed, including
 PostgreSQL 16 migration and tenant-isolation integration, lint, typecheck,
-dependency audit, and production build. Local calendar API tests (109), lint,
-and typecheck pass. PostgreSQL integration skips locally because
-`CHRON_TEST_DATABASE_URL` is unset.
+dependency audit, and production build. Before this split increment, local
+calendar API tests (109), lint, and typecheck passed. The split increment's
+calendar API (111), layout/API client (58), and time/domain (43) suites pass;
+typecheck and lint pass. GitHub CI is pending. PostgreSQL integration skips
+locally because `CHRON_TEST_DATABASE_URL` is unset.
 
 https://testing.uwu.markets/sign-in was checked over HTTPS and returned 200
-with HSTS. Staging still serves the prior release; this change is not
-deployed. The session's deployment path is unavailable, so no VPS or Cloudflare
-resources were changed. Authenticated calendar actions remain unverified
-because no test account is configured.
+with HSTS in the earlier check. On 2026-11-02, HTTPS requests to the root and
+`/calendar` returned redirects to `/calendar` and `/sign-in` respectively,
+with valid TLS and HSTS. No redirect was followed; this confirms the HTTPS
+edge only, not the running app version or authenticated behavior. This change
+is not deployed. The session's deployment path is unavailable, so no VPS or
+Cloudflare resources were changed. Authenticated calendar actions remain
+unverified because no test account is configured.
 
 External services, Git remotes, and staging or production hosts use HTTPS.
 HTTP references are limited to loopback test configuration and negative
@@ -30,9 +36,9 @@ No reference folder was inspected or used. Commits continue on `main` only,
 with author 2q9e.
 
 Occurrence movement is implemented, pushed, and verified by CI. Split-series
-behavior, SMTP delivery, scheduler deployment, external calendar
-synchronization, staging activation, and authenticated browser verification
-remain open.
+behavior is implemented locally; its PostgreSQL CI validation is pending.
+SMTP delivery, scheduler deployment, external calendar synchronization,
+staging activation, and authenticated browser verification remain open.
 
 The previously pushed cancellation slice binds the occurrence's original key
 and series revision; approval persists an owner-scoped exception, cancels
