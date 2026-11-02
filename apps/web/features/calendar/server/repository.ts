@@ -2529,7 +2529,10 @@ async function transferSplitOccurrenceExceptions(
   plan: CalendarSeriesSplitPlan,
 ): Promise<void> {
   const mapping = [...plan.sourceToFollowingOccurrenceKey]
-    .map(([sourceKey, followingKey]) => ({ sourceKey, followingKey }));
+    .map(([sourceKey, followingKey]) => ({
+      source_key: sourceKey,
+      following_key: followingKey,
+    }));
   await client.query(
     `INSERT INTO calendar_event_occurrence_exceptions (
        user_id, event_id, occurrence_key, is_cancelled, cancelled_at,
