@@ -5,16 +5,16 @@
 Chron is a standalone public repository on GitHub. The only remote branch is
 `main`, and commits are pushed by 2q9e with short titles over HTTPS. The branch
 contains occurrence cancellation, restoration, and reviewed movement of one
-timed or all-day recurrence instance. The public tree contains no AGENTS.md;
-local operating instructions remain untracked. No old calendar reference
-folder was inspected or used.
+timed or all-day recurrence instance. Migration 0012 persists a stable series
+root and backfills existing recurring events; reviewed splitting remains open.
+The public tree contains no AGENTS.md; local operating instructions remain
+untracked. No old calendar reference folder was inspected or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41404738609 passed with PostgreSQL
-16 integration, lint, typecheck, and production build. Run
-https://github.com/2q9e/chron/actions/runs/41404967855 passed on the latest
-main head. Local calendar time (42), API (108), layout (56), and recovery (5)
-tests pass. PostgreSQL integration skips locally because
+https://github.com/2q9e/chron/actions/runs/41406406586 passed with PostgreSQL
+16 migration and tenant-isolation integration, lint, typecheck, dependency
+audit, and production build. Local calendar API tests (109), lint, and
+typecheck pass. PostgreSQL integration skips locally because
 `CHRON_TEST_DATABASE_URL` is unset.
 
 The testing site at https://testing.uwu.markets/sign-in was checked over HTTPS;
@@ -31,8 +31,8 @@ owner-scoped persisted events and preferences, four views, create/edit/delete,
 search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
 interactions. Single-occurrence cancellation, reviewed restoration, and
-reviewed per-occurrence movement are pushed on main. Split-series edits remain
-open.
+reviewed per-occurrence movement are pushed on main. Migration 0012 gives
+recurring segments a stable lineage root. Split-series edits remain open.
 
 The reminder schema, migrations, repositories, and route contracts were
 executed by CI; live mail delivery, scheduler deployment, and inbox receipt

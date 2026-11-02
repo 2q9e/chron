@@ -194,9 +194,9 @@ verification remains gated on a test account.
 
 - **Task ID:** C1-rec6
 - **Objective:** Incrementally add explicit single-occurrence cancellation and
-  restoration, then this-and-following series splits without changing
-  unrelated occurrences. Cancellation and restoration are pushed; movement
-  and split remain open.
+  restoration, reviewed movement, and this-and-following series splits without
+  changing unrelated occurrences. Cancellation, restoration, and movement
+  are pushed; split behavior remains open.
 - **Assigned agent:** main integration owner; runtime model identity is fixed
   and not independently attested
 - **Dependencies:** C1-rec0 through C1-rec4; use the passing PostgreSQL CI
@@ -220,23 +220,23 @@ verification remains gated on a test account.
   conflict snapshot; it deletes only that exception and never requeues a
   reminder attempted in any revision. Reject stale, expired, replayed, or
   cross-owner proposals; keep one-off and full-series behavior unchanged.
-  Remaining movement must preserve the original scheduled key. Remaining split
-  work must establish stable series lineage and finite bounds across segments.
+  Movement preserves the original scheduled key. Split work must preserve a
+  stable series lineage and finite bounds across segments.
 - **Tests:** pure rule/identity and DST cases; API shape, scope and replay
   checks; two-owner PostgreSQL RLS checks; restore overlap and prior-revision
   reminder history; deletion cascade and reminder reconciliation; browser
   keyboard and responsive review when an account is available
 - **Current slice:** migration, owner-scoped cancellation and restoration
   proposals/approvals, bounded cancelled-occurrence discovery, conflict
-  exclusion/revalidation, reminder cancellation/restoration, UI review,
-  deterministic tests, and PostgreSQL integration coverage are implemented
-  and pushed on main. Run 41400318323 passed PostgreSQL 16 integration and the
-  production build. The staged b01cbfe release predates restoration; release
-  activation and authenticated browser review remain open.
+  exclusion/revalidation, reminder cancellation/restoration, reviewed movement,
+  stable series-root migration and insertion, UI review, deterministic tests,
+  and PostgreSQL integration coverage are implemented and pushed on main.
+  Run 41406406586 passed PostgreSQL 16 migration/tenant integration, lint,
+  typecheck, dependency audit, and production build. The staged release and
+  authenticated browser review remain open.
 - **Remaining deliverables:** split-series behavior, authenticated browser
-  review, and final handoff evidence. Restore code and its regression tests
-  are pushed on main; migration 0010 and PostgreSQL integration coverage
-  passed in run 41400318323.
+  review, and final handoff evidence. Migration 0012's data backfill passed in
+  run 41406406586.
 
 ### C1-rec6m — move one recurring occurrence
 

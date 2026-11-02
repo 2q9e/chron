@@ -3,19 +3,18 @@
 ## Current verified state — 2026-11-02
 
 C1 — calendar — remains the active milestone; landing-page work is paused.
-The public repository has one branch, `main`, with 661 commits, pushed as
+The public repository has one branch, `main`, with 664 commits, pushed as
 2q9e over HTTPS. Occurrence cancellation, restoration, and reviewed movement
-for timed and all-day recurring events are pushed. Movement preserves the
-original occurrence identity and duration, checks conflicts, updates eligible
-reminders, and requires proposal review and approval.
+for timed and all-day recurring events are pushed. Migration 0012 adds a
+stable series root and backfills existing recurring events; new recurring
+series persist that root. Split-series behavior remains open.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41404738609 passed, including
-PostgreSQL 16 integration and the production build. Run
-https://github.com/2q9e/chron/actions/runs/41404967855 also passed on the
-latest main head. Local calendar time (42), API (108), layout (56), and
-recovery (5) tests pass, along with lint and typecheck. PostgreSQL integration
-skips locally because `CHRON_TEST_DATABASE_URL` is unset.
+https://github.com/2q9e/chron/actions/runs/41406406586 passed, including
+PostgreSQL 16 migration and tenant-isolation integration, lint, typecheck,
+dependency audit, and production build. Local calendar API tests (109), lint,
+and typecheck pass. PostgreSQL integration skips locally because
+`CHRON_TEST_DATABASE_URL` is unset.
 
 https://testing.uwu.markets/sign-in was checked over HTTPS and returned 200
 with HSTS. Staging still serves the prior release; this change is not
@@ -23,7 +22,10 @@ deployed. The session's deployment path is unavailable, so no VPS or Cloudflare
 resources were changed. Authenticated calendar actions remain unverified
 because no test account is configured.
 
-The latest remote tree has no AGENTS.md; local instructions remain untracked.
+External services, Git remotes, and staging or production hosts use HTTPS.
+HTTP references are limited to loopback test configuration and negative
+security tests. The latest remote tree has no AGENTS.md; local instructions
+remain untracked.
 No reference folder was inspected or used. Commits continue on `main` only,
 with author 2q9e.
 
