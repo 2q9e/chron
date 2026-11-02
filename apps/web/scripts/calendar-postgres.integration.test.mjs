@@ -126,6 +126,54 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     assert.deepEqual(await repository.getPreferences(accountA), preferences);
     assert.deepEqual(await repository.getPreferences(accountB), null);
 
+    const cancelledOccurrenceKey = `${eventA}:2026-11-09`;
+    await databasePool.query(
+      `UPDATE calendar_events
+       SET recurrence_frequency = 'weekly', recurrence_interval = 1, recurrence_count = 3,
+           reminder_choice = 'event-day-9am', reminder_time_zone = 'UTC'
+       WHERE user_id = $1 AND id = $2::uuid`,
+      [accountA, eventA],
+    );
+    await databasePool.query(
+      `INSERT INTO calendar_event_reminders (
+         id, user_id, event_id, event_revision, occurrence_key, scheduled_at,
+         time_zone, next_attempt_at, status
+       ) VALUES (
+         $1::uuid, $2, $3::uuid, 1, $4, TIMESTAMPTZ '2026-11-09 09:00:00+00',
+         'UTC', TIMESTAMPTZ '2026-11-09 09:00:00+00', 'pending'
+       )`,
+      [randomUUID(), accountA, eventA, cancelledOccurrenceKey],
+    );
+    const cancellationDraft = await repository.createSeriesDraft(accountA, {
+      action: "cancel-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 1,
+      occurrenceKey: cancelledOccurrenceKey,
+    }, "postgres-occurrence-cancel");
+    assert.equal(cancellationDraft.beforeOccurrences.length, 1);
+    const cancellation = await repository.approveSeriesDraft(accountA, cancellationDraft.id);
+    assert.equal(cancellation.outcome, "approved");
+    assert.deepEqual(
+      await repository.listEvents(accountA, "2026-11-09", "2026-11-10", "UTC"),
+      [],
+    );
+    assert.deepEqual(
+      await repository.findConflicts(accountA, {
+        kind: "all-day",
+        title: "Replacement exam review",
+        startDate: "2026-11-09",
+        endDate: "2026-11-10",
+      }, "UTC"),
+      [],
+    );
+    assert.deepEqual(
+      (await repository.listEvents(accountA, "2026-11-02", "2026-11-03", "UTC"))
+        .map((event) => event.occurrenceKey),
+      [`${eventA}:2026-11-02`],
+    );
+    assert.equal((await repository.getCalendarReminderStatus(accountA, eventA)).cancelled, 1);
+
     const appRole = await adminPool.query(
       "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1",
       [roleName],
@@ -137,6 +185,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       "calendar_preferences",
       "calendar_event_create_requests",
       "calendar_event_series_proposal_drafts",
+      "calendar_event_occurrence_exceptions",
       "calendar_series_expiry_worker_state",
       "calendar_event_reminders",
       "calendar_reminder_worker_state",
@@ -155,6 +204,10 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       "SELECT count(*)::integer AS count FROM calendar_events",
     );
     assert.equal(unscoped.rows[0].count, 0);
+    const unscopedExceptions = await applicationPool.query(
+      "SELECT count(*)::integer AS count FROM calendar_event_occurrence_exceptions",
+    );
+    assert.equal(unscopedExceptions.rows[0].count, 0);
 
     const client = await applicationPool.connect();
     try {
@@ -165,6 +218,19 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
         [accountA],
       );
       assert.deepEqual(ownRows.rows.map((row) => row.id), [eventA]);
+      const ownExceptions = await client.query(
+        "SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
+        [accountA],
+      );
+      assert.deepEqual(ownExceptions.rows, [{
+        event_id: eventA,
+        occurrence_key: cancelledOccurrenceKey,
+      }]);
+      const crossOwnerExceptions = await client.query(
+        "SELECT event_id FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
+        [accountB],
+      );
+      assert.deepEqual(crossOwnerExceptions.rows, []);
       const crossOwnerRows = await client.query(
         "SELECT id FROM calendar_events WHERE user_id = $1",
         [accountB],
@@ -177,6 +243,14 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
           [randomUUID(), accountB],
         ),
         (error) => error?.code === "42501",
+      );
+      await assert.rejects(
+        client.query(
+          `INSERT INTO calendar_event_occurrence_exceptions (user_id, event_id, occurrence_key)
+           VALUES ($1, $2::uuid, $3)`,
+          [accountB, eventA, `${eventA}:2026-11-16`],
+        ),
+        (error) => error?.code === "42501" || error?.code === "23503",
       );
     } finally {
       await client.query("ROLLBACK");
@@ -194,6 +268,11 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       [[accountA, accountB]],
     );
     assert.equal(cascadeCheck.rows[0].count, 0);
+    const exceptionCascadeCheck = await databasePool.query(
+      "SELECT count(*)::integer AS count FROM calendar_event_occurrence_exceptions WHERE user_id = ANY($1::text[])",
+      [[accountA, accountB]],
+    );
+    assert.equal(exceptionCascadeCheck.rows[0].count, 0);
   } finally {
     await applicationPool?.end();
     await databasePool?.end();

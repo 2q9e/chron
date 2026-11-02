@@ -147,6 +147,26 @@ test("expands existing series and surfaces overlaps within the proposed series",
   ));
 });
 
+test("a cancelled recurring occurrence no longer blocks a proposed series", () => {
+  const proposalRule = { frequency: "daily", interval: 1, count: 2 };
+  const existingRule = { frequency: "weekly", interval: 1, count: 2 };
+  const proposed = allDayEvent("series-proposed", "2026-11-02", "2026-11-03", proposalRule);
+  const existing = allDayEvent("series-cancelled", "2026-11-02", "2026-11-03", existingRule);
+  const cancelled = new Map([
+    [existing.id, new Set([`${existing.id}:2026-11-02`])],
+  ]);
+
+  const result = findCalendarSeriesConflicts(
+    proposed,
+    proposalRule,
+    [existing],
+    "America/Montreal",
+    undefined,
+    cancelled,
+  );
+  assert.deepEqual(result.conflicts, []);
+});
+
 test("fails instead of returning a partial snapshot when the conflict set exceeds its cap", () => {
   const rule = { frequency: "daily", interval: 1, count: 2 };
   const proposal = allDayEvent("series-f", "2026-11-02", "2026-11-03", rule);

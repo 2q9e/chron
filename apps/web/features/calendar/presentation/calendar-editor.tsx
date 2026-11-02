@@ -16,8 +16,9 @@ import styles from "./calendar.module.css";
 export type Editor = {
   generation: number;
   event: CalendarEvent | null;
+  occurrenceKey?: string;
   operationKey: string | null;
-  operationAction: "create" | "update" | "delete" | null;
+  operationAction: "create" | "update" | "delete" | "cancel-occurrence" | null;
   draft: EventDraft;
   zone: string;
   errors: Partial<Record<EventDraftField, string>>;
@@ -42,12 +43,13 @@ type Props = {
   onClose: () => void;
   onReloadLatest: () => void;
   onDeleteReview: () => void;
+  onCancelOccurrenceReview: () => void;
   onDeleteCancel: () => void;
   onDeleteConfirm: () => void;
   onSave: () => void;
 };
 
-export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
+export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   const locked = busy || stale || retryOnly;
   const errorPanel = useRef<HTMLDivElement | null>(null);
   const reminderOptions = editor.draft.kind === "timed"
@@ -252,6 +254,7 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
         )}
         <div className={styles.actions}>
           <button type="submit" disabled={locked}>{busy ? "Checking calendar…" : "Review changes"}</button>
+          {editor.event?.recurrenceRule && editor.occurrenceKey && <button type="button" disabled={locked} onClick={onCancelOccurrenceReview}>Cancel this occurrence</button>}
           {editor.event && <button type="button" disabled={locked} onClick={onDeleteReview}>{editor.event.recurrenceRule ? "Delete series" : "Delete event"}</button>}
         </div>
       </form>
@@ -308,9 +311,12 @@ function SeriesDraftReview({
   onCancel: () => void;
 }) {
   const isDelete = draft.action === "delete";
+  const isOccurrenceCancellation = draft.action === "cancel-occurrence";
   const occurrences = isDelete ? draft.beforeOccurrences : draft.afterOccurrences;
   const headline = isDelete
     ? `Delete ${occurrences.length} occurrences?`
+    : isOccurrenceCancellation
+      ? `Cancel ${draft.beforeOccurrences.length === 1 ? "this occurrence" : "this date"}?`
     : draft.action === "create"
       ? `Create ${occurrences.length} occurrences?`
       : `Update ${draft.beforeOccurrences.length} current occurrences to ${draft.afterOccurrences.length} proposed occurrences?`;
@@ -321,12 +327,12 @@ function SeriesDraftReview({
 
   return (
     <div className={styles.review}>
-      <h3>Review repeating series</h3>
+      <h3>{isOccurrenceCancellation ? "Review occurrence cancellation" : "Review repeating series"}</h3>
       <p><strong>{headline}</strong></p>
       {draft.action === "create" && draft.event && (
         <p><strong>Proposed:</strong> {describeSeries(draft.event, draft.recurrenceRule)} · Calendar time zone {draft.calendarTimeZone}</p>
       )}
-      {draft.action !== "delete" && draft.event && (
+      {draft.action !== "delete" && draft.action !== "cancel-occurrence" && draft.event && (
         <p aria-live="polite">{reminderReviewText(draft.event, draft.afterOccurrences[0])}</p>
       )}
       {draft.action === "update" && currentEvent && draft.event && (
@@ -339,7 +345,13 @@ function SeriesDraftReview({
         <p><strong>Current:</strong> {describeSeries(currentEvent, currentEvent.recurrenceRule ?? null)}</p>
       )}
       <p>This proposal expires at {new Date(draft.expiresAt).toLocaleString()}.</p>
-      {draft.action === "update" ? (
+      {isOccurrenceCancellation ? (
+        <ol className={styles.seriesOccurrences}>
+          {draft.beforeOccurrences.map((occurrence) => (
+            <li key={occurrence.occurrenceKey}>{describeOccurrence(occurrence)}</li>
+          ))}
+        </ol>
+      ) : draft.action === "update" ? (
         <>
           <details className={styles.seriesOccurrences}>
             <summary>View all {draft.beforeOccurrences.length} current occurrences</summary>
@@ -363,7 +375,9 @@ function SeriesDraftReview({
         </details>
       )}
       {draft.conflicts.length === 0 ? (
-        <p className={styles.conflictStatus}>No overlaps were found in the proposed series.</p>
+        <p className={styles.conflictStatus}>{isOccurrenceCancellation
+          ? "Only this scheduled occurrence changes. Chron cancels queued reminders; one already being delivered may still arrive."
+          : "No overlaps were found in the proposed series."}</p>
       ) : (
         <div className={styles.conflictList}>
           <h4>{draft.conflicts.length} overlapping occurrences</h4>
@@ -382,9 +396,10 @@ function SeriesDraftReview({
         </div>
       )}
       <button type="button" disabled={busy} onClick={onApprove}>
-        {busy ? "Approving…" : isDelete ? "Approve and delete series" : "Approve series changes"}
+        {busy ? "Approving…" : isDelete ? "Approve and delete series" : isOccurrenceCancellation ? "Approve occurrence cancellation" : "Approve series changes"}
       </button>
       {isDelete && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep series</button>}
+      {isOccurrenceCancellation && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep occurrence</button>}
     </div>
   );
 }

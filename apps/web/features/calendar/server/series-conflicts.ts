@@ -209,6 +209,7 @@ export function findCalendarSeriesConflicts(
   existingEvents: readonly CalendarEvent[],
   calendarTimeZoneValue: string,
   excludedEventId?: string,
+  cancelledOccurrenceKeys: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
 ): Readonly<{
   occurrences: readonly CalendarRecurrenceOccurrence[];
   conflicts: readonly CalendarSeriesOccurrenceConflict[];
@@ -235,9 +236,12 @@ export function findCalendarSeriesConflicts(
       if (expandedExistingCount > maximumSeriesProposalExpandedOccurrences) {
         throw new RangeError("There are too many calendar series to verify this proposal safely.");
       }
-      recurringIntervals.push(...expanded.map((occurrence) =>
+      const cancelled = cancelledOccurrenceKeys.get(event.id);
+      recurringIntervals.push(...expanded
+        .filter((occurrence) => !cancelled?.has(occurrence.occurrenceKey))
+        .map((occurrence) =>
         occurrenceInterval(occurrence, calendarTimeZone)
-      ));
+        ));
     } else {
       oneOffIntervals.push(occurrenceInterval(singleEventOccurrence(event), calendarTimeZone));
     }

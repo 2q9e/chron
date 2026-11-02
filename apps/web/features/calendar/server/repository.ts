@@ -20,6 +20,7 @@ import type {
   CalendarPreferences,
   CalendarReminderFailureCounts,
   CalendarReminderStatusSummary,
+  CalendarSeriesDraftRequest,
   CalendarRecurrenceRule,
 } from "../domain/types.ts";
 import {
@@ -40,7 +41,6 @@ import {
   occurrenceOverlapsCalendarInterval,
   type CalendarSeriesOccurrenceConflict,
 } from "./series-conflicts.ts";
-import type { CalendarSeriesDraftRequest } from "./validation.ts";
 import { parseCalendarSeriesDraftRequest } from "./validation.ts";
 import { CalendarRouteError, calendarSearchTimeoutError } from "./errors.ts";
 
@@ -137,8 +137,8 @@ type CreateRequestRow = QueryResultRow & {
 type SeriesDraftRow = QueryResultRow & {
   id: string;
   idempotency_key: string;
-  action: "create" | "update" | "delete";
-  scope: "series";
+  action: CalendarSeriesDraftRequest["action"];
+  scope: CalendarSeriesDraftRequest["scope"];
   target_event_id: string | null;
   target_revision: number | null;
   normalized_payload: unknown;
@@ -181,8 +181,8 @@ type SeriesProposalSnapshot = Readonly<{
 
 export type CalendarSeriesDraftResult = Readonly<{
   id: string;
-  action: "create" | "update" | "delete";
-  scope: "series";
+  action: CalendarSeriesDraftRequest["action"];
+  scope: CalendarSeriesDraftRequest["scope"];
   outcome: SeriesDraftRow["outcome"];
   replayed: boolean;
   targetEventId: string | null;
@@ -522,7 +522,10 @@ type ReminderJobInput = Readonly<{
   timeZone: string;
 }>;
 
-function reminderJobsForEvent(event: CalendarEvent): readonly ReminderJobInput[] {
+function reminderJobsForEvent(
+  event: CalendarEvent,
+  cancelledOccurrenceKeys: ReadonlySet<string> = new Set(),
+): readonly ReminderJobInput[] {
   if (event.reminderChoice === "none") return [];
   const reminderTimeZone = event.kind === "all-day"
     ? event.reminderTimeZone ?? undefined
@@ -531,22 +534,25 @@ function reminderJobsForEvent(event: CalendarEvent): readonly ReminderJobInput[]
     throw new Error("An all-day reminder is missing its saved time zone.");
   }
 
-  return reminderOccurrences(event).flatMap((occurrence) => {
-    const schedule = scheduleCalendarReminder(
-      event.reminderChoice,
-      occurrence,
-      reminderTimeZone,
-    );
-    return schedule ? [{ id: randomUUID(), ...schedule }] : [];
-  });
+  return reminderOccurrences(event)
+    .filter((occurrence) => !cancelledOccurrenceKeys.has(occurrence.occurrenceKey))
+    .flatMap((occurrence) => {
+      const schedule = scheduleCalendarReminder(
+        event.reminderChoice,
+        occurrence,
+        reminderTimeZone,
+      );
+      return schedule ? [{ id: randomUUID(), ...schedule }] : [];
+    });
 }
 
 async function insertCalendarReminderJobs(
   client: PoolClient,
   ownerId: string,
   event: CalendarEvent,
+  cancelledOccurrenceKeys: ReadonlySet<string> = new Set(),
 ): Promise<void> {
-  const jobs = reminderJobsForEvent(event);
+  const jobs = reminderJobsForEvent(event, cancelledOccurrenceKeys);
   if (jobs.length === 0) return;
 
   await client.query(
@@ -582,6 +588,7 @@ async function replaceCalendarReminderJobs(
   ownerId: string,
   event: CalendarEvent,
 ): Promise<void> {
+  const cancelled = await loadCancelledOccurrenceKeys(client, ownerId, [event.id]);
   await client.query(
     `UPDATE calendar_event_reminders
      SET status = 'cancelled',
@@ -594,7 +601,12 @@ async function replaceCalendarReminderJobs(
        AND status IN ('pending', 'leased')`,
     [ownerId, event.id, event.revision],
   );
-  await insertCalendarReminderJobs(client, ownerId, event);
+  await insertCalendarReminderJobs(
+    client,
+    ownerId,
+    event,
+    cancelled.get(event.id),
+  );
 }
 
 function preferencesFromRow(row: PreferencesRow): CalendarPreferences {
@@ -811,9 +823,15 @@ async function conflictsInTransaction(
     );
   }
 
+  const candidateEvents = result.rows.map(toCalendarEvent);
+  const cancelledOccurrenceKeys = await loadCancelledOccurrenceKeys(
+    client,
+    ownerId,
+    candidateEvents.filter((event) => event.recurrenceRule).map(({ id }) => id),
+  );
+
   const conflicts: CalendarConflict[] = [];
-  for (const row of result.rows) {
-    const event = toCalendarEvent(row);
+  for (const event of candidateEvents) {
     const base = { id: event.id, revision: event.revision, title: event.title };
     if (!event.recurrenceRule) {
       conflicts.push(event.kind === "timed"
@@ -846,7 +864,7 @@ async function conflictsInTransaction(
         occurrence,
         { startsAt: bounds.startsAt, endsAt: bounds.endsAt },
         bounds.calendarTimeZone,
-      ));
+      ) && !cancelledOccurrenceKeys.get(event.id)?.has(occurrence.occurrenceKey));
       if (occurrences.length > 1) {
         throw new CalendarRouteError(
           422,
@@ -980,6 +998,15 @@ function canonicalSeriesRequest(request: CalendarSeriesDraftRequest): Record<str
       targetRevision: request.targetRevision,
     };
   }
+  if (request.action === "cancel-occurrence") {
+    return {
+      action: request.action,
+      scope: request.scope,
+      targetEventId: request.targetEventId.toLowerCase(),
+      targetRevision: request.targetRevision,
+      occurrenceKey: request.occurrenceKey,
+    };
+  }
 
   const event = request.event.kind === "timed"
     ? {
@@ -1002,7 +1029,7 @@ function canonicalSeriesRequest(request: CalendarSeriesDraftRequest): Record<str
 
   return {
     action: request.action,
-    scope: "series",
+    scope: request.scope,
     ...(request.action === "update"
       ? {
           targetEventId: request.targetEventId.toLowerCase(),
@@ -1272,7 +1299,7 @@ async function loadSeriesCandidates(
   client: PoolClient,
   ownerId: string,
   excludeEventId?: string,
-): Promise<CalendarEvent[]> {
+): Promise<SeriesCandidateSet> {
   const result = await client.query<EventRow>(
     `SELECT ${eventColumns}
      FROM calendar_events
@@ -1289,20 +1316,97 @@ async function loadSeriesCandidates(
       "There are too many calendar events to verify every series overlap. Narrow or archive the calendar and try again.",
     );
   }
-  return result.rows.map(toCalendarEvent);
+  const events = result.rows.map(toCalendarEvent);
+  return {
+    events,
+    cancelledOccurrenceKeys: await loadCancelledOccurrenceKeys(
+      client,
+      ownerId,
+      events.map(({ id }) => id),
+    ),
+  };
+}
+
+type SeriesCandidateSet = Readonly<{
+  events: readonly CalendarEvent[];
+  cancelledOccurrenceKeys: ReadonlyMap<string, ReadonlySet<string>>;
+}>;
+
+const emptySeriesCandidates: SeriesCandidateSet = {
+  events: [],
+  cancelledOccurrenceKeys: new Map(),
+};
+
+async function loadCancelledOccurrenceKeys(
+  client: PoolClient,
+  ownerId: string,
+  eventIds: readonly string[],
+): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
+  const uniqueIds = [...new Set(eventIds)];
+  if (uniqueIds.length === 0) return new Map();
+  const result = await client.query<{
+    event_id: string;
+    occurrence_key: string;
+  } & QueryResultRow>(
+    `SELECT event_id, occurrence_key
+     FROM calendar_event_occurrence_exceptions
+     WHERE user_id = $1 AND event_id = ANY($2::uuid[])
+     ORDER BY event_id, occurrence_key`,
+    [ownerId, uniqueIds],
+  );
+  const keys = new Map<string, Set<string>>();
+  for (const row of result.rows) {
+    let eventKeys = keys.get(row.event_id);
+    if (!eventKeys) {
+      eventKeys = new Set();
+      keys.set(row.event_id, eventKeys);
+    }
+    eventKeys.add(row.occurrence_key);
+  }
+  return keys;
 }
 
 function buildSeriesProposalSnapshot(
   request: CalendarSeriesDraftRequest,
   eventId: string,
   target: CalendarEvent | null,
-  existingEvents: readonly CalendarEvent[],
+  existingCandidates: SeriesCandidateSet,
   now: string,
+  targetCancelledOccurrenceKeys: ReadonlySet<string> = new Set(),
 ): SeriesProposalSnapshot {
   const beforeOccurrences = target?.recurrenceRule
     ? expandFullCalendarSeries(target, target.recurrenceRule).map(occurrenceSnapshot)
     : [];
   const targetSnapshot = target ? snapshotTarget(target) : null;
+
+  if (request.action === "cancel-occurrence") {
+    if (!target || targetCancelledOccurrenceKeys.has(request.occurrenceKey)) {
+      throw new CalendarRouteError(
+        409,
+        "OCCURRENCE_ALREADY_CANCELLED",
+        "That occurrence is no longer available to cancel. Reload the calendar.",
+      );
+    }
+    const occurrence = beforeOccurrences.find(({ occurrenceKey }) =>
+      occurrenceKey === request.occurrenceKey
+    );
+    if (!occurrence) {
+      throw new CalendarRouteError(
+        409,
+        "OCCURRENCE_NOT_IN_SERIES",
+        "That occurrence no longer belongs to this recurring series. Reload the calendar.",
+      );
+    }
+    return {
+      version: 1,
+      eventId,
+      calendarTimeZone: null,
+      target: targetSnapshot,
+      beforeOccurrences: [occurrence],
+      afterOccurrences: [],
+      conflicts: [],
+    };
+  }
 
   if (request.action === "delete") {
     return {
@@ -1329,9 +1433,10 @@ function buildSeriesProposalSnapshot(
     comparison = findCalendarSeriesConflicts(
       event,
       request.recurrenceRule,
-      existingEvents,
+      existingCandidates.events,
       request.calendarTimeZone,
       target?.id,
+      existingCandidates.cancelledOccurrenceKeys,
     );
   } catch (error) {
     if (error instanceof RangeError || error instanceof RecurrenceError) {
@@ -1342,6 +1447,17 @@ function buildSeriesProposalSnapshot(
       );
     }
     throw error;
+  }
+
+  if (request.action === "update") {
+    const proposedKeys = new Set(comparison.occurrences.map(({ occurrenceKey }) => occurrenceKey));
+    if ([...targetCancelledOccurrenceKeys].some((key) => !proposedKeys.has(key))) {
+      throw new CalendarRouteError(
+        409,
+        "SERIES_CANCELLATION_NOT_PRESERVED",
+        "This series change would move or remove a cancelled occurrence. Keep its scheduled date unchanged and review the change again.",
+      );
+    }
   }
 
   return {
@@ -1370,9 +1486,13 @@ function seriesDraftResult(row: SeriesDraftRow, replayed: boolean): CalendarSeri
     replayed,
     targetEventId: row.target_event_id,
     targetRevision: row.target_revision,
-    event: request && request.action !== "delete" ? request.event : null,
-    recurrenceRule: request && request.action !== "delete" ? request.recurrenceRule : null,
-    calendarTimeZone: request && request.action !== "delete"
+    event: request && (request.action === "create" || request.action === "update")
+      ? request.event
+      : null,
+    recurrenceRule: request && (request.action === "create" || request.action === "update")
+      ? request.recurrenceRule
+      : null,
+    calendarTimeZone: request && (request.action === "create" || request.action === "update")
       ? request.calendarTimeZone
       : snapshot?.calendarTimeZone ?? null,
     beforeOccurrences: snapshot?.beforeOccurrences ?? [],
@@ -1985,10 +2105,16 @@ export class CalendarRepository {
         );
       }
 
+      const eventRows = result.rows.map(toCalendarEvent);
+      const cancelledOccurrenceKeys = await loadCancelledOccurrenceKeys(
+        client,
+        ownerId,
+        eventRows.filter((event) => event.recurrenceRule).map(({ id }) => id),
+      );
+
       const events: CalendarEventEntry[] = [];
       try {
-        for (const row of result.rows) {
-          const event = toCalendarEvent(row);
+        for (const event of eventRows) {
           if (!event.recurrenceRule) {
             events.push(event);
           } else {
@@ -2002,6 +2128,9 @@ export class CalendarRepository {
               },
             );
             for (const occurrence of occurrences) {
+              if (cancelledOccurrenceKeys.get(event.id)?.has(occurrence.occurrenceKey)) {
+                continue;
+              }
               const entry: CalendarEventOccurrence = {
                 ...occurrence,
                 id: occurrence.occurrenceKey,
@@ -2508,21 +2637,25 @@ export class CalendarRepository {
         );
       }
 
-      if (request.action !== "delete") {
+      if (request.action === "create" || request.action === "update") {
         await requireCalendarTimeZone(client, ownerId, request.calendarTimeZone);
       }
 
       const draftId = randomUUID();
       const eventId = target?.id ?? randomUUID();
-      const candidates = request.action === "delete"
-        ? []
+      const candidates = request.action === "delete" || request.action === "cancel-occurrence"
+        ? emptySeriesCandidates
         : await loadSeriesCandidates(client, ownerId, target?.id);
+      const targetCancelled = target
+        ? await loadCancelledOccurrenceKeys(client, ownerId, [target.id])
+        : new Map<string, ReadonlySet<string>>();
       const snapshot = buildSeriesProposalSnapshot(
         request,
         eventId,
         target,
         candidates,
         new Date().toISOString(),
+        target ? targetCancelled.get(target.id) ?? new Set() : new Set(),
       );
       const inserted = await client.query<SeriesDraftRow>(
         `INSERT INTO calendar_event_series_proposal_drafts (
@@ -2530,8 +2663,8 @@ export class CalendarRepository {
            target_event_id, target_revision, normalized_payload,
            payload_hash, conflict_snapshot, outcome, expires_at
          ) VALUES (
-           $1::uuid, $2, $3, $4, 'series', $5::uuid, $6,
-           $7::jsonb, $8, $9::jsonb, 'pending',
+           $1::uuid, $2, $3, $4, $5, $6::uuid, $7,
+           $8::jsonb, $9, $10::jsonb, 'pending',
            clock_timestamp() + interval '15 minutes'
          )
          RETURNING ${seriesDraftColumns}`,
@@ -2540,6 +2673,7 @@ export class CalendarRepository {
           ownerId,
           idempotencyKey,
           request.action,
+          request.scope,
           target?.id ?? null,
           target?.revision ?? null,
           JSON.stringify(request),
@@ -2649,18 +2783,22 @@ export class CalendarRepository {
 
       let recomputed: SeriesProposalSnapshot;
       try {
-        if (request.action !== "delete") {
+        if (request.action === "create" || request.action === "update") {
           await requireCalendarTimeZone(client, ownerId, request.calendarTimeZone);
         }
-        const candidates = request.action === "delete"
-          ? []
+        const candidates = request.action === "delete" || request.action === "cancel-occurrence"
+          ? emptySeriesCandidates
           : await loadSeriesCandidates(client, ownerId, target?.id);
+        const targetCancelled = target
+          ? await loadCancelledOccurrenceKeys(client, ownerId, [target.id])
+          : new Map<string, ReadonlySet<string>>();
         recomputed = buildSeriesProposalSnapshot(
           request,
           savedSnapshot.eventId,
           target,
           candidates,
           new Date().toISOString(),
+          target ? targetCancelled.get(target.id) ?? new Set() : new Set(),
         );
       } catch (error) {
         if (error instanceof CalendarRouteError && error.status === 422) {
@@ -2669,7 +2807,10 @@ export class CalendarRepository {
         }
         if (error instanceof CalendarRouteError
           && (error.code === "CALENDAR_TIME_ZONE_CHANGED"
-            || error.code === "CALENDAR_TIME_ZONE_UNCONFIGURED")) {
+            || error.code === "CALENDAR_TIME_ZONE_UNCONFIGURED"
+            || error.code === "OCCURRENCE_ALREADY_CANCELLED"
+            || error.code === "OCCURRENCE_NOT_IN_SERIES"
+            || error.code === "SERIES_CANCELLATION_NOT_PRESERVED")) {
           const stale = await transitionPendingSeriesDraft(client, ownerId, draftId, "stale");
           return calendarSeriesApproval(stale);
         }
@@ -2715,6 +2856,37 @@ export class CalendarRepository {
         }
         await replaceCalendarReminderJobs(client, ownerId, event);
         await staleOtherSeriesDraftsForTarget(client, ownerId, event.id, draftId);
+      } else if (request.action === "cancel-occurrence") {
+        const inserted = await client.query(
+          `INSERT INTO calendar_event_occurrence_exceptions (
+             user_id, event_id, occurrence_key
+           ) VALUES ($1, $2::uuid, $3)
+           ON CONFLICT (user_id, event_id, occurrence_key) DO NOTHING
+           RETURNING occurrence_key`,
+          [ownerId, request.targetEventId, request.occurrenceKey],
+        );
+        if (!inserted.rows[0]) {
+          const stale = await transitionPendingSeriesDraft(client, ownerId, draftId, "stale");
+          return calendarSeriesApproval(stale);
+        }
+        await client.query(
+          `UPDATE calendar_event_reminders
+           SET status = 'cancelled',
+               lease_token = NULL,
+               lease_expires_at = NULL,
+               updated_at = clock_timestamp()
+           WHERE user_id = $1
+             AND event_id = $2::uuid
+             AND occurrence_key = $3
+             AND status IN ('pending', 'leased')`,
+          [ownerId, request.targetEventId, request.occurrenceKey],
+        );
+        await staleOtherSeriesDraftsForTarget(
+          client,
+          ownerId,
+          request.targetEventId,
+          draftId,
+        );
       } else {
         const deleted = await client.query(
           `DELETE FROM calendar_events
@@ -2756,6 +2928,21 @@ export class CalendarRepository {
              RETURNING ${seriesDraftColumns}`,
             [ownerId, draftId, resolvedAt],
           )
+        : request.action === "cancel-occurrence"
+          ? await client.query<SeriesDraftRow>(
+              `UPDATE calendar_event_series_proposal_drafts
+               SET outcome = 'approved',
+                   normalized_payload = NULL,
+                   conflict_snapshot = NULL,
+                   target_event_id = NULL,
+                   target_revision = NULL,
+                   result_event_id = NULL,
+                   resolved_at = $3::timestamptz,
+                   updated_at = $3::timestamptz
+               WHERE user_id = $1 AND id = $2::uuid AND outcome = 'pending'
+               RETURNING ${seriesDraftColumns}`,
+              [ownerId, draftId, resolvedAt],
+            )
         : await client.query<SeriesDraftRow>(
             `UPDATE calendar_event_series_proposal_drafts
              SET outcome = 'approved',

@@ -75,6 +75,7 @@ function cloneDraft(draft) {
 class SeriesProposalPool {
   events = new Map();
   drafts = new Map();
+  exceptions = new Set();
   reminderJobs = [];
   preferences = new Map([[ownerId, "America/Montreal"]]);
 
@@ -105,6 +106,7 @@ class SeriesProposalPool {
           snapshot = {
             events: new Map([...this.events].map(([id, row]) => [id, { ...row }])),
             drafts: new Map([...this.drafts].map(([id, row]) => [id, cloneDraft(row)])),
+            exceptions: new Set(this.exceptions),
           };
           return { rows: [] };
         }
@@ -116,6 +118,7 @@ class SeriesProposalPool {
           if (snapshot) {
             this.events = snapshot.events;
             this.drafts = snapshot.drafts;
+            this.exceptions = snapshot.exceptions;
             snapshot = undefined;
           }
           return { rows: [] };
@@ -164,8 +167,18 @@ class SeriesProposalPool {
             ),
           };
         }
+        if (statement.startsWith("SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions")) {
+          const [queryOwner, eventIds] = values;
+          return {
+            rows: [...this.exceptions]
+              .map((key) => key.split("\u0000"))
+              .filter(([rowOwner, eventId]) => rowOwner === queryOwner
+                && queryOwner === owner && eventIds.includes(eventId))
+              .map(([, event_id, occurrence_key]) => ({ event_id, occurrence_key })),
+          };
+        }
         if (statement.startsWith("INSERT INTO calendar_event_series_proposal_drafts")) {
-          const [id, user_id, idempotency_key, action, target_event_id, target_revision,
+          const [id, user_id, idempotency_key, action, scope, target_event_id, target_revision,
             normalizedPayload, payload_hash, conflictSnapshot] = values;
           if (user_id !== owner || this.draftByKey(user_id, idempotency_key)) return { rows: [] };
           const created_at = new Date();
@@ -174,7 +187,7 @@ class SeriesProposalPool {
             user_id,
             idempotency_key,
             action,
-            scope: "series",
+            scope,
             target_event_id,
             target_revision,
             normalized_payload: JSON.parse(normalizedPayload),
@@ -228,10 +241,10 @@ class SeriesProposalPool {
             if (!draft || draft.user_id !== queryOwner || queryOwner !== owner || draft.outcome !== "pending") {
               return { rows: [] };
             }
-            if (statement.includes("payload_hash = NULL")) {
+            if (["delete", "cancel-occurrence"].includes(draft.action)) {
               draft.outcome = "approved";
               draft.normalized_payload = null;
-              draft.payload_hash = null;
+              if (draft.action === "delete") draft.payload_hash = null;
               draft.conflict_snapshot = null;
               draft.target_event_id = null;
               draft.target_revision = null;
@@ -331,7 +344,24 @@ class SeriesProposalPool {
           return { rows: [this.projectedDraft(draft)] };
         }
         if (statement.startsWith("UPDATE calendar_event_reminders")) {
+          if (statement.includes("occurrence_key = $3")) {
+            const [queryOwner, eventId, occurrenceKey] = values;
+            for (const job of this.reminderJobs) {
+              if (job.user_id === queryOwner && job.event_id === eventId
+                && job.occurrence_key === occurrenceKey
+                && ["pending", "leased"].includes(job.status)) {
+                Object.assign(job, { status: "cancelled", lease_token: null, lease_expires_at: null });
+              }
+            }
+          }
           return { rows: [] };
+        }
+        if (statement.startsWith("INSERT INTO calendar_event_occurrence_exceptions")) {
+          const [queryOwner, eventId, occurrenceKey] = values;
+          const key = `${queryOwner}\u0000${eventId}\u0000${occurrenceKey}`;
+          if (queryOwner !== owner || this.exceptions.has(key)) return { rows: [] };
+          this.exceptions.add(key);
+          return { rows: [{ occurrence_key: occurrenceKey }] };
         }
         if (statement.startsWith("INSERT INTO calendar_event_reminders")) {
           this.reminderJobs.push(...JSON.parse(values[3]));
@@ -542,4 +572,124 @@ test("expires proposals at approval time and hides another owner's target", asyn
   assert.equal(pool.events.size, 1);
   assert.equal(pool.drafts.get(draft.id).normalized_payload, null);
   assert.equal(pool.drafts.get(draft.id).payload_hash, null);
+});
+
+test("cancels one reviewed occurrence, its reminder, and only once", async () => {
+  const pool = new SeriesProposalPool();
+  const repository = new CalendarRepository(pool);
+  pool.addEvent(allDayRow({ id: seriesId }));
+  const occurrenceKey = `${seriesId}:2026-11-09`;
+  const request = parseCalendarSeriesDraftRequest({
+    action: "cancel-occurrence",
+    scope: "occurrence",
+    targetEventId: seriesId,
+    targetRevision: 1,
+    occurrenceKey,
+  });
+  pool.reminderJobs.push({
+    user_id: ownerId,
+    event_id: seriesId,
+    occurrence_key: occurrenceKey,
+    status: "leased",
+    lease_token: "lease-1",
+    lease_expires_at: new Date(Date.now() + 60_000),
+  });
+
+  const draft = await repository.createSeriesDraft(ownerId, request, "cancel-occurrence-1");
+  assert.equal(draft.scope, "occurrence");
+  assert.equal(draft.action, "cancel-occurrence");
+  assert.deepEqual(draft.beforeOccurrences.map(({ occurrenceKey: key }) => key), [occurrenceKey]);
+  assert.deepEqual(draft.afterOccurrences, []);
+  assert.equal(pool.exceptions.size, 0);
+
+  const approval = await repository.approveSeriesDraft(ownerId, draft.id);
+  assert.deepEqual(approval, {
+    id: draft.id,
+    action: "cancel-occurrence",
+    outcome: "approved",
+    event: null,
+  });
+  assert.equal(pool.exceptions.has(`${ownerId}\u0000${seriesId}\u0000${occurrenceKey}`), true);
+  assert.equal(pool.reminderJobs[0].status, "cancelled");
+  assert.equal(pool.reminderJobs[0].lease_token, null);
+  assert.equal(pool.reminderJobs[0].lease_expires_at, null);
+
+  const replay = await repository.approveSeriesDraft(ownerId, draft.id);
+  assert.equal(replay.outcome, "approved");
+  assert.equal(pool.exceptions.size, 1);
+  const draftReplay = await repository.createSeriesDraft(ownerId, request, "cancel-occurrence-1");
+  assert.equal(draftReplay.outcome, "approved");
+  assert.equal(draftReplay.replayed, true);
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, parseCalendarSeriesDraftRequest({
+      ...request,
+      occurrenceKey: `${seriesId}:2026-11-16`,
+    }), "cancel-occurrence-1"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "IDEMPOTENCY_KEY_REUSED"
+      && error.status === 409,
+  );
+});
+
+test("occurrence proposals reject keys outside the owned series and already-cancelled keys", async () => {
+  const pool = new SeriesProposalPool();
+  const repository = new CalendarRepository(pool);
+  pool.addEvent(allDayRow({ id: seriesId }));
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, parseCalendarSeriesDraftRequest({
+      action: "cancel-occurrence",
+      scope: "occurrence",
+      targetEventId: seriesId,
+      targetRevision: 1,
+      occurrenceKey: `${seriesId}:2026-11-10`,
+    }), "cancel-occurrence-invalid"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "OCCURRENCE_NOT_IN_SERIES"
+      && error.status === 409,
+  );
+
+  const occurrenceKey = `${seriesId}:2026-11-09`;
+  pool.exceptions.add(`${ownerId}\u0000${seriesId}\u0000${occurrenceKey}`);
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, parseCalendarSeriesDraftRequest({
+      action: "cancel-occurrence",
+      scope: "occurrence",
+      targetEventId: seriesId,
+      targetRevision: 1,
+      occurrenceKey,
+    }), "cancel-occurrence-replay"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "OCCURRENCE_ALREADY_CANCELLED"
+      && error.status === 409,
+  );
+});
+
+test("series updates cannot move or remove an already-cancelled scheduled date", async () => {
+  const pool = new SeriesProposalPool();
+  pool.addEvent(allDayRow({ id: seriesId }));
+  const repository = new CalendarRepository(pool);
+  const cancelledKey = `${seriesId}:2026-11-09`;
+  pool.exceptions.add(`${ownerId}\u0000${seriesId}\u0000${cancelledKey}`);
+
+  const movedRequest = proposal({
+    action: "update",
+    targetEventId: seriesId,
+    targetRevision: 1,
+    event: {
+      kind: "all-day",
+      title: "Study group",
+      startDate: "2026-11-04",
+      endDate: "2026-11-05",
+    },
+  });
+
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, movedRequest, "move-cancelled-series-date"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "SERIES_CANCELLATION_NOT_PRESERVED"
+      && error.status === 409,
+  );
+  assert.equal(pool.drafts.size, 0);
+  assert.equal(pool.events.get(seriesId).start_date, "2026-11-02");
+  assert.equal(pool.exceptions.has(`${ownerId}\u0000${seriesId}\u0000${cancelledKey}`), true);
 });

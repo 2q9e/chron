@@ -241,6 +241,70 @@ test("series draft creation carries an idempotency key and validates its snapsho
   }
 });
 
+test("occurrence cancellation uses the reviewed occurrence key for create and approval", async () => {
+  const occurrenceKey = `${seriesId}:2026-06-08`;
+  const requestBody = {
+    action: "cancel-occurrence",
+    scope: "occurrence",
+    targetEventId: seriesId,
+    targetRevision: 2,
+    occurrenceKey,
+  };
+  const draft = {
+    id: "74953a92-52d7-4bb1-b623-1c5e18371490",
+    action: "cancel-occurrence",
+    scope: "occurrence",
+    outcome: "pending",
+    replayed: false,
+    targetEventId: seriesId,
+    targetRevision: 2,
+    event: null,
+    recurrenceRule: null,
+    calendarTimeZone: null,
+    beforeOccurrences: [{
+      occurrenceKey,
+      kind: "all-day",
+      startDate: "2026-06-08",
+      endDate: "2026-06-09",
+    }],
+    afterOccurrences: [],
+    conflicts: [],
+    expiresAt: "2026-06-01T12:15:00.000Z",
+  };
+  let request;
+  globalThis.fetch = async (url, init) => {
+    request = { url, init };
+    return response({ draft }, 201);
+  };
+  try {
+    const created = await createCalendarSeriesDraft(requestBody, "cancel-one-date");
+    assert.equal(created.scope, "occurrence");
+    assert.equal(created.beforeOccurrences[0].occurrenceKey, occurrenceKey);
+    assert.equal(request.url, "/api/calendar/events/series-drafts");
+    assert.equal(request.init.headers["Idempotency-Key"], "cancel-one-date");
+    assert.deepEqual(JSON.parse(request.init.body), requestBody);
+
+    globalThis.fetch = async (url, init) => {
+      request = { url, init };
+      return response({
+        approval: {
+          id: draft.id,
+          action: "cancel-occurrence",
+          outcome: "approved",
+          event: null,
+        },
+      });
+    };
+    const approval = await approveCalendarSeriesDraft(draft.id, "cancel-occurrence", created);
+    assert.equal(approval.action, "cancel-occurrence");
+    assert.equal(approval.outcome, "approved");
+    assert.equal(request.init.method, "POST");
+    assert.equal(request.init.credentials, "same-origin");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("approval reads typed stale outcomes from the API's conflict response", async () => {
   globalThis.fetch = async () => response({
     approval: {

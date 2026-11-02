@@ -153,8 +153,10 @@ function isCalendarSeriesOccurrenceConflict(
 function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
   if (!isRecord(value)
     || !isNonEmptyString(value.id)
-    || (value.action !== "create" && value.action !== "update" && value.action !== "delete")
-    || value.scope !== "series"
+    || (value.action !== "create" && value.action !== "update" && value.action !== "delete"
+      && value.action !== "cancel-occurrence")
+    || !((value.action === "cancel-occurrence" && value.scope === "occurrence")
+      || (value.action !== "cancel-occurrence" && value.scope === "series"))
     || !["pending", "approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     || typeof value.replayed !== "boolean"
     || !(value.targetEventId === null || isNonEmptyString(value.targetEventId))
@@ -184,12 +186,15 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
       && value.conflicts.length === 0;
   }
 
-  if (value.action === "delete") {
+  if (value.action === "delete" || value.action === "cancel-occurrence") {
     return value.targetEventId !== null
       && value.targetRevision !== null
       && value.event === null
       && value.recurrenceRule === null
-      && value.beforeOccurrences.length > 0
+      && (value.action === "cancel-occurrence"
+        ? value.scope === "occurrence" && value.beforeOccurrences.length === 1
+          && value.beforeOccurrences[0].occurrenceKey.length <= 200
+        : value.beforeOccurrences.length > 0)
       && value.afterOccurrences.length === 0;
   }
   return (value.action === "create"
@@ -203,7 +208,8 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
 function isCalendarSeriesApproval(value: unknown): value is CalendarSeriesApproval {
   return isRecord(value)
     && isNonEmptyString(value.id)
-    && (value.action === "create" || value.action === "update" || value.action === "delete")
+    && (value.action === "create" || value.action === "update" || value.action === "delete"
+      || value.action === "cancel-occurrence")
     && ["approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     && (value.event === null || isCalendarEvent(value.event));
 }
@@ -212,7 +218,7 @@ function matchesSeriesDraftRequest(
   draft: CalendarSeriesDraft,
   request: CalendarSeriesDraftRequest,
 ): boolean {
-  if (draft.action !== request.action || draft.scope !== "series") return false;
+  if (draft.action !== request.action || draft.scope !== request.scope) return false;
   if (draft.outcome !== "pending") {
     const requestedTarget = request.action === "create" ? null : request.targetEventId;
     const requestedRevision = request.action === "create" ? null : request.targetRevision;
@@ -232,6 +238,14 @@ function matchesSeriesDraftRequest(
   }
   if (draft.targetEventId !== request.targetEventId
     || draft.targetRevision !== request.targetRevision) return false;
+  if (request.action === "cancel-occurrence") {
+    return draft.event === null
+      && draft.recurrenceRule === null
+      && draft.beforeOccurrences.length === 1
+      && draft.beforeOccurrences[0].occurrenceKey === request.occurrenceKey
+      && draft.afterOccurrences.length === 0
+      && draft.conflicts.length === 0;
+  }
   if (request.action === "delete") {
     return draft.event === null
       && draft.recurrenceRule === null
@@ -253,7 +267,9 @@ function matchesApprovedEvent(
 ): boolean {
   if (approval.id !== draft.id || approval.action !== draft.action) return false;
   if (approval.outcome !== "approved") return approval.event === null;
-  if (draft.action === "delete") return approval.event === null;
+  if (draft.action === "delete" || draft.action === "cancel-occurrence") {
+    return approval.event === null;
+  }
   if (!approval.event || !draft.event || !draft.recurrenceRule) return false;
 
   const expectedId = draft.action === "update"
@@ -900,7 +916,7 @@ export async function approveCalendarSeriesDraft(
       : 410;
   const outcomeMatchesAction = payload.approval.outcome !== "approved"
     ? payload.approval.event === null
-    : expectedAction === "delete"
+    : expectedAction === "delete" || expectedAction === "cancel-occurrence"
       ? payload.approval.event === null
       : payload.approval.event !== null;
   if (response.status !== expectedStatus

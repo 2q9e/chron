@@ -41,6 +41,13 @@ export type CalendarSeriesDraftRequest =
       scope: "series";
       targetEventId: string;
       targetRevision: number;
+    }>
+  | Readonly<{
+      action: "cancel-occurrence";
+      scope: "occurrence";
+      targetEventId: string;
+      targetRevision: number;
+      occurrenceKey: string;
     }>;
 
 export type CalendarSeriesOccurrenceSnapshot = Readonly<{
@@ -66,7 +73,7 @@ export type CalendarSeriesOccurrenceConflict = Readonly<{
 export type CalendarSeriesDraft = Readonly<{
   id: string;
   action: CalendarSeriesDraftRequest["action"];
-  scope: "series";
+  scope: "series" | "occurrence";
   outcome: "pending" | "approved" | "stale" | "expired" | "deleted";
   replayed: boolean;
   targetEventId: string | null;

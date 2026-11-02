@@ -3,6 +3,7 @@ import {
   calendarThemes,
   type CalendarConflictReview,
   type CalendarDensity,
+  type CalendarSeriesDraftRequest,
   type CalendarEventCreateRequest,
   type CalendarEventCommit,
   type CalendarEventMutation,
@@ -104,30 +105,6 @@ function parseAllDayReminderChoice(value: unknown): AllDayCalendarReminderChoice
   }
   return value as AllDayCalendarReminderChoice;
 }
-
-export type CalendarSeriesDraftRequest =
-  | Readonly<{
-      action: "create";
-      scope: "series";
-      event: CalendarEventMutation;
-      recurrenceRule: RecurrenceRule;
-      calendarTimeZone: string;
-    }>
-  | Readonly<{
-      action: "update";
-      scope: "series";
-      targetEventId: string;
-      targetRevision: number;
-      event: CalendarEventMutation;
-      recurrenceRule: RecurrenceRule;
-      calendarTimeZone: string;
-    }>
-  | Readonly<{
-      action: "delete";
-      scope: "series";
-      targetEventId: string;
-      targetRevision: number;
-    }>;
 
 function parseRecurrenceRule(input: unknown): RecurrenceRule {
   let rule: RecurrenceRule;
@@ -250,6 +227,32 @@ function parseSeriesTarget(value: Record<string, unknown>): Readonly<{
 
 export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesDraftRequest {
   const value = objectRecord(input);
+  if (value.action === "cancel-occurrence") {
+    if (value.scope !== "occurrence") {
+      return invalidPayload("Choose one occurrence as the change scope.");
+    }
+    assertAllowedFields(value, [
+      "action",
+      "scope",
+      "targetEventId",
+      "targetRevision",
+      "occurrenceKey",
+    ]);
+    const target = parseSeriesTarget(value);
+    if (typeof value.occurrenceKey !== "string"
+      || value.occurrenceKey.length < 1
+      || value.occurrenceKey.length > 200
+      || /[\u0000-\u001f\u007f]/u.test(value.occurrenceKey)) {
+      return invalidPayload("Choose a valid occurrence from this recurring series.");
+    }
+    return {
+      action: "cancel-occurrence",
+      scope: "occurrence",
+      ...target,
+      occurrenceKey: value.occurrenceKey,
+    };
+  }
+
   if (value.scope !== "series") {
     return invalidPayload("Choose the entire series as the change scope.");
   }

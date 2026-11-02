@@ -146,6 +146,22 @@ test("normalizes exact create and update series draft scopes", () => {
     scope: "series",
     ...target,
   });
+
+  const occurrence = {
+    action: "cancel-occurrence",
+    scope: "occurrence",
+    ...target,
+    occurrenceKey: `${target.targetEventId}:2026-11-02`,
+  };
+  assert.deepEqual(parseCalendarSeriesDraftRequest(occurrence), occurrence);
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest({ ...occurrence, scope: "series" }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest({ ...occurrence, occurrenceKey: "x".repeat(201) }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
 });
 
 test("requires a finite supported rule, exact series scope, and current target revision", () => {
@@ -552,6 +568,7 @@ test("requires event revisions and validates opaque identifiers", () => {
 class MemoryCalendarPool {
   events = new Map();
   requests = new Map();
+  exceptions = new Set();
   failCreateCompletion = false;
   failAbandonedReservation = false;
 
@@ -566,6 +583,7 @@ class MemoryCalendarPool {
         if (statement === "BEGIN") {
           snapshot = {
             events: cloneMap(this.events),
+            exceptions: new Set(this.exceptions),
             requests: cloneMap(this.requests, (request) => ({
               ...request,
               request_hash: request.request_hash === null ? null : Buffer.from(request.request_hash),
@@ -580,6 +598,7 @@ class MemoryCalendarPool {
         if (statement === "ROLLBACK") {
           if (snapshot) {
             this.events = snapshot.events;
+            this.exceptions = snapshot.exceptions;
             this.requests = snapshot.requests;
             snapshot = undefined;
           }
@@ -710,6 +729,16 @@ class MemoryCalendarPool {
               : [],
           };
         }
+        if (statement.startsWith("SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions")) {
+          const [queryOwnerId, eventIds] = values;
+          return {
+            rows: [...this.exceptions]
+              .map((key) => key.split("\u0000"))
+              .filter(([rowOwnerId, eventId]) => rowOwnerId === queryOwnerId
+                && queryOwnerId === ownerId && eventIds.includes(eventId))
+              .map(([, event_id, occurrence_key]) => ({ event_id, occurrence_key })),
+          };
+        }
         if (statement.startsWith("INSERT INTO calendar_events")) {
           const [id, rowOwnerId, title, details, startDate, endDate] = values;
           const now = "2026-10-30T12:00:00.000Z";
@@ -739,6 +768,13 @@ class MemoryCalendarPool {
         if (statement.startsWith("UPDATE calendar_event_reminders")
           || statement.startsWith("INSERT INTO calendar_event_reminders")) {
           return { rows: [] };
+        }
+        if (statement.startsWith("INSERT INTO calendar_event_occurrence_exceptions")) {
+          const [queryOwnerId, eventId, occurrenceKey] = values;
+          const key = `${queryOwnerId}\u0000${eventId}\u0000${occurrenceKey}`;
+          if (queryOwnerId !== ownerId || this.exceptions.has(key)) return { rows: [] };
+          this.exceptions.add(key);
+          return { rows: [{ occurrence_key: occurrenceKey }] };
         }
         if (statement.startsWith("UPDATE calendar_events")) {
           const [queryOwnerId, eventId, expectedRevision, title, details, startDate, endDate] = values;
@@ -1002,6 +1038,42 @@ test("round-trips recurrence rules and prevents single-event edits or deletes of
   );
   assert.equal(stored.revision, created.event.revision);
   assert.equal(pool.events.size, 1);
+});
+
+test("calendar listing excludes only the owner-scoped cancelled occurrence", async () => {
+  const pool = new MemoryCalendarPool();
+  const repository = new CalendarRepository(pool);
+  const created = await createCalendarEvent(
+    repository,
+    "owner-one",
+    "series-exception-list",
+    validAllDayCommit(),
+  );
+  Object.assign(pool.events.get(created.event.id), {
+    recurrence_frequency: "weekly",
+    recurrence_interval: 1,
+    recurrence_count: 3,
+  });
+  const cancelledKey = `${created.event.id}:2026-11-09`;
+  pool.exceptions.add(`owner-one\u0000${created.event.id}\u0000${cancelledKey}`);
+
+  const cancelledRange = await repository.listEvents(
+    "owner-one",
+    "2026-11-09",
+    "2026-11-10",
+    "America/Montreal",
+  );
+  assert.deepEqual(cancelledRange, []);
+
+  const nextRange = await repository.listEvents(
+    "owner-one",
+    "2026-11-16",
+    "2026-11-17",
+    "America/Montreal",
+  );
+  assert.deepEqual(nextRange.map(({ occurrenceKey }) => occurrenceKey), [
+    `${created.event.id}:2026-11-16`,
+  ]);
 });
 
 test("reconciliation replays a saved result without requiring or storing event text", async () => {
