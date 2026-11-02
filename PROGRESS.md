@@ -30,7 +30,8 @@ the documented single-service rollout and rollback constraints.
 External, Git, and staging endpoints stay on HTTPS. Plain HTTP literals found
 in the source scan are confined to loopback or negative security-test inputs;
 no product fetch target or deployment URL uses HTTP. Staging remains on
-release `6ddcaf1`; no VPS files or services were changed.
+release `6ddcaf1`. The documented SSH login was rejected in the read-only
+preflight; no deployment command or VPS/Cloudflare configuration change ran.
 
 ## Latest checkpoint — 2026-11-02
 

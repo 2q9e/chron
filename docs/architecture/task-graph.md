@@ -1557,4 +1557,6 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   `4161ee5`, and `2ab3047`, all authored by `2q9e`; not deployed. CI run
   `41436641635` passed. HTTPS staging still serves release `6ddcaf1`.
   Independent read-only review found no category blocker within the documented
-  single-service rollout and pending-draft rollback constraints.
+  single-service rollout and pending-draft rollback constraints. The
+  documented SSH login was rejected during read-only preflight; no deploy
+  command or VPS/Cloudflare change ran.

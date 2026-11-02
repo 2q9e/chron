@@ -40,15 +40,17 @@ authored by `2q9e`. An HTTPS request to `https://testing.uwu.markets/calendar`
 redirected to sign-in and returned HSTS. The independent read-only category
 review found no remaining code blocker under the single-service rollout and
 pending-draft rollback rules.
+The read-only SSH preflight using the documented login was rejected, so no
+deployment command ran and no VPS or Cloudflare configuration changed.
 
 Next actions:
 
-1. Deploy the pushed Chron release only after the documented VPS login works.
+1. Deploy the pushed Chron release only after valid VPS login is available.
    Stop the single `chron-web.service`, apply migration 0018, switch only
    Chron's release, then start that service and verify via
    `https://testing.uwu.markets`; do not change unrelated VPS files or services.
-2. If authorized access still fails, leave staging unchanged and record the
-   blocker; do not guess credentials or alter Cloudflare/VPS configuration.
+2. If authorized access still fails, leave staging unchanged; do not guess
+   credentials or alter Cloudflare/VPS configuration.
 3. Verify signed-in calendar category flows only with an authorized test
    account.
 
