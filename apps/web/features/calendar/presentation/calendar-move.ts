@@ -55,13 +55,6 @@ export function moveCalendarEventDraft(
   targetMinute: number | null,
   calendarTimeZone: string,
 ): CalendarMoveResult {
-  if (event.recurrenceRule) {
-    return {
-      ok: false,
-      message: "Open the repeating series to review a series move.",
-    };
-  }
-
   let targetDate: Temporal.PlainDate;
   try {
     targetDate = parseCalendarDate(targetDateValue);

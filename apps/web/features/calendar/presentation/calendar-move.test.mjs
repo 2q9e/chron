@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Temporal } from "@js-temporal/polyfill";
+import { expandCalendarRecurrence } from "../domain/recurrence.ts";
 import {
   calendarMinuteAtPointer,
   calendarMoveSnapMinutes,
   moveCalendarEventDraft,
   resizeCalendarEventDraft,
 } from "./calendar-move.ts";
+import { validateCalendarEventDraft } from "./calendar-model.ts";
 
 function timedEvent({
   id = "event-1",
@@ -125,14 +127,86 @@ test("date-only movement refuses a gap or repeated local wall time", () => {
   assert.match(repeated.message, /occurs twice/);
 });
 
-test("series occurrences require the explicit series editor", () => {
+test("moving a timed series prepares a finite whole-series update", () => {
+  const rule = { frequency: "weekly", interval: 1, count: 4 };
   const event = timedEvent({
-    recurrenceRule: { frequency: "weekly", interval: 1, count: 4 },
+    recurrenceRule: rule,
   });
   const moved = moveCalendarEventDraft(event, "2026-06-16", 615, "America/Toronto");
 
-  assert.equal(moved.ok, false);
-  assert.match(moved.message, /repeating series/);
+  assert.equal(moved.ok, true);
+  assert.equal(moved.draft.startLocal, "2026-06-16T10:15");
+  assert.equal(moved.draft.endLocal, "2026-06-16T11:45");
+  assert.equal(moved.draft.repeatFrequency, "weekly");
+  assert.equal(moved.draft.repeatInterval, "1");
+  assert.equal(moved.draft.repeatCount, "4");
+
+  const reviewed = validateCalendarEventDraft(moved.draft, moved.timeZone);
+  assert.equal(reviewed.ok, true);
+  assert.deepEqual(reviewed.recurrenceRule, rule);
+  assert.equal(reviewed.mutation.startLocal, "2026-06-16T10:15");
+  const proposedEvent = {
+    ...event,
+    ...reviewed.mutation,
+    startsAt: Temporal.ZonedDateTime.from(
+      `${reviewed.mutation.startLocal}[${event.timeZone}]`,
+    ).toInstant().toString(),
+    endsAt: Temporal.ZonedDateTime.from(
+      `${reviewed.mutation.endLocal}[${event.timeZone}]`,
+    ).toInstant().toString(),
+  };
+  const occurrences = expandCalendarRecurrence(
+    proposedEvent,
+    reviewed.recurrenceRule,
+    { fromDate: "2026-06-16", toDate: "2026-07-16", timeZone: "America/Toronto" },
+  );
+  assert.deepEqual(occurrences.map((occurrence) => occurrence.startLocal), [
+    "2026-06-16T10:15",
+    "2026-06-23T10:15",
+    "2026-06-30T10:15",
+    "2026-07-07T10:15",
+  ]);
+});
+
+test("moving an all-day series preserves its date-only duration and finite rule", () => {
+  const rule = { frequency: "weekly", interval: 2, count: 5 };
+  const event = {
+    id: "series-all-day",
+    kind: "all-day",
+    title: "Study block",
+    details: null,
+    revision: 3,
+    recurrenceRule: rule,
+    reminderChoice: "none",
+    reminderTimeZone: null,
+    startDate: "2024-02-28",
+    endDate: "2024-03-01",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+  const moved = moveCalendarEventDraft(event, "2024-03-01", null, "UTC");
+
+  assert.equal(moved.ok, true);
+  assert.equal(moved.draft.startDate, "2024-03-01");
+  assert.equal(moved.draft.endDate, "2024-03-03");
+  assert.equal(moved.draft.repeatFrequency, "weekly");
+  assert.equal(moved.draft.repeatInterval, "2");
+  assert.equal(moved.draft.repeatCount, "5");
+
+  const reviewed = validateCalendarEventDraft(moved.draft, moved.timeZone);
+  assert.equal(reviewed.ok, true);
+  assert.deepEqual(reviewed.recurrenceRule, rule);
+  assert.equal(reviewed.mutation.startDate, "2024-03-01");
+  const occurrences = expandCalendarRecurrence(
+    { ...event, ...reviewed.mutation },
+    reviewed.recurrenceRule,
+    { fromDate: "2024-03-01", toDate: "2024-04-01" },
+  );
+  assert.deepEqual(occurrences.map((occurrence) => occurrence.startDate), [
+    "2024-03-01",
+    "2024-03-15",
+    "2024-03-29",
+  ]);
 });
 
 test("resize changes the end slot while preserving the start and event timezone", () => {
