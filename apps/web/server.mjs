@@ -6,6 +6,9 @@ const hostname = process.env.HOSTNAME ?? "127.0.0.1";
 const port = Number(process.env.PORT ?? "4175");
 const certificatePath = process.env.TLS_CERT_FILE;
 const privateKeyPath = process.env.TLS_KEY_FILE;
+const canonicalOrigin = process.env.BETTER_AUTH_URL
+  ? new URL(process.env.BETTER_AUTH_URL)
+  : undefined;
 
 if (hostname !== "127.0.0.1" && hostname !== "::1") {
   throw new Error("Chron must bind its HTTPS server to loopback.");
@@ -29,6 +32,25 @@ const server = createServer(
     key: readFileSync(privateKeyPath),
   },
   (request, response) => {
+    const forwardedProtocol = request.headers["x-forwarded-proto"];
+    if (
+      canonicalOrigin?.protocol === "https:" &&
+      typeof forwardedProtocol === "string" &&
+      forwardedProtocol.split(",", 1)[0]?.trim().toLowerCase() === "http"
+    ) {
+      const requestTarget = request.url ?? "/";
+      const safeTarget = requestTarget.startsWith("/") &&
+        !requestTarget.startsWith("//") &&
+        !requestTarget.includes("\\")
+        ? requestTarget
+        : "/";
+      response.writeHead(308, {
+        location: new URL(safeTarget, canonicalOrigin).href,
+        "cache-control": "no-store",
+      }).end();
+      return;
+    }
+
     void handle(request, response).catch(() => {
       if (!response.headersSent) {
         response.writeHead(500).end();
