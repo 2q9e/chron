@@ -4,7 +4,7 @@ import { Temporal } from "@js-temporal/polyfill";
 import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
-import { calendarEventSeries, type CalendarEvent, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
+import { calendarEventSeries, type CalendarEvent, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest, type StudyPlannerDefaults } from "../domain/types";
 import { buildCalendarIcs } from "../domain/calendar-ics";
 import { accessibleCalendarAccent } from "../domain/calendar-accent";
 import { expandCalendarRecurrenceRange } from "../domain/recurrence-range";
@@ -1119,6 +1119,17 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     catch (reason) { setSettingsError(reason instanceof Error ? reason.message : "Could not save preferences. Try saving again."); }
     finally { setBusy(false); }
   }
+  async function saveStudyPlannerDefaults(studyPlanner: StudyPlannerDefaults) {
+    if (!preferences || calendarLocked) throw new Error("The calendar is busy. Try saving your study defaults again.");
+    setBusy(true);
+    try {
+      const saved = await saveCalendarPreferences({ ...preferences, studyPlanner });
+      setPreferences(saved);
+      setSettings((current) => current ? { ...current, studyPlanner: saved.studyPlanner } : saved);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function exportVisibleEvents() {
     if (!preferences || !date || loading || loadError || calendarLocked || editor) return;
@@ -1208,7 +1219,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         locale={locale}
         disabled={calendarLocked || !!editor || loading || !!loadError}
         savedSessionIds={savedStudySessionIds}
+        studyDefaults={preferences.studyPlanner}
         onReview={reviewStudySession}
+        onSaveDefaults={saveStudyPlannerDefaults}
         onClose={() => setStudyPlannerOpen(false)}
       />
     )}

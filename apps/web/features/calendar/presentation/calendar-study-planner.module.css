@@ -126,6 +126,8 @@
 .actions {
   display: flex;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: .5rem;
 }
 
 .planner button {
@@ -228,6 +230,11 @@
   .actions,
   .fieldError {
     grid-column: auto;
+  }
+
+  .actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .actions,

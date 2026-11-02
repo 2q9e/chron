@@ -2,10 +2,11 @@
 
 import { Temporal } from "@js-temporal/polyfill";
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
+import type { StudyPlannerDefaults } from "../domain/types";
 import { formatDateOnly, formatInstant } from "./calendar-model";
 import { fetchCalendarEvents } from "./calendar-api";
 import { resolveCalendarRange } from "../domain/time";
-import { planStudyTime, studyPlannerInputErrors, type StudyPlan, type StudyPlanSession, type StudyPlannerField, type StudyPlannerInput } from "../domain/study-planner";
+import { planStudyTime, studyPlannerDefaultsErrors, studyPlannerInputErrors, type StudyPlan, type StudyPlanSession, type StudyPlannerField, type StudyPlannerInput } from "../domain/study-planner";
 import styles from "./calendar-study-planner.module.css";
 
 type Fields = Readonly<{
@@ -26,7 +27,9 @@ type Props = Readonly<{
   locale: string;
   disabled: boolean;
   savedSessionIds: ReadonlySet<string>;
+  studyDefaults: StudyPlannerDefaults;
   onReview: (session: StudyPlanSession, returnFocusTarget: HTMLButtonElement) => void;
+  onSaveDefaults: (defaults: StudyPlannerDefaults) => Promise<void>;
   onClose: () => void;
 }>;
 
@@ -40,18 +43,18 @@ const weekdayOptions = [
   { value: 7, label: "Sunday" },
 ] as const;
 
-function initialFields(initialDate: string): Fields {
+function initialFields(initialDate: string, defaults: StudyPlannerDefaults): Fields {
   const first = Temporal.PlainDate.from(initialDate);
   return {
     topic: "",
     totalMinutes: "300",
-    sessionMinutes: "60",
+    sessionMinutes: String(defaults.sessionMinutes),
     startDate: first.toString(),
     deadline: first.add({ days: 14 }).toString(),
-    dayStart: "09:00",
-    dayEnd: "17:00",
-    eventBufferMinutes: "15",
-    sessionBreakMinutes: "15",
+    dayStart: defaults.dayStart,
+    dayEnd: defaults.dayEnd,
+    eventBufferMinutes: String(defaults.eventBufferMinutes),
+    sessionBreakMinutes: String(defaults.sessionBreakMinutes),
   };
 }
 
@@ -77,12 +80,15 @@ function planSummary(plan: StudyPlan): string {
   return `${count} reviewable study ${count === 1 ? "session" : "sessions"}; ${placed}.`;
 }
 
-export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, savedSessionIds, onReview, onClose }: Props) {
+export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, savedSessionIds, studyDefaults, onReview, onSaveDefaults, onClose }: Props) {
   const id = useId();
-  const [fields, setFields] = useState(() => initialFields(initialDate));
-  const [weekdays, setWeekdays] = useState<readonly number[]>([1, 2, 3, 4, 5]);
+  const [fields, setFields] = useState(() => initialFields(initialDate, studyDefaults));
+  const [weekdays, setWeekdays] = useState<readonly number[]>(studyDefaults.weekdays);
   const [plan, setPlan] = useState<StudyPlan | null>(null);
   const [error, setError] = useState("");
+  const [defaultsError, setDefaultsError] = useState("");
+  const [defaultsStatus, setDefaultsStatus] = useState("");
+  const [savingDefaults, setSavingDefaults] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<StudyPlannerField, string>>>({});
   const [loading, setLoading] = useState(false);
   const request = useRef<AbortController | null>(null);
@@ -101,6 +107,8 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
     });
     setPlan(null);
     setError("");
+    setDefaultsError("");
+    setDefaultsStatus("");
   }
 
   function toggleWeekday(day: number) {
@@ -114,6 +122,39 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
     });
     setPlan(null);
     setError("");
+    setDefaultsError("");
+    setDefaultsStatus("");
+  }
+
+  async function saveDefaults() {
+    if (disabled || loading || savingDefaults) return;
+    const defaults: StudyPlannerDefaults = {
+      weekdays,
+      dayStart: fields.dayStart,
+      dayEnd: fields.dayEnd,
+      sessionMinutes: Number(fields.sessionMinutes),
+      eventBufferMinutes: Number(fields.eventBufferMinutes),
+      sessionBreakMinutes: Number(fields.sessionBreakMinutes),
+    };
+    const errors = studyPlannerDefaultsErrors(defaults);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      setDefaultsStatus("");
+      setDefaultsError("Check the highlighted scheduling settings before saving.");
+      return;
+    }
+
+    setSavingDefaults(true);
+    setDefaultsError("");
+    setDefaultsStatus("");
+    try {
+      await onSaveDefaults({ ...defaults, weekdays: [...defaults.weekdays].sort((left, right) => left - right) });
+      setDefaultsStatus("Study planning defaults saved to your account.");
+    } catch (reason) {
+      setDefaultsError(reason instanceof Error ? reason.message : "Could not save study planning defaults. Try again.");
+    } finally {
+      setSavingDefaults(false);
+    }
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -248,11 +289,16 @@ export function CalendarStudyPlanner({ initialDate, timeZone, locale, disabled, 
 
         <p className={styles.note}>Times use your calendar time zone. Session lengths and buffers follow 15-minute increments. Existing event times are padded by the buffer; all-day events block their full dates. On a repeated clock hour, the window uses the first start and last end occurrence. Nonexistent windows are skipped.</p>
         <div className={styles.actions}>
-          <button type="submit" disabled={disabled || loading}>{loading ? "Checking calendar…" : "Generate study plan"}</button>
+          <button type="submit" disabled={disabled || loading || savingDefaults}>{loading ? "Checking calendar…" : "Generate study plan"}</button>
+          <button type="button" disabled={disabled || loading || savingDefaults} onClick={() => void saveDefaults()}>
+            {savingDefaults ? "Saving defaults…" : "Save as my defaults"}
+          </button>
         </div>
       </form>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
+      {defaultsError && <p className={styles.error} role="alert">{defaultsError}</p>}
+      {defaultsStatus && <p className={styles.status} role="status">{defaultsStatus}</p>}
       {loading && <p className={styles.status} role="status">Checking your saved calendar events…</p>}
       {plan && (
         <div className={styles.results} aria-live="polite">
