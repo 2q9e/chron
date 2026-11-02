@@ -27,9 +27,18 @@ increment adds bounded delivery, verified-email checks, generic reminder
 content, a protected internal route, and a Cloudflare Cron scheduler that calls
 the fixed HTTPS staging endpoint. Commits `0aad4d9` and `aa5c9dc` add
 type-specific editor choices, saved all-day time-zone preservation, and a
-calculated local delivery-time preview. Database-backed delivery, visible
-delivery status, SMTP, and staging are still unverified. All work remains on
-the same `main` branch; public history now exceeds 600 non-merge commits.
+calculated local delivery-time preview. Commits `162f358`, `e50477b`,
+`4b6eb42`, and `b0395ec` add an authenticated owner-scoped status read,
+bounded sanitized delivery summaries, and editor status, retry, failure,
+empty, and offline states. Status source is implemented; database-backed
+delivery, SMTP, and staging remain unverified. All work remains on the same
+`main` branch; this documentation checkpoint brings public history to 615
+non-merge commits.
+
+The focused Codex Security diff review covered all ten changed files from
+`c7d9771` through `b0395ec` and found no source candidates. It was a sequential
+parent review because isolated delegation was unavailable; authenticated
+database, browser, SMTP, and staging checks remain open.
 
 ## Completed
 
@@ -125,9 +134,10 @@ the same `main` branch; public history now exceeds 600 non-merge commits.
   provider data. The internal route requires a long bearer secret; the
   Cloudflare Cron worker targets only `https://testing.uwu.markets` with
   redirects disabled. Public email links reject HTTP origins. Runtime delivery,
-  migration execution, and visible persisted delivery status remain
-  unverified. Editor choices and calculated local-time review are in source;
-  no end-to-end reminder flow has been verified.
+  migration execution, and end-to-end delivery remain unverified. The editor
+  offers type-specific choices, calculated local-time review, and a private
+  owner-scoped status panel. Status exposes counts and sanitized failure
+  categories, never recipient addresses, event content, or raw SMTP errors.
 
 ## Open work
 
@@ -137,10 +147,11 @@ the same `main` branch; public history now exceeds 600 non-merge commits.
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
-- Continue C1 at C1-rmd3: add truthful persisted reminder delivery status.
-  Reminder choices, schedule preview, outbox, delivery worker, internal route,
-  and HTTPS scheduler are implemented in source and locally tested. Live
-  PostgreSQL execution and SMTP delivery remain unverified.
+- Continue C1 at C1-rmd4: independently review reminder behavior and close
+  remaining source-level issues. Reminder choices, schedule preview, persisted
+  status read and UI, outbox, delivery worker, internal route, and HTTPS
+  scheduler are implemented in source and locally tested. Live PostgreSQL
+  execution, SMTP delivery, and rendered browser behavior remain unverified.
   Drag scheduling and external calendar synchronization remain later work.
   PostgreSQL ownership and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
@@ -242,8 +253,8 @@ the same `main` branch; public history now exceeds 600 non-merge commits.
   `npm run typecheck --workspace @chron/web` and `npm run lint --workspace
   @chron/web` passed. No production build, database, authenticated browser, or
   reminder delivery has been verified.
-- Current reminder source verification: calendar API/server tests (85), auth
-  config/email tests (13), scheduler tests (2), calendar time (39), layout (33),
+- Current reminder source verification: calendar API/server tests (89), auth
+  config/email tests (13), scheduler tests (2), calendar time (39), layout (34),
   and recovery (5) pass. Typecheck and lint pass. The HTTPS probe to the staging
   hostname cannot resolve because its DNS record is absent. No database,
   scheduler deployment, SMTP send, or browser reminder flow was exercised.

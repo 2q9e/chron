@@ -4,7 +4,8 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. The reminder event and outbox integration was pushed as
+remote branch. Public `main` contains 615 non-merge commits after this
+checkpoint. The reminder event and outbox integration was pushed as
 `be722e9`; bounded reminder delivery source was pushed in six small commits
 through `f44ed03`. Public history exceeds 600 non-merge commits. New commits
 are authored as `2q9e`, not `codex`.
@@ -41,9 +42,15 @@ and a Cloudflare Cron scheduler with a fixed HTTPS target. Those source paths
 pass local tests, but migration execution, database behavior, SMTP delivery,
 and scheduler deployment are unverified. Commits `0aad4d9` and `aa5c9dc` add
 type-specific editor choices, saved all-day time-zone preservation, and a
-calculated local-time preview before save. Persisted delivery status is still
-absent. Staging must remain HTTPS-only; `testing.uwu.markets` currently has no
-DNS record, so no HTTP fallback is allowed.
+calculated local-time preview before save. Commits `162f358`, `e50477b`,
+`4b6eb42`, and `b0395ec` add a private owner-scoped status read and the editor
+panel with loading, empty, failure, retry, and offline states. The status
+response contains counts and safe failure categories only; SMTP acceptance is
+not represented as inbox delivery. Database-backed behavior and browser
+rendering remain unverified. A focused security diff review of these ten
+changed files found no source candidates; it ran sequentially without an
+isolated independent reviewer. Staging is HTTPS-only; `testing.uwu.markets`
+has no DNS record, so there is no HTTP fallback.
 Drag scheduling, external sync, database-backed runtime verification, and a
 real authenticated browser walkthrough remain open.
 C-01 through C-14 have
@@ -77,6 +84,12 @@ and database-backed verification remains pending.
   exist and pass locally; live PostgreSQL integration remains unverified.
 - Do not add samples, placeholders, stubs, fake demos, or nonfunctional
   controls to the product.
+- Reminder status source was reviewed against `13-api-integration`,
+  `04-typescript`, `11-accessibility`, and `antislop-forms`. The panel uses a
+  bounded private read, validates the response shape, reports mail-server
+  acceptance accurately, and has loading, empty, error, retry, and offline
+  states. Live keyboard, responsive, and account-backed behavior still needs
+  browser verification.
 - `docs/audits/calendar-page.md` records independent visual and security
   reviews, scores, source-level fixes, and verification limits. No authenticated
   database session is available for rendered calendar verification.
@@ -115,9 +128,12 @@ and database-backed verification remains pending.
   recurring events. The bounded sender is in
   `apps/web/features/calendar/server/reminder-delivery-worker.ts`, with a
   bearer-protected route at `apps/web/app/api/internal/calendar-reminders/`
-  and the HTTPS-only scheduled caller in `apps/reminder-scheduler/`. No live
-  PostgreSQL instance is configured, so migration execution and real RLS
-  behavior are unverified; SMTP delivery and editor/status controls remain open.
+  and the HTTPS-only scheduled caller in `apps/reminder-scheduler/`. The
+  owner-scoped status API is at
+  `apps/web/app/api/calendar/events/[eventId]/reminders/route.ts`; its editor
+  panel is `apps/web/features/calendar/presentation/calendar-reminder-status.tsx`.
+  No live PostgreSQL instance is configured, so migration execution and real
+  RLS behavior are unverified; SMTP delivery and browser behavior remain open.
 - The user requested staging at `https://testing.uwu.markets` through the
   supplied VPS and Cloudflare setup, without changing other VPS services.
   The HTTPS-only probe cannot resolve the hostname, and Cloudflare has no
@@ -204,22 +220,21 @@ awaits narrow and zoom browser checks.
   workspace volume has only 58 MB free; authenticated recurrence behavior is
   still unverified without configured PostgreSQL/auth services.
 - After `a906351`, calendar domain/time tests passed (39), typecheck passed, and
-  lint passed. The current reminder increment passes calendar API/server (85),
-  auth-config/email (13), scheduler (2), calendar time (39), layout (29), and
-  recovery (5) tests, plus typecheck and lint. No production build, configured
-  database, authenticated browser, migration execution, or SMTP delivery was
-  verified.
+  lint passed. The current reminder increment passes calendar API/server (89),
+  auth-config/email (13), scheduler (2), calendar time (39), layout (34), and
+  recovery (5) tests, plus typecheck and lint. No production build was run
+  because free disk space is low. No configured database, authenticated browser,
+  migration execution, or SMTP delivery was verified.
 - Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
   is active but has no `testing.uwu.markets` DNS record. No hosting changes
-  were made. The HTTPS-only check was repeated on 2026-11-01 and DNS still
+  were made. The HTTPS-only check was repeated on 2026-11-02 and DNS still
   failed. Do not use HTTP or edit unrelated VPS configuration.
 
 ## Next actions
 
-1. Add truthful persisted delivery status for reminder jobs while preserving
-   the opt-in default. Editor choices, saved all-day zone, and calculated
-   local-time review are already in source; delivery is not operationally
-   verified.
+1. Continue C1-rmd4 with browser and keyboard review of the integrated
+   reminder flow. Source security review found no candidates; database and
+   browser acceptance remain open.
 2. Configure disposable PostgreSQL and account fixtures; apply migrations and
    verify owner isolation and reminder persistence.
 3. Configure only the Chron-specific staging DNS/tunnel/app route, preserving

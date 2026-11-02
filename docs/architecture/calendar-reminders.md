@@ -155,6 +155,25 @@ C1-rmd0 time and delivery contract
 - **Tests:** choices, edit round-trip, review invalidation, saved timezone,
   field-error association, status announcements and delivery failure.
 - **Expected deliverables:** functional editor and truthful persisted status.
+- **Source implementation:** commits `162f358`, `e50477b`, `4b6eb42`, and
+  `b0395ec` add an authenticated, owner-scoped status route and an editor panel.
+  The database read is limited to the saved event revision and 366 finite
+  occurrences, and returns persisted state counts, retry timing, acceptance
+  time, and sanitized failure categories. It does not return email addresses,
+  event content, or raw SMTP error codes. The editor distinguishes email-server
+  acceptance from inbox delivery and provides loading, empty, error, retry, and
+  offline states. Source behavior is implemented; browser and database
+  acceptance remain open.
+- **Skills applied:** `13-api-integration`, `04-typescript`,
+  `11-accessibility`, and `antislop-forms`.
+- **Source verification (2026-11-02 UTC):** calendar API/server tests (89),
+  calendar presentation tests (34), typecheck, and lint pass. These tests use
+  synthetic repository/fetch fixtures; no PostgreSQL instance, authenticated
+  account, SMTP server, or rendered reminder editor was available.
+- **Security review (2026-11-02 UTC):** a source diff review of all ten changed
+  files found no security candidates. It was not an independent review because
+  technically isolated delegation was unavailable; live database, browser,
+  SMTP, and HTTPS staging acceptance remain unverified.
 
 ### C1-rmd4 — integrated tests and independent audits
 
