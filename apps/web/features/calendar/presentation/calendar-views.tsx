@@ -10,6 +10,7 @@ import {
   timedEventSegmentsForDate,
   type CalendarView,
 } from "./calendar-model";
+import { CalendarEventControl, type CalendarMoveAction } from "./calendar-event-control";
 import styles from "./calendar.module.css";
 
 type EventButtonProps = Readonly<{
@@ -18,8 +19,11 @@ type EventButtonProps = Readonly<{
   timeZone: string;
   locale: string;
   onSelect: (event: CalendarEventEntry) => void;
+  onMove?: CalendarMoveAction;
   compact?: boolean;
   timeLabelOverride?: string;
+  className?: string;
+  style?: React.CSSProperties;
 }>;
 
 type TimedEventDaySegment = Readonly<{
@@ -134,23 +138,28 @@ export function CalendarEventButton({
   timeZone,
   locale,
   onSelect,
+  onMove,
   compact = false,
   timeLabelOverride,
+  className,
+  style,
 }: EventButtonProps) {
   const timeLabel = event.kind === "timed"
     ? timeLabelOverride ?? timedEventDayLabel(event, date, timeZone, locale)
     : "All day";
   return (
-    <button
-      className={`${styles.eventButton} ${compact ? styles.compactEvent : ""}`}
-      type="button"
-      onClick={() => onSelect(event)}
-      aria-label={eventAccessibleLabel(event, date, timeZone, locale)}
-      title={event.title}
-    >
-      <span className={styles.eventTime}>{timeLabel}</span>
-      <span className={styles.eventTitle}>{event.title}</span>
-    </button>
+    <CalendarEventControl
+      accessibleLabel={eventAccessibleLabel(event, date, timeZone, locale)}
+      calendarTimeZone={timeZone}
+      className={className}
+      compact={compact}
+      event={event}
+      locale={locale}
+      onMove={onMove}
+      onSelect={onSelect}
+      style={style}
+      timeLabel={timeLabel}
+    />
   );
 }
 
@@ -162,6 +171,7 @@ type CalendarViewProps = Readonly<{
   locale: string;
   onCreate: (date: string) => void;
   onSelectEvent: (event: CalendarEventEntry) => void;
+  onMoveEvent?: CalendarMoveAction;
 }>;
 
 function weekdayLabels(weekStartsOn: number, locale: string): readonly string[] {
@@ -172,7 +182,7 @@ function weekdayLabels(weekStartsOn: number, locale: string): readonly string[] 
 }
 
 export function MonthCalendar(props: CalendarViewProps) {
-  const { events, selectedDate, weekStartsOn, timeZone, locale, onCreate, onSelectEvent } = props;
+  const { events, selectedDate, weekStartsOn, timeZone, locale, onCreate, onSelectEvent, onMoveEvent } = props;
   const grid = monthGrid(selectedDate, weekStartsOn);
   const labels = weekdayLabels(weekStartsOn, locale);
   return (
@@ -188,6 +198,8 @@ export function MonthCalendar(props: CalendarViewProps) {
           return (
             <article
               className={`${styles.monthCell} ${currentMonth ? "" : styles.adjacentMonthCell}`}
+              data-calendar-drop-date={dateKey}
+              data-calendar-drop-time-zone={timeZone}
               key={dateKey}
               aria-label={`${day.toLocaleString(locale, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}${dayEvents.length ? `, ${dayEvents.length} events` : ", no events"}`}
             >
@@ -211,6 +223,7 @@ export function MonthCalendar(props: CalendarViewProps) {
                     event={event}
                     key={calendarEventEntryKey(event)}
                     locale={locale}
+                    onMove={onMoveEvent}
                     onSelect={onSelectEvent}
                     timeZone={timeZone}
                   />
@@ -233,6 +246,7 @@ function DayColumn({
   locale,
   onCreate,
   onSelectEvent,
+  onMoveEvent,
 }: DayColumnProps) {
   const dayEvents = eventsOnDate(events, date, timeZone);
   const allDayEvents = allDayEventsForDate(dayEvents, date);
@@ -241,7 +255,12 @@ function DayColumn({
     .toLocaleString(locale, { weekday: "long", month: "short", day: "numeric" });
 
   return (
-    <article className={styles.dayColumn} aria-label={dateTitle}>
+    <article
+      className={styles.dayColumn}
+      aria-label={dateTitle}
+      data-calendar-drop-date={date}
+      data-calendar-drop-time-zone={timeZone}
+    >
       <header className={styles.dayColumnHeader}>
         <h3>{dateTitle}</h3>
         <button
@@ -255,7 +274,11 @@ function DayColumn({
       </header>
       <div className={styles.allDayRow}>
         <span className={styles.rowLabel}>All day</span>
-        <div className={styles.allDayEvents}>
+        <div
+          className={styles.allDayEvents}
+          data-calendar-drop-date={date}
+          data-calendar-drop-time-zone={timeZone}
+        >
           {allDayEvents.map((event) => (
             <CalendarEventButton
               compact
@@ -263,6 +286,7 @@ function DayColumn({
               event={event}
               key={calendarEventEntryKey(event)}
               locale={locale}
+              onMove={onMoveEvent}
               onSelect={onSelectEvent}
               timeZone={timeZone}
             />
@@ -271,6 +295,10 @@ function DayColumn({
       </div>
       <div
         className={styles.dayTrack}
+        data-calendar-drop-date={date}
+        data-calendar-day-minutes={timeline.dayDurationMinutes}
+        data-calendar-drop-time-zone={timeZone}
+        data-calendar-drop-track
         style={{ "--track-height": `${timeline.trackHeightRem}rem` } as React.CSSProperties}
       >
         <div className={styles.hourAxis} aria-hidden="true">
@@ -289,27 +317,24 @@ function DayColumn({
             : segment.endsOnDate
               ? `Until ${timedEventEndLabel(segment.event, date, timeZone, locale, true)}`
               : "Continues";
-            const suffix = segment.startsOnDate && !segment.endsOnDate
-              ? "; continues into a later day"
-              : "";
             return (
-              <button
-                className={`${styles.timedEvent} ${styles.eventButton}`}
-                type="button"
+              <CalendarEventButton
+                className={styles.timedEvent}
+                date={date}
+                event={segment.event}
                 key={calendarEventEntryKey(segment.event)}
-                onClick={() => onSelectEvent(segment.event)}
-                aria-label={eventAccessibleLabel(segment.event, date, timeZone, locale)}
-                title={`${segment.event.title} · ${time}${suffix}`}
+                locale={locale}
+                onMove={segment.startsOnDate && segment.heightRem >= 2.75 ? onMoveEvent : undefined}
+                onSelect={onSelectEvent}
+                timeLabelOverride={time}
+                timeZone={timeZone}
                 style={{
                   top: `${segment.topRem}rem`,
                   height: `${segment.heightRem}rem`,
                   left: `${segment.leftPercent}%`,
                   width: `${segment.widthPercent}%`,
                 }}
-              >
-                <span className={styles.eventTime}>{time}</span>
-                <span className={styles.eventTitle}>{segment.event.title}</span>
-              </button>
+              />
             );
           })}
         </div>
@@ -322,6 +347,7 @@ function DayColumn({
                 date={date}
                 event={segment.event}
                 locale={locale}
+                onMove={onMoveEvent}
                 onSelect={onSelectEvent}
                 timeLabelOverride={shortTimedEventLabel(segment.event, date, timeZone, locale)}
                 timeZone={timeZone}
@@ -332,7 +358,7 @@ function DayColumn({
       )}
       <div className={styles.mobileTimedEvents}>
         {dayEvents.filter((event) => event.kind === "timed").map((event) => (
-          <CalendarEventButton date={date} event={event} key={calendarEventEntryKey(event)} locale={locale} onSelect={onSelectEvent} timeZone={timeZone} />
+          <CalendarEventButton date={date} event={event} key={calendarEventEntryKey(event)} locale={locale} onMove={onMoveEvent} onSelect={onSelectEvent} timeZone={timeZone} />
         ))}
       </div>
       {dayEvents.length === 0 && (
@@ -350,6 +376,7 @@ export function TimeCalendar({
   locale,
   onCreate,
   onSelectEvent,
+  onMoveEvent,
   view,
 }: CalendarViewProps & Readonly<{ view: "day" | "week" }>) {
   const first = view === "day" ? Temporal.PlainDate.from(selectedDate) : startOfWeek(selectedDate, weekStartsOn);
@@ -363,7 +390,7 @@ export function TimeCalendar({
     >
       {days.map((dateKey) => (
         <DayColumn
-          {...{ events, selectedDate, weekStartsOn, timeZone, locale, onCreate, onSelectEvent }}
+          {...{ events, selectedDate, weekStartsOn, timeZone, locale, onCreate, onSelectEvent, onMoveEvent }}
           date={dateKey}
           key={dateKey}
           view={view}

@@ -26,6 +26,8 @@ export type Editor = {
   reviewTimeZone: string | null;
   deleting: boolean;
   seriesDraft: CalendarSeriesDraft | null;
+  purpose?: "move";
+  moveCalendarTimeZone?: string;
 };
 
 type Props = {
@@ -78,9 +80,17 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
   return (
     <section id="calendar-event-editor" className={styles.panel} aria-labelledby="editor-heading">
       <div className={styles.panelHeading}>
-        <h2 id="editor-heading">{editor.event?.recurrenceRule ? "Edit recurring series" : editor.event ? "Edit event" : "New event"}</h2>
+        <h2 id="editor-heading">{editor.purpose === "move" ? "Review event move" : editor.event?.recurrenceRule ? "Edit recurring series" : editor.event ? "Edit event" : "New event"}</h2>
         <button type="button" onClick={onClose} disabled={busy || retryOnly}>Close</button>
       </div>
+      {editor.purpose === "move" && (
+        <p className={styles.moveReviewNote}>
+          This proposed move is not saved yet. Review its dates, reminder, and conflicts before approving it.
+          {editor.draft.kind === "timed" && (
+            <> The drop used {editor.moveCalendarTimeZone ?? editor.zone}; this event remains in {editor.zone}.</>
+          )}
+        </p>
+      )}
       {error && <div ref={errorPanel} className={styles.error} role="alert" tabIndex={-1}><p>{error}</p>{reauthRequired && <a className={styles.recoveryLink} href="/sign-in">Sign in again</a>}{stale && <button type="button" disabled={busy} onClick={onReloadLatest}>Discard edits and reload calendar</button>}</div>}
       <form onSubmit={onReview} className={styles.form}>
         <label>

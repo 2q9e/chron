@@ -572,6 +572,7 @@ export function timedEventSegmentsForDate(
   locale: string,
 ): Readonly<{
   trackHeightRem: number;
+  dayDurationMinutes: number;
   hourLabels: readonly string[];
   events: readonly TimedEventSegment[];
   belowTrackEvents: readonly TimedEventSegment[];
@@ -582,6 +583,7 @@ export function timedEventSegmentsForDate(
   const dayStartMs = Number(startOfDay.epochMilliseconds);
   const dayEndMs = Number(startOfNextDay.epochMilliseconds);
   const durationHours = (dayEndMs - dayStartMs) / millisecondsPerHour;
+  const dayDurationMinutes = Math.round(durationHours * 60);
   const trackHeightRem = durationHours * rowHeightRem;
   const hourLabels: string[] = [];
   for (let hour = 0; hour < durationHours; hour += 1) {
@@ -668,6 +670,7 @@ export function timedEventSegmentsForDate(
 
   return {
     trackHeightRem,
+    dayDurationMinutes,
     hourLabels,
     events: segments.filter((segment) => segment.heightRem >= minimumTimedEventHeightRem),
     belowTrackEvents: segments.filter((segment) => segment.heightRem < minimumTimedEventHeightRem),

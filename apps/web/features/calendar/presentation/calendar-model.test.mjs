@@ -147,8 +147,18 @@ test("the spring-forward day keeps event positions mapped to elapsed time", () =
   const [before, after] = timeline.events;
 
   assert.equal(timeline.trackHeightRem, 23 * 2.75);
+  assert.equal(timeline.dayDurationMinutes, 23 * 60);
   assert.ok(Math.abs(after.topRem - before.topRem - (5 / 60) * 2.75) < 1e-9);
   assert.ok(before.leftPercent + before.widthPercent <= after.leftPercent);
+});
+
+test("the fall-back day exposes both repeated hours and its full duration", () => {
+  const timeline = timedEventSegmentsForDate([], "2026-11-01", "America/Toronto", "en-US");
+
+  assert.equal(timeline.trackHeightRem, 25 * 2.75);
+  assert.equal(timeline.dayDurationMinutes, 25 * 60);
+  assert.equal(timeline.hourLabels.length, 25);
+  assert.equal(timeline.hourLabels.filter((label) => label.startsWith("1 AM")).length, 2);
 });
 
 test("new event drafts default to one-off and accept a finite weekly series", () => {
