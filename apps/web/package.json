@@ -13,7 +13,9 @@
     "test:calendar-time": "node --no-warnings --experimental-strip-types --test features/calendar/domain/*.test.mjs",
     "test:calendar-layout": "node --no-warnings --experimental-strip-types --test features/calendar/presentation/*.test.mjs",
     "test:calendar-recovery": "node --no-warnings --experimental-strip-types --test features/calendar/presentation/calendar-create-recovery.test.mjs",
-    "test:calendar-api": "node --no-warnings --experimental-strip-types --test features/calendar/server/*.test.mjs"
+    "test:calendar-api": "node --no-warnings --experimental-strip-types --test features/calendar/server/*.test.mjs",
+    "test:calendar-expiry-worker": "node --no-warnings --experimental-strip-types --test features/calendar/server/series-expiry-worker.test.mjs",
+    "calendar:expire-series": "node --no-warnings --experimental-strip-types scripts/expire-calendar-series-proposals.mjs"
   },
   "dependencies": {
     "@fontsource-variable/hanken-grotesk": "5.3.0",

@@ -53,6 +53,20 @@ includes any event instance whose half-open interval overlaps that window.
 - Create/edit review reports the occurrence count and full-series scope.
   Approval rechecks the exact normalized payload, target revision, and
   recurrence-aware conflict snapshot inside the owner-serialized transaction.
+- Pending series proposals are cleared by the recurring expiry worker in
+  bounded owner transactions. It takes one PostgreSQL advisory lock to prevent
+  overlapping runs, scans only account IDs from the auth table, then calls the
+  owner-scoped repository cleanup with a finite per-owner row limit. Failed
+  owners are counted without logging account IDs or database error details and
+  are retried after the round-robin cursor wraps. The cursor intentionally has
+  no user foreign key, so deleting its last visited account cannot restart
+  processing at the beginning. The worker checks its run budget between owner
+  operations; each cleanup transaction also applies lock, statement, and idle
+  transaction timeouts. The state table's custom-GUC policy is an application
+  guard, not an isolation boundary against another connection using the same
+  trusted database role. Run it with
+  `npm run calendar:expire-series --workspace @chron/web`; production must
+  invoke this command on a recurring host scheduler.
 
 ## Standards and scope
 
