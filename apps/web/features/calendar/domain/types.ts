@@ -14,6 +14,74 @@ export type CalendarRecurrenceRule = Readonly<{
   count: number;
 }>;
 
+export type CalendarSeriesDraftRequest =
+  | Readonly<{
+      action: "create";
+      scope: "series";
+      event: CalendarEventMutation;
+      recurrenceRule: CalendarRecurrenceRule;
+      calendarTimeZone: string;
+    }>
+  | Readonly<{
+      action: "update";
+      scope: "series";
+      targetEventId: string;
+      targetRevision: number;
+      event: CalendarEventMutation;
+      recurrenceRule: CalendarRecurrenceRule;
+      calendarTimeZone: string;
+    }>
+  | Readonly<{
+      action: "delete";
+      scope: "series";
+      targetEventId: string;
+      targetRevision: number;
+    }>;
+
+export type CalendarSeriesOccurrenceSnapshot = Readonly<{
+  occurrenceKey: string;
+  kind: "timed" | "all-day";
+  startLocal?: string;
+  endLocal?: string;
+  timeZone?: string;
+  startsAt?: string;
+  endsAt?: string;
+  startDate?: string;
+  endDate?: string;
+}>;
+
+export type CalendarSeriesOccurrenceConflict = Readonly<{
+  candidateOccurrenceKey: string;
+  conflictingEventId: string;
+  conflictingEventRevision: number;
+  conflictingTitle: string;
+  conflictingOccurrence: CalendarSeriesOccurrenceSnapshot;
+}>;
+
+export type CalendarSeriesDraft = Readonly<{
+  id: string;
+  action: CalendarSeriesDraftRequest["action"];
+  scope: "series";
+  outcome: "pending" | "approved" | "stale" | "expired" | "deleted";
+  replayed: boolean;
+  targetEventId: string | null;
+  targetRevision: number | null;
+  event: CalendarEventMutation | null;
+  recurrenceRule: CalendarRecurrenceRule | null;
+  calendarTimeZone: string | null;
+  beforeOccurrences: readonly CalendarSeriesOccurrenceSnapshot[];
+  afterOccurrences: readonly CalendarSeriesOccurrenceSnapshot[];
+  conflicts: readonly CalendarSeriesOccurrenceConflict[];
+  expiresAt: string;
+}>;
+
+export type CalendarSeriesApproval = Readonly<{
+  id: string;
+  action: CalendarSeriesDraftRequest["action"];
+  outcome: "approved" | "stale" | "expired" | "deleted";
+  event: CalendarEvent | null;
+}>;
+
 export type CalendarPreferences = Readonly<{
   theme: CalendarTheme;
   density: CalendarDensity;

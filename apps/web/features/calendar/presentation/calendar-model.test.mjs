@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { allDayEventsForDate, timedEventSegmentsForDate } from "./calendar-model.ts";
+import {
+  allDayEventsForDate,
+  buildEventDraft,
+  newEventDraft,
+  timedEventSegmentsForDate,
+  validateCalendarEventDraft,
+} from "./calendar-model.ts";
 
 function timedEvent(id, startLocal, endLocal, timeZone, startsAt, endsAt) {
   return {
@@ -141,4 +147,70 @@ test("the spring-forward day keeps event positions mapped to elapsed time", () =
   assert.equal(timeline.trackHeightRem, 23 * 2.75);
   assert.ok(Math.abs(after.topRem - before.topRem - (5 / 60) * 2.75) < 1e-9);
   assert.ok(before.leftPercent + before.widthPercent <= after.leftPercent);
+});
+
+test("new event drafts default to one-off and accept a finite weekly series", () => {
+  const draft = newEventDraft("2026-06-15");
+  assert.equal(draft.repeatFrequency, "");
+
+  const reviewed = validateCalendarEventDraft({
+    ...draft,
+    title: "Seminar",
+    repeatFrequency: "weekly",
+    repeatInterval: "2",
+    repeatCount: "5",
+  }, "UTC");
+
+  assert.equal(reviewed.ok, true);
+  assert.deepEqual(reviewed.recurrenceRule, {
+    frequency: "weekly",
+    interval: 2,
+    count: 5,
+  });
+});
+
+test("recurrence validation enforces the finite horizon and seven-day event cap", () => {
+  const draft = newEventDraft("2026-06-15");
+  const outsideHorizon = validateCalendarEventDraft({
+    ...draft,
+    title: "Seminar",
+    repeatFrequency: "weekly",
+    repeatInterval: "4",
+    repeatCount: "15",
+  }, "UTC");
+  assert.equal(outsideHorizon.ok, false);
+  assert.match(outsideHorizon.errors.repeatCount, /366 calendar dates/u);
+
+  const longAllDay = validateCalendarEventDraft({
+    ...draft,
+    kind: "all-day",
+    title: "Conference",
+    startDate: "2026-06-15",
+    endDate: "2026-06-23",
+    repeatFrequency: "daily",
+    repeatInterval: "1",
+    repeatCount: "2",
+  }, "UTC");
+  assert.equal(longAllDay.ok, false);
+  assert.match(longAllDay.errors.repeatFrequency, /up to 7 days/u);
+});
+
+test("editing a recurring root retains its original series dates and rule", () => {
+  const draft = buildEventDraft({
+    id: "series-root",
+    kind: "all-day",
+    title: "Seminar",
+    details: null,
+    revision: 2,
+    startDate: "2026-06-15",
+    endDate: "2026-06-16",
+    recurrenceRule: { frequency: "weekly", interval: 1, count: 8 },
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  });
+
+  assert.equal(draft.startDate, "2026-06-15");
+  assert.equal(draft.endDate, "2026-06-16");
+  assert.equal(draft.repeatFrequency, "weekly");
+  assert.equal(draft.repeatCount, "8");
 });

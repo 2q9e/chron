@@ -12,6 +12,7 @@ import type {
   CalendarEventEntry,
   CalendarEventMutation,
   CalendarPreferences,
+  CalendarRecurrenceRule,
   CreateAllDayCalendarEvent,
   CreateTimedCalendarEvent,
 } from "../domain/types";
@@ -29,6 +30,9 @@ export type EventDraft = Readonly<{
   endDate: string;
   startDisambiguation: "" | "earlier" | "later";
   endDisambiguation: "" | "earlier" | "later";
+  repeatFrequency: "" | "daily" | "weekly";
+  repeatInterval: string;
+  repeatCount: string;
 }>;
 
 export type EventDraftField =
@@ -39,10 +43,21 @@ export type EventDraftField =
   | "startDate"
   | "endDate"
   | "startDisambiguation"
-  | "endDisambiguation";
+  | "endDisambiguation"
+  | "repeatFrequency"
+  | "repeatInterval"
+  | "repeatCount";
 
 export type EventDraftValidation =
   | Readonly<{ ok: true; mutation: CalendarEventMutation }>
+  | Readonly<{ ok: false; errors: Partial<Record<EventDraftField, string>> }>;
+
+export type CalendarEventDraftReview =
+  | Readonly<{
+      ok: true;
+      mutation: CalendarEventMutation;
+      recurrenceRule: CalendarRecurrenceRule | null;
+    }>
   | Readonly<{ ok: false; errors: Partial<Record<EventDraftField, string>> }>;
 
 const agendaDays = 30;
@@ -243,6 +258,9 @@ export function buildEventDraft(
       endDate: event.endDate,
       startDisambiguation: "",
       endDisambiguation: "",
+      repeatFrequency: event.recurrenceRule?.frequency ?? "",
+      repeatInterval: String(event.recurrenceRule?.interval ?? 1),
+      repeatCount: String(event.recurrenceRule?.count ?? 2),
     };
   }
 
@@ -269,6 +287,9 @@ export function buildEventDraft(
     endDate: "",
     startDisambiguation,
     endDisambiguation,
+    repeatFrequency: event.recurrenceRule?.frequency ?? "",
+    repeatInterval: String(event.recurrenceRule?.interval ?? 1),
+    repeatCount: String(event.recurrenceRule?.count ?? 2),
   };
 }
 
@@ -283,6 +304,71 @@ export function newEventDraft(selectedDate: string): EventDraft {
     endDate: date(selectedDate).add({ days: 1 }).toString(),
     startDisambiguation: "",
     endDisambiguation: "",
+    repeatFrequency: "",
+    repeatInterval: "1",
+    repeatCount: "2",
+  };
+}
+
+export function validateCalendarEventDraft(
+  draft: EventDraft,
+  timeZone: string,
+): CalendarEventDraftReview {
+  const event = validateEventDraft(draft, timeZone);
+  if (!event.ok) return event;
+  if (!draft.repeatFrequency) {
+    return { ok: true, mutation: event.mutation, recurrenceRule: null };
+  }
+
+  const errors: Partial<Record<EventDraftField, string>> = {};
+  const interval = Number(draft.repeatInterval);
+  const count = Number(draft.repeatCount);
+  if (!Number.isInteger(interval) || interval < 1 || interval > 4) {
+    errors.repeatInterval = "Choose an interval from 1 to 4.";
+  }
+  if (!Number.isInteger(count) || count < 2 || count > 366) {
+    errors.repeatCount = "Choose between 2 and 366 occurrences.";
+  }
+  const stepDays = draft.repeatFrequency === "weekly" ? 7 : 1;
+  if (Number.isInteger(interval) && Number.isInteger(count)
+    && interval >= 1 && interval <= 4 && count >= 2 && count <= 366
+    && (count - 1) * interval * stepDays > 365) {
+    errors.repeatCount = "Repeating events must end within 366 calendar dates.";
+  }
+
+  const maximumDurationNanoseconds = BigInt(7) * BigInt(24) * BigInt(60)
+    * BigInt(60) * BigInt(1_000_000_000);
+  if (event.mutation.kind === "all-day") {
+    const duration = Temporal.PlainDate.from(event.mutation.startDate)
+      .until(Temporal.PlainDate.from(event.mutation.endDate), { largestUnit: "day" }).days;
+    if (duration > 7) errors.repeatFrequency = "Repeating all-day events may last up to 7 days.";
+  } else {
+    const start = resolveLocalDateTime(
+      event.mutation.startLocal,
+      event.mutation.timeZone,
+      event.mutation.startDisambiguation,
+    );
+    const end = resolveLocalDateTime(
+      event.mutation.endLocal,
+      event.mutation.timeZone,
+      event.mutation.endDisambiguation,
+    );
+    const duration = Temporal.Instant.from(end.instant).epochNanoseconds
+      - Temporal.Instant.from(start.instant).epochNanoseconds;
+    if (duration > maximumDurationNanoseconds) {
+      errors.repeatFrequency = "Repeating timed events may last up to 7 days.";
+    }
+  }
+  if (Object.keys(errors).length > 0) return { ok: false, errors };
+
+  return {
+    ok: true,
+    mutation: event.mutation,
+    recurrenceRule: {
+      frequency: draft.repeatFrequency,
+      interval: interval as CalendarRecurrenceRule["interval"],
+      count,
+    },
   };
 }
 
