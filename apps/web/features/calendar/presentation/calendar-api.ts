@@ -1,5 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
-import { calendarThemes } from "../domain/types.ts";
+import { calendarEventCategories, calendarThemes } from "../domain/types.ts";
 import { isCalendarAccentColor } from "../domain/calendar-accent.ts";
 import { isStudyPlannerDefaults } from "../domain/study-planner.ts";
 import {
@@ -59,6 +59,45 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+export type CalendarCapabilities = Readonly<{ eventCategories: boolean }>;
+
+export async function fetchCalendarCapabilities(
+  signal?: AbortSignal,
+): Promise<CalendarCapabilities> {
+  try {
+    const response = await fetch("/api/calendar/capabilities", {
+      method: "GET",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+      signal,
+    });
+    if (!response.ok) return { eventCategories: false };
+    const payload = await parseJson(response);
+    return {
+      eventCategories: isRecord(payload)
+        && isRecord(payload.features)
+        && payload.features.eventCategories === true,
+    };
+  } catch {
+    return { eventCategories: false };
+  }
+}
+
+async function requireEventCategorySupport(
+  category: CalendarEventMutation["category"],
+): Promise<void> {
+  if (category === undefined) return;
+  const capabilities = await fetchCalendarCapabilities();
+  if (!capabilities.eventCategories) {
+    throw new CalendarRequestError(
+      "This calendar server does not support event categories yet. No changes were saved.",
+      409,
+      "CALENDAR_FEATURE_UNAVAILABLE",
+    );
+  }
+}
+
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
@@ -100,7 +139,10 @@ function isCalendarRecurrenceRule(value: unknown): value is CalendarRecurrenceRu
 function isCalendarEventMutation(value: unknown): value is CalendarEventMutation {
   if (!isRecord(value)
     || !isNonEmptyString(value.title)
-    || !(value.details === undefined || typeof value.details === "string")) return false;
+    || !(value.details === undefined || typeof value.details === "string")
+    || !(value.category === undefined || value.category === null
+      || (typeof value.category === "string"
+        && calendarEventCategories.includes(value.category as (typeof calendarEventCategories)[number])))) return false;
   if (value.kind === "all-day") {
     const reminderChoice = value.reminderChoice;
     const reminderValid = reminderChoice === undefined
@@ -406,6 +448,7 @@ function matchesApprovedEvent(
     || event.kind !== draft.event.kind
     || event.title !== draft.event.title
     || event.details !== (draft.event.details ?? null)
+    || (draft.event.category !== undefined && event.category !== draft.event.category)
     || event.reminderChoice !== (draft.event.reminderChoice ?? "none")
     || !sameJsonValue(event.recurrenceRule, draft.recurrenceRule)
     || (draft.action === "split-series"
@@ -449,6 +492,9 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
     || !isNonEmptyString(value.id)
     || !isNonEmptyString(value.title)
     || !(typeof value.details === "string" || value.details === null)
+    || !(value.category === undefined || value.category === null
+      || (typeof value.category === "string"
+        && calendarEventCategories.includes(value.category as (typeof calendarEventCategories)[number])))
     || !Number.isInteger(value.revision)
     || typeof value.revision !== "number"
     || (Object.hasOwn(value, "seriesRootId") && !isUuid(value.seriesRootId))
@@ -539,6 +585,14 @@ function isCalendarPreferences(value: unknown): value is CalendarPreferences {
   } catch {
     return false;
   }
+}
+
+function withCalendarEventEntryCategory(event: CalendarEventEntry): CalendarEventEntry {
+  if ("series" in event) {
+    if (event.category !== undefined || event.series.category === undefined) return event;
+    return { ...event, category: event.series.category };
+  }
+  return event;
 }
 
 function isCalendarReminderStatusSummary(
@@ -754,7 +808,7 @@ export async function fetchCalendarEvents(
       "INVALID_RESPONSE",
     );
   }
-  return payload.events;
+  return payload.events.map(withCalendarEventEntryCategory);
 }
 
 export async function fetchCalendarCancelledOccurrences(
@@ -782,7 +836,7 @@ export async function fetchCalendarCancelledOccurrences(
       "INVALID_RESPONSE",
     );
   }
-  return payload.occurrences;
+  return payload.occurrences.map(withCalendarEventEntryCategory) as CalendarEventOccurrence[];
 }
 
 export async function fetchCalendarReminderStatus(
@@ -885,6 +939,7 @@ export async function createCalendarEvent(
   conflicts: readonly CalendarConflict[],
   operationKey: string,
 ): Promise<CalendarEvent> {
+  await requireEventCategorySupport(mutation.category);
   const response = await fetch("/api/calendar/events", {
     method: "POST",
     cache: "no-store",
@@ -946,6 +1001,7 @@ export async function checkCalendarEventConflicts(
   calendarTimeZone: string,
   excludeEventId?: string,
 ): Promise<CalendarConflict[]> {
+  await requireEventCategorySupport(event.category);
   const response = await fetch("/api/calendar/events/conflicts", {
     method: "POST",
     cache: "no-store",
@@ -994,6 +1050,7 @@ export async function updateCalendarEvent(
   calendarTimeZone: string,
   conflicts: readonly CalendarConflict[],
 ): Promise<CalendarEvent> {
+  await requireEventCategorySupport(mutation.category);
   const response = await fetch(`/api/calendar/events/${encodeURIComponent(event.id)}`, {
     method: "PUT",
     cache: "no-store",
@@ -1045,6 +1102,7 @@ export async function createCalendarSeriesDraft(
   request: CalendarSeriesDraftRequest,
   operationKey: string,
 ): Promise<CalendarSeriesDraft> {
+  await requireEventCategorySupport("event" in request ? request.event.category : undefined);
   const response = await fetch("/api/calendar/events/series-drafts", {
     method: "POST",
     cache: "no-store",
@@ -1080,6 +1138,7 @@ export async function approveCalendarSeriesDraft(
   expectedAction: CalendarSeriesDraft["action"],
   expectedDraft?: CalendarSeriesDraft,
 ): Promise<CalendarSeriesApproval> {
+  await requireEventCategorySupport(expectedDraft?.event?.category);
   const response = await fetch(
     `/api/calendar/events/series-drafts/${encodeURIComponent(draftId)}/approve`,
     {

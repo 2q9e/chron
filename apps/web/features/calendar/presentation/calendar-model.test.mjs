@@ -3,6 +3,7 @@ import test from "node:test";
 import { Temporal } from "@js-temporal/polyfill";
 import {
   allDayEventsForDate,
+  buildStudySessionEventDraft,
   buildEventDraft,
   defaultPreferences,
   newEventDraft,
@@ -250,6 +251,99 @@ test("new event drafts default to one-off and accept a finite weekly series", ()
     count: 5,
   });
   assert.equal(reviewed.mutation.reminderChoice, "none");
+});
+
+test("event category selection persists through timed and all-day draft validation", () => {
+  const empty = newEventDraft("2026-06-15");
+  const untouched = validateCalendarEventDraft({ ...empty, title: "Seminar" }, "UTC");
+  assert.equal(untouched.ok, true);
+  assert.equal(Object.hasOwn(untouched.mutation, "category"), false);
+
+  const examDraft = updateEventDraft(empty, "category", "exam");
+  const timed = validateCalendarEventDraft({ ...examDraft, title: "Final exam" }, "UTC");
+  assert.equal(timed.ok, true);
+  assert.equal(timed.mutation.category, "exam");
+
+  const cleared = updateEventDraft(examDraft, "category", "");
+  const allDay = validateCalendarEventDraft({
+    ...cleared,
+    kind: "all-day",
+    title: "Reading week",
+  }, "UTC");
+  assert.equal(allDay.ok, true);
+  assert.equal(allDay.mutation.category, null);
+});
+
+test("legacy events preserve an unreported category until the user changes it", () => {
+  const event = utcEvent("legacy", "09:00", "10:00");
+  const originalDraft = buildEventDraft(event);
+  assert.equal(originalDraft.category, undefined);
+
+  const unchanged = validateCalendarEventDraft({ ...originalDraft, title: "Updated event" }, "UTC");
+  assert.equal(unchanged.ok, true);
+  assert.equal(Object.hasOwn(unchanged.mutation, "category"), false);
+
+  const changed = updateEventDraft(originalDraft, "category", "exam");
+  assert.equal(changed.category, "exam");
+  assert.equal(changed.categoryEdited, true);
+
+  const keepExisting = updateEventDraft(changed, "category", "__preserve");
+  assert.equal(keepExisting.category, undefined);
+  assert.equal(keepExisting.categoryEdited, false);
+  const preserved = validateCalendarEventDraft({ ...keepExisting, title: "Updated event" }, "UTC");
+  assert.equal(preserved.ok, true);
+  assert.equal(Object.hasOwn(preserved.mutation, "category"), false);
+
+  const categorized = updateEventDraft(originalDraft, "category", "exam");
+  const selected = validateCalendarEventDraft({ ...categorized, title: "Updated event" }, "UTC");
+  assert.equal(selected.ok, true);
+  assert.equal(selected.mutation.category, "exam");
+
+  const uncategorized = updateEventDraft(originalDraft, "category", "");
+  const cleared = validateCalendarEventDraft({ ...uncategorized, title: "Updated event" }, "UTC");
+  assert.equal(cleared.ok, true);
+  assert.equal(cleared.mutation.category, null);
+});
+
+test("study planner proposals save with the Study category", () => {
+  const draft = buildStudySessionEventDraft(
+    newEventDraft("2026-06-15"),
+    {
+      id: "session-1",
+      date: "2026-06-15",
+      title: "Study: Biology",
+      startLocal: "2026-06-15T09:00",
+      endLocal: "2026-06-15T10:00",
+      startsAt: "2026-06-15T13:00:00Z",
+      endsAt: "2026-06-15T14:00:00Z",
+      timeZone: "UTC",
+      durationMinutes: 60,
+    },
+    true,
+  );
+
+  const reviewed = validateCalendarEventDraft(draft, "UTC");
+  assert.equal(reviewed.ok, true);
+  assert.equal(reviewed.mutation.category, "study");
+
+  const legacyDraft = buildStudySessionEventDraft(
+    newEventDraft("2026-06-15"),
+    {
+      id: "session-2",
+      date: "2026-06-15",
+      title: "Study: Biology",
+      startLocal: "2026-06-15T09:00",
+      endLocal: "2026-06-15T10:00",
+      startsAt: "2026-06-15T13:00:00Z",
+      endsAt: "2026-06-15T14:00:00Z",
+      timeZone: "UTC",
+      durationMinutes: 60,
+    },
+    false,
+  );
+  const legacyReview = validateCalendarEventDraft(legacyDraft, "UTC");
+  assert.equal(legacyReview.ok, true);
+  assert.equal(Object.hasOwn(legacyReview.mutation, "category"), false);
 });
 
 test("single-occurrence recurrence segments are accepted only when the caller permits them", () => {

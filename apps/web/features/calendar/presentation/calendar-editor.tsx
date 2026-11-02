@@ -6,6 +6,7 @@ import type {
   CalendarEventMutation,
   CalendarSeriesDraft,
 } from "../domain/types";
+import { calendarEventCategories, calendarEventCategoryLabels } from "../domain/types.ts";
 import { reminderReviewText, type EventDraft, type EventDraftField } from "./calendar-model";
 import {
   allDayCalendarReminderChoices,
@@ -39,6 +40,7 @@ export type Editor = {
 
 type Props = {
   editor: Editor;
+  eventCategoriesAvailable: boolean;
   busy: boolean;
   error: string;
   stale: boolean;
@@ -57,7 +59,7 @@ type Props = {
   onSave: () => void;
 };
 
-export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onSeriesScopeChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
+export function CalendarEditor({ editor, eventCategoriesAvailable, busy, error, stale, retryOnly, reauthRequired, onChange, onSeriesScopeChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   const locked = busy || stale || retryOnly;
   const movementOnly = editor.purpose === "move-occurrence";
   const errorPanel = useRef<HTMLDivElement | null>(null);
@@ -158,6 +160,24 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
             aria-invalid={!!editor.errors.details} aria-describedby={editor.errors.details ? "details-error" : undefined} />
         </label>
         {editor.errors.details && <p id="details-error" className={styles.fieldError}>{editor.errors.details}</p>}
+        {eventCategoriesAvailable && (
+          <label>
+            Calendar category
+            <select
+              disabled={locked || movementOnly}
+              value={editor.draft.category === undefined ? "__preserve" : editor.draft.category ?? ""}
+              onChange={(e) => onChange("category", e.target.value)}
+            >
+              {editor.draft.initialCategory === undefined && (
+                <option value="__preserve">Leave category unchanged</option>
+              )}
+              <option value="">Uncategorized</option>
+              {calendarEventCategories.map((category) => (
+                <option key={category} value={category}>{calendarEventCategoryLabels[category]}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Event type
           <select disabled={locked || movementOnly} value={editor.draft.kind} onChange={(e) => onChange("kind", e.target.value)}>
@@ -369,7 +389,10 @@ function describeSeries(event: CalendarEvent | CalendarSeriesDraft["event"], rul
   const cadence = rule.frequency === "daily" ? "day" : "week";
   const interval = rule.interval === 1 ? `every ${cadence}` : `every ${rule.interval} ${cadence}s`;
   const eventTimeZone = event.kind === "timed" ? ` · ${event.timeZone}` : " · All-day dates";
-  return `${event.title} · ${rule.count} occurrences, ${interval}${eventTimeZone}`;
+  const category = event.category === undefined
+    ? "Category unchanged"
+    : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category];
+  return `${event.title} · ${rule.count} occurrences, ${interval}${eventTimeZone} · ${category}`;
 }
 
 function SeriesDraftReview({
@@ -566,6 +589,9 @@ function EventReview({ event, conflicts, busy, retryOnly, onSave }: { event: Cal
     <div className={styles.review}>
       <h3>Review event</h3>
       <p><strong>{event.title}</strong></p>
+      <p>Category: {event.category === undefined
+        ? "Unchanged"
+        : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category]}</p>
       <p>{event.kind === "timed"
         ? `${event.startLocal}${occurrence(event.startDisambiguation)} to ${event.endLocal}${occurrence(event.endDisambiguation)} · ${event.timeZone}`
         : `${event.startDate} through the day before ${event.endDate} · All day`}</p>

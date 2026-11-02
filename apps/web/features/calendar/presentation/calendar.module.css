@@ -271,6 +271,14 @@
   font-size: .72rem;
   color: var(--muted);
 }
+.eventCategory {
+  color: var(--accent);
+  font-size: .62rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
 .eventTitle {
   font-size: .85rem;
   font-weight: 700;
@@ -673,6 +681,13 @@
 .searchResultDate, .searchResultKind {
   color: var(--muted);
   font-size: .82rem;
+}
+.searchResultCategory {
+  color: var(--accent);
+  font-size: .7rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
 .searchResultKind {
   flex: 0 0 auto;

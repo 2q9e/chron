@@ -10,6 +10,7 @@ import {
 import type {
   CalendarEvent,
   CalendarEventEntry,
+  CalendarEventCategory,
   CalendarEventMutation,
   CalendarPreferences,
   CalendarRecurrenceRule,
@@ -17,7 +18,7 @@ import type {
   CreateAllDayCalendarEvent,
   CreateTimedCalendarEvent,
 } from "../domain/types";
-import { defaultStudyPlannerDefaults } from "../domain/study-planner.ts";
+import { defaultStudyPlannerDefaults, type StudyPlanSession } from "../domain/study-planner.ts";
 import {
   allDayCalendarReminderChoices,
   scheduleCalendarReminder,
@@ -25,6 +26,7 @@ import {
   type AllDayCalendarReminderChoice,
   type TimedCalendarReminderChoice,
 } from "../domain/reminders.ts";
+import { calendarEventCategories } from "../domain/types.ts";
 
 export type CalendarView = "day" | "week" | "month" | "agenda";
 export type CalendarRange = Readonly<{ from: string; to: string }>;
@@ -33,6 +35,9 @@ export type EventDraft = Readonly<{
   kind: "timed" | "all-day";
   title: string;
   details: string;
+  category?: CalendarEventCategory | null;
+  initialCategory?: CalendarEventCategory | null;
+  categoryEdited: boolean;
   startLocal: string;
   endLocal: string;
   startDate: string;
@@ -48,6 +53,7 @@ export type EventDraft = Readonly<{
 export type EventDraftField =
   | "title"
   | "details"
+  | "category"
   | "startLocal"
   | "endLocal"
   | "startDate"
@@ -283,6 +289,9 @@ export function buildEventDraft(
       kind: "all-day",
       title: event.title,
       details: event.details ?? "",
+      category: event.category,
+      initialCategory: event.category,
+      categoryEdited: false,
       startLocal: "",
       endLocal: "",
       startDate: event.startDate,
@@ -313,6 +322,9 @@ export function buildEventDraft(
     kind: "timed",
     title: event.title,
     details: event.details ?? "",
+    category: event.category,
+    initialCategory: event.category,
+    categoryEdited: false,
     startLocal,
     endLocal,
     startDate: "",
@@ -331,6 +343,9 @@ export function newEventDraft(selectedDate: string): EventDraft {
     kind: "timed",
     title: "",
     details: "",
+    category: null,
+    initialCategory: null,
+    categoryEdited: false,
     startLocal: `${selectedDate}T09:00`,
     endLocal: `${selectedDate}T10:00`,
     startDate: selectedDate,
@@ -341,6 +356,22 @@ export function newEventDraft(selectedDate: string): EventDraft {
     repeatInterval: "1",
     repeatCount: "2",
     reminderChoice: "none",
+  };
+}
+
+export function buildStudySessionEventDraft(
+  draft: EventDraft,
+  session: StudyPlanSession,
+  eventCategoriesAvailable: boolean,
+): EventDraft {
+  return {
+    ...draft,
+    title: session.title,
+    ...(eventCategoriesAvailable ? { category: "study", categoryEdited: true } : {}),
+    startLocal: session.startLocal,
+    endLocal: session.endLocal,
+    startDisambiguation: session.startDisambiguation ?? "",
+    endDisambiguation: session.endDisambiguation ?? "",
   };
 }
 
@@ -398,6 +429,19 @@ export function updateEventDraft(
     if (value !== "timed" && value !== "all-day") return draft;
     if (value === draft.kind) return draft;
     return { ...draft, kind: value, reminderChoice: "none" };
+  }
+  if (field === "category") {
+    if (value === "") return { ...draft, category: null, categoryEdited: true };
+    if (value === "__preserve") {
+      return {
+        ...draft,
+        category: draft.initialCategory,
+        categoryEdited: false,
+      };
+    }
+    return calendarEventCategories.includes(value as CalendarEventCategory)
+      ? { ...draft, category: value as CalendarEventCategory, categoryEdited: true }
+      : draft;
   }
   return { ...draft, [field]: value };
 }
@@ -488,6 +532,7 @@ export function validateEventDraft(
       const mutation: CreateAllDayCalendarEvent = {
         kind: "all-day",
         title,
+        ...(draft.categoryEdited && draft.category !== undefined ? { category: draft.category } : {}),
         ...(draft.details.trim() ? { details: draft.details.trim() } : {}),
         ...range,
         reminderChoice,
@@ -540,6 +585,7 @@ export function validateEventDraft(
     const mutation: CreateTimedCalendarEvent = {
       kind: "timed",
       title,
+      ...(draft.categoryEdited && draft.category !== undefined ? { category: draft.category } : {}),
       ...(draft.details.trim() ? { details: draft.details.trim() } : {}),
       startLocal: start.local,
       endLocal: end.local,

@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { Temporal } from "@js-temporal/polyfill";
-import type { CalendarEvent } from "../domain/types";
+import { calendarEventCategoryLabels, type CalendarEvent } from "../domain/types";
 import {
   prepareCalendarEventSearchRequest,
   searchCalendarEvents,
@@ -293,6 +293,11 @@ export function CalendarSearch({ initialDate, locale, timeZone, disabled, onSele
                 <span className={styles.searchResultMain}>
                   <span className={styles.searchResultTitle}>{event.title}</span>
                   <span className={styles.searchResultDate}>{eventDateLabel(event, locale)}</span>
+                  <span className={styles.searchResultCategory}>
+                    {event.category === undefined
+                      ? "Category unavailable"
+                      : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category]}
+                  </span>
                 </span>
                 <span className={styles.searchResultKind}>{kindLabel(event)}</span>
               </button>

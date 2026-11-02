@@ -1,6 +1,6 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from "react";
-import type { CalendarEventEntry } from "../domain/types";
+import { calendarEventCategoryLabels, type CalendarEventEntry } from "../domain/types";
 import { calendarMinuteAtPointer } from "./calendar-move.ts";
 import styles from "./calendar.module.css";
 
@@ -254,10 +254,11 @@ export function CalendarEventControl({
         className={`${styles.eventButton} ${compact ? styles.compactEvent : ""}`}
         type="button"
         onClick={() => onSelect(event)}
-        aria-label={accessibleLabel}
-        title={event.title}
+        aria-label={`${accessibleLabel}, ${event.category === undefined ? "Category unavailable" : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category]}`}
+        title={`${event.title} · ${event.category === undefined ? "Category unavailable" : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category]}`}
       >
         <span className={styles.eventTime}>{timeLabel}</span>
+        <span className={styles.eventCategory}>{event.category === undefined ? "Category unavailable" : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category]}</span>
         <span className={styles.eventTitle}>{event.title}</span>
       </button>
       {canMove && (

@@ -9,11 +9,12 @@ import { buildCalendarIcs } from "../domain/calendar-ics";
 import { accessibleCalendarAccent } from "../domain/calendar-accent";
 import { expandCalendarRecurrenceRange } from "../domain/recurrence-range";
 import type { CalendarRecurrenceOccurrence } from "../domain/recurrence.ts";
-import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, saveStudyPlannerPreferences, updateCalendarEvent } from "./calendar-api";
+import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, fetchCalendarCapabilities, reconcileCalendarCreate, saveCalendarPreferences, saveStudyPlannerPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
 import {
   buildEventDraft,
+  buildStudySessionEventDraft,
   defaultPreferences,
   formatRangeHeading,
   localeWeekStart,
@@ -104,6 +105,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [preferences, setPreferences] = useState<CalendarPreferences | null>(null);
   const [settings, setSettings] = useState<CalendarPreferences | null>(null);
   const [events, setEvents] = useState<CalendarEventEntry[]>([]);
+  const [eventCategoriesAvailable, setEventCategoriesAvailable] = useState(false);
   const [cancelledOccurrences, setCancelledOccurrences] = useState<CalendarEventOccurrence[]>([]);
   const [cancelledLoadError, setCancelledLoadError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -141,6 +143,14 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       const value = saved ?? defaultPreferences(localTimeZone(), localeWeekStart(navigator.language));
       setLocale(navigator.language); setPreferences(value); setSettings(value); setDate(calendarToday(value.timeZone));
     }).catch((reason: unknown) => { if (!controller.signal.aborted) { setLoading(false); setLoadError(reason instanceof Error ? reason.message : "Could not load calendar preferences."); } });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchCalendarCapabilities(controller.signal).then((capabilities) => {
+      if (!controller.signal.aborted) setEventCategoriesAvailable(capabilities.eventCategories);
+    });
     return () => controller.abort();
   }, []);
 
@@ -339,14 +349,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setNotice("Choose a valid time slot before creating an event.");
       return;
     }
-    const draft: EventDraft = studySession ? {
-      ...baseDraft,
-      title: studySession.title,
-      startLocal: studySession.startLocal,
-      endLocal: studySession.endLocal,
-      startDisambiguation: studySession.startDisambiguation ?? "",
-      endDisambiguation: studySession.endDisambiguation ?? "",
-    } : baseDraft;
+    const draft: EventDraft = studySession
+      ? buildStudySessionEventDraft(baseDraft, studySession, eventCategoriesAvailable)
+      : baseDraft;
     if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
     else rememberEditorOpener();
     focusAfterEditor.current = null;
@@ -371,7 +376,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorRetryOnly(false);
     setEditorReauthRequired(false);
     setNotice("");
-  }, [preferences, calendarLocked, rememberEditorOpener]);
+  }, [preferences, calendarLocked, eventCategoriesAvailable, rememberEditorOpener]);
   function reviewStudySession(session: StudyPlanSession, returnFocusTarget: HTMLButtonElement) {
     openNew(session.date, undefined, returnFocusTarget, session);
   }
@@ -1300,6 +1305,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     {editor && (
       <CalendarEditor
         editor={editor}
+        eventCategoriesAvailable={eventCategoriesAvailable}
         busy={backgroundLocked}
         error={editorError}
         stale={editorStale}

@@ -3,13 +3,16 @@ import test from "node:test";
 import {
   approveCalendarSeriesDraft,
   CalendarRequestError,
+  createCalendarEvent,
   createCalendarSeriesDraft,
   fetchCalendarCancelledOccurrences,
+  fetchCalendarCapabilities,
   fetchCalendarEvents,
   fetchCalendarPreferences,
   fetchCalendarReminderStatus,
   saveCalendarPreferences,
   saveStudyPlannerPreferences,
+  updateCalendarEvent,
 } from "./calendar-api.ts";
 
 const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
@@ -225,6 +228,16 @@ test("calendar list accepts dated occurrences only when their series root matche
     assert.equal(event.id, `${seriesId}:2026-06-08`);
     assert.equal(event.series.id, seriesId);
     assert.equal(event.series.startDate, "2026-06-01");
+    assert.equal(event.category, undefined);
+    assert.equal(event.series.category, undefined);
+    assert.equal(Object.hasOwn(event, "category"), false);
+    assert.equal(Object.hasOwn(event.series, "category"), false);
+
+    const inheritedCategory = occurrence();
+    inheritedCategory.series.category = "class";
+    globalThis.fetch = async () => response({ events: [inheritedCategory] });
+    const [inheritedEvent] = await fetchCalendarEvents("2026-06-01", "2026-07-01", "UTC");
+    assert.equal(inheritedEvent.category, "class");
 
     const invalid = occurrence();
     invalid.seriesId = "another-series";
@@ -233,6 +246,86 @@ test("calendar list accepts dated occurrences only when their series root matche
       fetchCalendarEvents("2026-06-01", "2026-07-01", "UTC"),
       (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
     );
+
+    const categorized = occurrence();
+    categorized.category = "exam";
+    categorized.series.category = "exam";
+    globalThis.fetch = async () => response({ events: [categorized] });
+    const [categorizedEvent] = await fetchCalendarEvents("2026-06-01", "2026-07-01", "UTC");
+    assert.equal(categorizedEvent.category, "exam");
+
+    categorized.category = "webinar";
+    globalThis.fetch = async () => response({ events: [categorized] });
+    await assert.rejects(
+      fetchCalendarEvents("2026-06-01", "2026-07-01", "UTC"),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("event create and update requests omit an unedited category", async () => {
+  const captured = [];
+  globalThis.fetch = async (_url, init) => {
+    captured.push(JSON.parse(init.body));
+    return response({ event: rootEvent() });
+  };
+
+  try {
+    const mutation = {
+      kind: "all-day",
+      title: "Seminar",
+      startDate: "2026-06-15",
+      endDate: "2026-06-16",
+    };
+    await createCalendarEvent(mutation, "UTC", [], "category-omitted-create");
+    await updateCalendarEvent(rootEvent(), mutation, "UTC", []);
+
+    assert.equal(Object.hasOwn(captured[0].event, "category"), false);
+    assert.equal(Object.hasOwn(captured[1].event, "category"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("category support is detected and checked before category-bearing writes", async () => {
+  globalThis.fetch = async () => response({}, 404);
+  try {
+    assert.deepEqual(await fetchCalendarCapabilities(), { eventCategories: false });
+    await assert.rejects(
+      createCalendarEvent({
+        kind: "all-day",
+        title: "Exam",
+        category: "exam",
+        startDate: "2026-06-15",
+        endDate: "2026-06-16",
+      }, "UTC", [], "category-unsupported-create"),
+      (error) => error instanceof CalendarRequestError
+        && error.code === "CALENDAR_FEATURE_UNAVAILABLE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push(url);
+    if (url === "/api/calendar/capabilities") {
+      return response({ features: { eventCategories: true } });
+    }
+    assert.equal(JSON.parse(init.body).event.category, "exam");
+    return response({ event: { ...rootEvent(), category: "exam" } });
+  };
+  try {
+    await createCalendarEvent({
+      kind: "all-day",
+      title: "Exam",
+      category: "exam",
+      startDate: "2026-06-15",
+      endDate: "2026-06-16",
+    }, "UTC", [], "category-supported-create");
+    assert.deepEqual(calls, ["/api/calendar/capabilities", "/api/calendar/events"]);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -401,6 +494,7 @@ test("following-series split binds the unchanged prefix, exact tail, and new seg
       id: followingId,
       seriesRootId: seriesId,
       title: request.event.title,
+      category: null,
       startDate: request.event.startDate,
       endDate: request.event.endDate,
       recurrenceRule: request.recurrenceRule,
