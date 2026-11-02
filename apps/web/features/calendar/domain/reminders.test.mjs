@@ -38,6 +38,22 @@ test("minute offsets are elapsed-time offsets across a DST transition", () => {
   });
 });
 
+test("every timed minute-offset choice resolves to its configured instant", () => {
+  const occurrence = timed("2026-03-08T09:00", "2026-03-08T13:00:00Z");
+  const expected = [
+    ["at-start", "2026-03-08T13:00:00Z"],
+    ["5-minutes-before", "2026-03-08T12:55:00Z"],
+    ["10-minutes-before", "2026-03-08T12:50:00Z"],
+    ["15-minutes-before", "2026-03-08T12:45:00Z"],
+    ["30-minutes-before", "2026-03-08T12:30:00Z"],
+    ["60-minutes-before", "2026-03-08T12:00:00Z"],
+  ];
+
+  for (const [choice, instant] of expected) {
+    assert.equal(scheduleCalendarReminder(choice, occurrence)?.scheduledAt, instant);
+  }
+});
+
 test("one local day before preserves wall time across spring-forward", () => {
   const schedule = scheduleCalendarReminder(
     "one-local-day-before",
