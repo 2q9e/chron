@@ -233,19 +233,20 @@ verification remains gated on a test account.
   and pushed on main. Run 41400318323 passed PostgreSQL 16 integration and the
   production build. The staged b01cbfe release predates restoration; release
   activation and authenticated browser review remain open.
-- **Remaining deliverables:** move exceptions, split-series behavior,
-  authenticated browser review, and final handoff evidence. Restore code and
-  its regression tests are pushed on main; migration 0010 and PostgreSQL
-  integration coverage passed in run 41400318323.
+- **Remaining deliverables:** split-series behavior, authenticated browser
+  review, and final handoff evidence. Restore code and its regression tests
+  are pushed on main; migration 0010 and PostgreSQL integration coverage
+  passed in run 41400318323.
 
 ### C1-rec6m — move one recurring occurrence
 
 - **Task ID:** C1-rec6m
-- **Status:** implementation is in the main worktree. Local calendar tests,
-  lint, typecheck, and production compilation pass. PostgreSQL integration is
-  skipped locally because `CHRON_TEST_DATABASE_URL` is unset; GitHub CI is
-  pending. Staging remains on the previous release because SSH activation is
-  unavailable; the staging URL is HTTPS-only.
+- **Status:** implementation and migration 0011 are pushed to `main`. Local
+  calendar tests, lint, and typecheck pass. GitHub quality run 41404738609
+  passed, including PostgreSQL 16 integration and the production build.
+  PostgreSQL integration is skipped locally because
+  `CHRON_TEST_DATABASE_URL` is unset. Staging remains on the previous release;
+  its HTTPS endpoint returns 200 with HSTS, but this change is not deployed.
 - **Objective:** Let a user drag one timed or all-day recurrence occurrence to
   a new time while preserving the original occurrence key and neighboring
   instances. Persist the move as an exact reviewed proposal.
