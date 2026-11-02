@@ -14,12 +14,15 @@ Commit `90166ed fix` was pushed to the only GitHub branch, `main`, over HTTPS
 as `2q9e`. The calendar presentation suite (82), typecheck, lint, and diff
 check pass locally; GitHub Actions run `41465392379` passed. An independent
 reviewer identified two issues in the first draft (pending announcement and
-tests that copied rather than exercised the runner); both were corrected, and
-final review is pending. Browser use is disabled in this session, so actual
-download and screen-reader behavior have not been verified in a rendered
-browser. The authorized VPS key remains unavailable, so this change is not
-deployed to `https://testing.uwu.markets`. Do not modify unrelated VPS files
-or services.
+tests that copied rather than exercised the runner); both were corrected. The
+final recheck found no implementation defect and asked that the stale-finally
+test keep the newer request pending while the stale one resolves. That race
+assertion is fixed in `f45e365`; the 82 presentation tests, typecheck, lint,
+and diff check pass locally, and GitHub Actions run `41466345621` passed.
+Browser use is disabled in this session, so actual download and screen-reader
+behavior have not been verified in a rendered browser. The authorized VPS key
+remains unavailable, so this change is not deployed to
+`https://testing.uwu.markets`. Do not modify unrelated VPS files or services.
 
 ## Current checkpoint — 2026-11-02
 

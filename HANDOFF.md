@@ -12,14 +12,15 @@ status region. Four deferred-response tests use the production runner.
 Source and tests were pushed as commit `90166ed` (`fix`) to the one published
 branch, `main`, over HTTPS under author and committer `2q9e`. The calendar
 presentation suite (82), typecheck, lint, and diff check pass locally; GitHub
-Actions run `41465392379` also passed. The independent reviewer found and the
-implementation fixed an unannounced pending state and tests that imitated the
-guard instead of exercising shared orchestration; a final read-only recheck is
-pending. Browser use is disabled, so no rendered download or
-assistive-technology walkthrough was performed. Staging remains unchanged
-because the required authorized VPS key is unavailable. Do not edit unrelated
-VPS files/services; use only `https://testing.uwu.markets` when authorized
-access is restored.
+Actions runs `41465392379` and `41466345621` passed. The independent reviewer
+found and the implementation fixed an unannounced pending state and tests that
+imitated the guard instead of exercising shared orchestration. Its final
+source-only recheck found no implementation defect and identified a race-test
+ordering gap, fixed in `f45e365`. Browser use is disabled, so no rendered
+download or assistive-technology walkthrough was performed. Staging remains
+unchanged because the required authorized VPS key is unavailable. Do not edit
+unrelated VPS files/services; use only `https://testing.uwu.markets` when
+authorized access is restored.
 
 Next: continue calendar work on `main`, keep the landing page paused, and
 verify `.ics` export in a real browser with an authorized test account once

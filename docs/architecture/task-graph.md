@@ -15,7 +15,7 @@ credentials or private data.
   prevent stale results from downloading private calendar data.
 - **Assigned agent/model:** Primary integration agent; runtime model and effort
   are not independently attested. A separate read-only reviewer identified
-  the original race and is rechecking the final diff.
+  the original race, then rechecked the final implementation.
 - **Dependencies:** Existing owner-scoped calendar event fetch, visible-range
   calculation, and iCalendar serialization.
 - **Owned files:** `apps/web/features/calendar/presentation/calendar-workspace.tsx`,
@@ -37,15 +37,20 @@ credentials or private data.
   to assistive technology; clear the prior notice and permit retry after
   completion or failure.
 - **Tests:** Calendar presentation suite (82), TypeScript check, lint, and
-  `git diff --check` pass. Browser use is disabled in this session, so UI and
-  actual download behavior remain unverified in a rendered browser.
+  `git diff --check` pass locally; GitHub Actions run `41466345621` also passed
+  against commit `f45e365`. The independent recheck found no implementation
+  defect but identified a stale-finally test ordering gap, corrected in
+  `f45e365`. Browser use is disabled, so actual UI/download behavior remains
+  unverified in a rendered browser.
 - **Expected deliverables:** A testable export lifecycle shared by the React
   workspace and deferred-response tests, with no placeholder code or new
   dependency.
 - **Status:** Source/tests were pushed to the only published branch, `main`, in
-  commit `90166ed` (`fix`), authored as `2q9e` over HTTPS. No staging deploy was
-  made: the previously authorized VPS key is unavailable. Do not edit unrelated
-  VPS files or services; keep public and staging endpoints HTTPS.
+  commits `90166ed` (`fix`) and `f45e365` (`fix`); handoff records were pushed
+  in `2ef9f7f` (`update`). All were authored as `2q9e` over HTTPS. No staging
+  deploy was made: the previously authorized VPS key is unavailable. Do not
+  edit unrelated VPS files or services; keep public and staging endpoints
+  HTTPS.
 
 ## C1-focus-return — calendar create-editor focus restoration
 
