@@ -372,6 +372,55 @@
   min-height: 0;
   z-index: 1;
 }
+.workspace .resizableTimedEvent {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 2.75rem;
+  grid-template-rows: minmax(0,1fr) 2.75rem;
+}
+.resizableTimedEvent .eventButton {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  flex: none;
+  border-radius: .25rem 0 0 .25rem;
+}
+.resizableTimedEvent .moveHandle {
+  grid-column: 2;
+  grid-row: 1;
+  flex: 0 0 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  border-radius: 0 .35rem 0 0;
+}
+.workspace .resizeHandle {
+  grid-column: 2;
+  grid-row: 2;
+  flex: 0 0 2.75rem;
+  width: 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  display: grid;
+  place-items: center;
+  padding: .25rem;
+  border-radius: 0 0 .35rem 0;
+  border-inline-start: 1px solid var(--line);
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--accent);
+  cursor: ns-resize;
+  touch-action: none;
+  user-select: none;
+}
+.resizeHandle svg {
+  width: 1rem;
+  height: 1rem;
+}
+.resizeHandle svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.5;
+}
 .timedEvent .eventButton {
   min-height: 0;
   padding: .25rem .35rem;
@@ -383,6 +432,13 @@
   min-height: 0;
   padding: .15rem;
   border-radius: 0 .25rem .25rem 0;
+}
+.workspace .resizableTimedEvent .moveHandle {
+  flex: 0 0 2.75rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: .3rem;
+  border-radius: 0 .35rem 0 0;
 }
 .shortTimedEvents {
   display: grid;

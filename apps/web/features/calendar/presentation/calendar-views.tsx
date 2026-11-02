@@ -12,7 +12,11 @@ import {
   type CalendarView,
 } from "./calendar-model";
 import { calendarMinuteAtPointer } from "./calendar-move.ts";
-import { CalendarEventControl, type CalendarMoveAction } from "./calendar-event-control";
+import {
+  CalendarEventControl,
+  type CalendarMoveAction,
+  type CalendarResizeAction,
+} from "./calendar-event-control";
 import styles from "./calendar.module.css";
 
 type EventButtonProps = Readonly<{
@@ -22,6 +26,7 @@ type EventButtonProps = Readonly<{
   locale: string;
   onSelect: (event: CalendarEventEntry) => void;
   onMove?: CalendarMoveAction;
+  onResize?: CalendarResizeAction;
   compact?: boolean;
   timeLabelOverride?: string;
   className?: string;
@@ -141,6 +146,7 @@ export function CalendarEventButton({
   locale,
   onSelect,
   onMove,
+  onResize,
   compact = false,
   timeLabelOverride,
   className,
@@ -158,6 +164,7 @@ export function CalendarEventButton({
       event={event}
       locale={locale}
       onMove={onMove}
+      onResize={onResize}
       onSelect={onSelect}
       style={style}
       timeLabel={timeLabel}
@@ -174,6 +181,7 @@ type CalendarViewProps = Readonly<{
   onCreate: (date: string, minute?: number, returnFocusTarget?: HTMLButtonElement | null) => void;
   onSelectEvent: (event: CalendarEventEntry) => void;
   onMoveEvent?: CalendarMoveAction;
+  onResizeEvent?: CalendarResizeAction;
 }>;
 
 function weekdayLabels(weekStartsOn: number, locale: string): readonly string[] {
@@ -249,6 +257,7 @@ function DayColumn({
   onCreate,
   onSelectEvent,
   onMoveEvent,
+  onResizeEvent,
 }: DayColumnProps) {
   const dayEvents = eventsOnDate(events, date, timeZone);
   const allDayEvents = allDayEventsForDate(dayEvents, date);
@@ -329,6 +338,12 @@ function DayColumn({
         </div>
         <div className={styles.eventLayer}>
           {timeline.events.map((segment) => {
+            const resizable = segment.endsOnDate
+              && segment.heightRem >= 5.5
+              && segment.widthPercent >= 75
+              && !!onResizeEvent
+              && !("series" in segment.event)
+              && !("recurrenceRule" in segment.event && segment.event.recurrenceRule);
             const time = segment.startsOnDate
               ? segment.endsAtMidnight
                 ? `${segment.localStartLabel}–midnight ${segment.timeZoneLabel}`
@@ -338,12 +353,13 @@ function DayColumn({
               : "Continues";
             return (
               <CalendarEventButton
-                className={styles.timedEvent}
+                className={`${styles.timedEvent} ${resizable ? styles.resizableTimedEvent : ""}`}
                 date={date}
                 event={segment.event}
                 key={calendarEventEntryKey(segment.event)}
                 locale={locale}
                 onMove={segment.startsOnDate && segment.heightRem >= 2.75 ? onMoveEvent : undefined}
+                onResize={resizable ? onResizeEvent : undefined}
                 onSelect={onSelectEvent}
                 timeLabelOverride={time}
                 timeZone={timeZone}
@@ -396,6 +412,7 @@ export function TimeCalendar({
   onCreate,
   onSelectEvent,
   onMoveEvent,
+  onResizeEvent,
   view,
 }: CalendarViewProps & Readonly<{ view: "day" | "week" }>) {
   const first = view === "day" ? Temporal.PlainDate.from(selectedDate) : startOfWeek(selectedDate, weekStartsOn);
@@ -409,7 +426,7 @@ export function TimeCalendar({
     >
       {days.map((dateKey) => (
         <DayColumn
-          {...{ events, selectedDate, weekStartsOn, timeZone, locale, onCreate, onSelectEvent, onMoveEvent }}
+          {...{ events, selectedDate, weekStartsOn, timeZone, locale, onCreate, onSelectEvent, onMoveEvent, onResizeEvent }}
           date={dateKey}
           key={dateKey}
           view={view}

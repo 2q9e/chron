@@ -26,8 +26,8 @@ export type Editor = {
   reviewTimeZone: string | null;
   deleting: boolean;
   seriesDraft: CalendarSeriesDraft | null;
-  purpose?: "move";
-  moveCalendarTimeZone?: string;
+  purpose?: "move" | "resize";
+  reviewCalendarTimeZone?: string;
 };
 
 type Props = {
@@ -80,14 +80,16 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
   return (
     <section id="calendar-event-editor" className={styles.panel} aria-labelledby="editor-heading">
       <div className={styles.panelHeading}>
-        <h2 id="editor-heading">{editor.purpose === "move" ? "Review event move" : editor.event?.recurrenceRule ? "Edit recurring series" : editor.event ? "Edit event" : "New event"}</h2>
+        <h2 id="editor-heading">{editor.purpose === "move" ? "Review event move" : editor.purpose === "resize" ? "Review event duration change" : editor.event?.recurrenceRule ? "Edit recurring series" : editor.event ? "Edit event" : "New event"}</h2>
         <button type="button" onClick={onClose} disabled={busy || retryOnly}>Close</button>
       </div>
-      {editor.purpose === "move" && (
+      {(editor.purpose === "move" || editor.purpose === "resize") && (
         <p className={styles.moveReviewNote}>
-          This proposed move is not saved yet. Review its dates, reminder, and conflicts before approving it.
+          {editor.purpose === "move"
+            ? "This proposed move is not saved yet. Review its dates, reminder, and conflicts before approving it."
+            : "This proposed duration change is not saved yet. Review its end time, reminder, and conflicts before approving it."}
           {editor.draft.kind === "timed" && (
-            <> The drop used {editor.moveCalendarTimeZone ?? editor.zone}; this event remains in {editor.zone}.</>
+            <> The drop used {editor.reviewCalendarTimeZone ?? editor.zone}; this event remains in {editor.zone}.</>
           )}
         </p>
       )}

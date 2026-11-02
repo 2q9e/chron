@@ -10,6 +10,7 @@ export type CalendarMoveAction = (
   targetMinute: number | null,
   calendarTimeZone: string,
 ) => void;
+export type CalendarResizeAction = CalendarMoveAction;
 
 type DropTarget = Readonly<{
   date: string;
@@ -21,6 +22,7 @@ type DropTarget = Readonly<{
 
 type PointerInteraction = {
   pointerId: number;
+  mode: "move" | "resize";
   startX: number;
   startY: number;
   dragging: boolean;
@@ -35,12 +37,17 @@ type Props = Readonly<{
   accessibleLabel: string;
   onSelect: (event: CalendarEventEntry) => void;
   onMove?: CalendarMoveAction;
+  onResize?: CalendarResizeAction;
   compact?: boolean;
   className?: string;
   style?: CSSProperties;
 }>;
 
-function targetAtPoint(clientX: number, clientY: number): DropTarget | null {
+function targetAtPoint(
+  clientX: number,
+  clientY: number,
+  requireTimeSlot = false,
+): DropTarget | null {
   const hit = document.elementFromPoint(clientX, clientY);
   const element = hit?.closest<HTMLElement>("[data-calendar-drop-date]");
   const date = element?.dataset.calendarDropDate;
@@ -59,6 +66,7 @@ function targetAtPoint(clientX: number, clientY: number): DropTarget | null {
       dayDurationMinutes,
     )
     : null;
+  if (requireTimeSlot && minute === null) return null;
 
   return {
     date,
@@ -86,14 +94,14 @@ function showTargetHighlight(target: DropTarget): void {
   }
 }
 
-function announceTarget(target: DropTarget, locale: string): string {
+function announceTarget(target: DropTarget, locale: string, mode: PointerInteraction["mode"]): string {
   const targetDate = Temporal.PlainDate.from(target.date);
   const day = targetDate.toLocaleString(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
-  if (target.minute === null) return `Drop on ${day} to keep the displayed time in ${target.timeZone}.`;
+  if (target.minute === null) return `Move to ${day} to keep the displayed time in ${target.timeZone}.`;
   const dayStart = targetDate.toZonedDateTime(target.timeZone).toInstant();
   const targetInstant = dayStart.add({ minutes: target.minute });
   const time = new Intl.DateTimeFormat(locale, {
@@ -102,7 +110,9 @@ function announceTarget(target: DropTarget, locale: string): string {
     timeZoneName: "short",
     timeZone: target.timeZone,
   }).format(new Date(Number(targetInstant.epochMilliseconds)));
-  return `Drop on ${day} at ${time} in ${target.timeZone}.`;
+  return mode === "resize"
+    ? `Resize the end to ${day} at ${time} in ${target.timeZone}.`
+    : `Move to ${day} at ${time} in ${target.timeZone}.`;
 }
 
 export function CalendarEventControl({
@@ -113,6 +123,7 @@ export function CalendarEventControl({
   accessibleLabel,
   onSelect,
   onMove,
+  onResize,
   compact = false,
   className,
   style,
@@ -124,24 +135,35 @@ export function CalendarEventControl({
   const canMove = !!onMove
     && !("series" in event)
     && !("recurrenceRule" in event && event.recurrenceRule);
+  const canResize = !!onResize
+    && event.kind === "timed"
+    && !("series" in event)
+    && !("recurrenceRule" in event && event.recurrenceRule);
 
   function updateDropTarget(current: PointerInteraction, clientX: number, clientY: number): void {
-    const next = targetAtPoint(clientX, clientY);
+    const next = targetAtPoint(clientX, clientY, current.mode === "resize");
     if (current.target?.key === next?.key) return;
     removeTargetHighlight(current.target);
     current.target = next;
     if (next) {
       showTargetHighlight(next);
-      setDragAnnouncement(announceTarget(next, locale));
+      setDragAnnouncement(announceTarget(next, locale, current.mode));
     } else {
-      setDragAnnouncement("Move over a calendar day or time to choose a destination.");
+      setDragAnnouncement(current.mode === "resize"
+        ? "Resize the end on a day or week time grid."
+        : "Move over a calendar day or time to choose a destination.");
     }
   }
 
-  function beginInteraction(event: ReactPointerEvent<HTMLButtonElement>): void {
-    if (!canMove || event.button !== 0 || !event.isPrimary) return;
+  function beginInteraction(
+    event: ReactPointerEvent<HTMLButtonElement>,
+    mode: PointerInteraction["mode"],
+  ): void {
+    if ((mode === "move" ? !canMove : !canResize)
+      || event.button !== 0 || !event.isPrimary) return;
     interaction.current = {
       pointerId: event.pointerId,
+      mode,
       startX: event.clientX,
       startY: event.clientY,
       dragging: false,
@@ -157,7 +179,9 @@ export function CalendarEventControl({
       const distance = Math.hypot(event.clientX - current.startX, event.clientY - current.startY);
       if (distance < 7) return;
       current.dragging = true;
-      setDragAnnouncement("Moving event. Release to choose a destination.");
+      setDragAnnouncement(current.mode === "resize"
+        ? "Resizing event. Release to choose its new end time."
+        : "Moving event. Release to choose a destination.");
     }
     event.preventDefault();
     updateDropTarget(current, event.clientX, event.clientY);
@@ -172,11 +196,16 @@ export function CalendarEventControl({
       suppressNextClick.current = true;
       window.setTimeout(() => { suppressNextClick.current = false; }, 0);
       event.preventDefault();
-      if (current.target && onMove) {
-        onMove(calendarEvent, current.target.date, current.target.minute, calendarTimeZone);
-        setDragAnnouncement("Move proposed. Review its date, time, and conflicts before saving.");
+      const action = current.mode === "move" ? onMove : onResize;
+      if (current.target && action) {
+        action(calendarEvent, current.target.date, current.target.minute, calendarTimeZone);
+        setDragAnnouncement(current.mode === "resize"
+          ? "Resize proposed. Review its end time and conflicts before saving."
+          : "Move proposed. Review its date, time, and conflicts before saving.");
       } else {
-        setDragAnnouncement("No calendar destination was selected. The event was not changed.");
+        setDragAnnouncement(current.mode === "resize"
+          ? "No time-grid end was selected. The event was not changed."
+          : "No calendar destination was selected. The event was not changed.");
       }
     } else {
       removeTargetHighlight(current.target);
@@ -190,7 +219,11 @@ export function CalendarEventControl({
     if (!current || current.pointerId !== event.pointerId) return;
     removeTargetHighlight(current.target);
     interaction.current = null;
-    setDragAnnouncement(current.dragging ? "Move cancelled. The event was not changed." : "");
+    setDragAnnouncement(current.dragging
+      ? current.mode === "resize"
+        ? "Resize cancelled. The event was not changed."
+        : "Move cancelled. The event was not changed."
+      : "");
   }
 
   return (
@@ -222,7 +255,7 @@ export function CalendarEventControl({
             }
             onSelect(event);
           }}
-          onPointerDown={beginInteraction}
+          onPointerDown={(pointerEvent) => beginInteraction(pointerEvent, "move")}
           onPointerMove={continueInteraction}
           onPointerUp={finishInteraction}
           onPointerCancel={cancelInteraction}
@@ -238,7 +271,32 @@ export function CalendarEventControl({
           </svg>
         </button>
       )}
-      {canMove && dragAnnouncement && (
+      {canResize && (
+        <button
+          className={styles.resizeHandle}
+          type="button"
+          aria-label={`Open ${event.title} in the editor to change its end time. Drag this handle to resize.`}
+          title="Drag to resize. Activate to edit."
+          onClick={(clickEvent) => {
+            if (suppressNextClick.current) {
+              clickEvent.preventDefault();
+              suppressNextClick.current = false;
+              return;
+            }
+            onSelect(event);
+          }}
+          onPointerDown={(pointerEvent) => beginInteraction(pointerEvent, "resize")}
+          onPointerMove={continueInteraction}
+          onPointerUp={finishInteraction}
+          onPointerCancel={cancelInteraction}
+          onLostPointerCapture={cancelInteraction}
+        >
+          <svg aria-hidden="true" viewBox="0 0 16 16" focusable="false">
+            <path d="M3 5h10M3 11h10M8 6v4m-2-2 2 2 2-2" />
+          </svg>
+        </button>
+      )}
+      {(canMove || canResize) && dragAnnouncement && (
         <span className={styles.visuallyHidden} aria-live="polite">{dragAnnouncement}</span>
       )}
     </div>

@@ -23,8 +23,8 @@ import {
   type EventDraft,
 } from "./calendar-model";
 import { CalendarEditor, type Editor } from "./calendar-editor";
-import type { CalendarMoveAction } from "./calendar-event-control";
-import { moveCalendarEventDraft } from "./calendar-move.ts";
+import type { CalendarMoveAction, CalendarResizeAction } from "./calendar-event-control";
+import { moveCalendarEventDraft, resizeCalendarEventDraft } from "./calendar-move.ts";
 import { CalendarSearch } from "./calendar-search";
 import { CalendarPreferencesForm } from "./calendar-preferences";
 import { AgendaCalendar, MonthCalendar, TimeCalendar } from "./calendar-views";
@@ -308,7 +308,43 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       deleting: false,
       seriesDraft: null,
       purpose: "move",
-      moveCalendarTimeZone: calendarTimeZone,
+      reviewCalendarTimeZone: calendarTimeZone,
+    });
+    setEditorError("");
+    setEditorStale(false);
+    setEditorRetryOnly(false);
+    setEditorReauthRequired(false);
+    setNotice("");
+  }, [preferences, calendarLocked, rememberEditorOpener]);
+  const resizeEvent: CalendarResizeAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone) => {
+    if (!preferences || calendarLocked) return;
+    if ("series" in selected) {
+      setNotice("Open the repeating series to review a duration change.");
+      return;
+    }
+    const resized = resizeCalendarEventDraft(selected, targetDate, targetMinute, calendarTimeZone);
+    if (!resized.ok) {
+      setNotice(resized.message);
+      return;
+    }
+    rememberEditorOpener();
+    focusAfterEditor.current = null;
+    editorGeneration.current += 1;
+    setEditor({
+      generation: editorGeneration.current,
+      event: selected,
+      operationKey: null,
+      operationAction: null,
+      draft: resized.draft,
+      zone: resized.timeZone,
+      errors: {},
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+      purpose: "resize",
+      reviewCalendarTimeZone: calendarTimeZone,
     });
     setEditorError("");
     setEditorStale(false);
@@ -511,7 +547,10 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         forgetPendingCalendarCreate(userId, editor.operationKey);
       }
       if (editorGeneration.current === generation) closeEditor(true);
-      setNotice(editor.purpose === "move" ? "Event moved." : "Event saved."); setReload((value) => value + 1);
+      setNotice(editor.purpose === "move"
+        ? "Event moved."
+        : editor.purpose === "resize" ? "Event duration changed." : "Event saved.");
+      setReload((value) => value + 1);
     } catch (reason) {
       if (editorGeneration.current !== generation) return;
       if (reason instanceof CalendarRequestError && reason.code === "IDEMPOTENCY_KEY_REUSED") {
@@ -741,12 +780,12 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     {preferences && <p className={styles.zone}>Times shown in {preferences.timeZone}</p>}
     {events.length > 0 && view !== "agenda" && (
       <p className={styles.moveHelp}>
-        Drag an event handle to another date; on a time grid, drop it on a 15-minute slot. Open an event to edit it with the keyboard. Every move is reviewed before saving.
+        Drag an event handle to another date; on a time grid, drop it on a 15-minute slot. Longer timed blocks also have an end handle to propose a duration change. Open an event to edit it with the keyboard. Every change is reviewed before saving.
       </p>
     )}
     <p role="status" className={styles.status}>{loading ? "Loading calendar…" : notice}</p>
     {loadError && <div className={styles.error} role="alert"><p>{loadError}</p><button type="button" onClick={() => { setLoadError(""); if (!preferences) window.location.reload(); else setReload((value) => value + 1); }}>Retry loading calendar</button></div>}
-    {preferences && !loading && !loadError && <><div className={styles.calendarSurface} inert={calendarLocked}>{view === "month" ? <MonthCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onSelectEvent={openEvent} /> : view === "agenda" ? <AgendaCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : <TimeCalendar view={view} events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onSelectEvent={openEvent} />}</div>{events.length === 0 && <p className={styles.empty}>No events in this period. <button type="button" disabled={calendarLocked} onClick={() => openNew(date)}>Create an event</button></p>}</>}
+    {preferences && !loading && !loadError && <><div className={styles.calendarSurface} inert={calendarLocked}>{view === "month" ? <MonthCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onSelectEvent={openEvent} /> : view === "agenda" ? <AgendaCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : <TimeCalendar view={view} events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onResizeEvent={resizeEvent} onSelectEvent={openEvent} />}</div>{events.length === 0 && <p className={styles.empty}>No events in this period. <button type="button" disabled={calendarLocked} onClick={() => openNew(date)}>Create an event</button></p>}</>}
     {editor && (
       <CalendarEditor
         editor={editor}
