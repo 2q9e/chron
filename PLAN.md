@@ -107,6 +107,24 @@ focused test to CI and records the retrieval boundary. Commit 6ddcaf1 passed
 GitHub Actions run 41423649691 and is active on HTTPS staging after migration
 0016 and the owner-scoped runtime grant were applied.
 
+The in-product TypeScript skill catalog is distinct from the 500-entry
+development `SKILLS.md`. Its deterministic policy now distinguishes reading
+validated public HTTPS URLs from discovering sources, requires separate server
+grants for those capabilities, rejects forged or invalid in-process scope
+markers for clarification, records a version for every skill contract, and
+keeps source-level quality separate from corroboration status. The marker and
+URL helpers do not authenticate users or prove intent provenance; a future
+route must bind them to authenticated explicit user input.
+This policy is not called by a product agent route, and no source-discovery
+capability is currently granted or implemented. The Research UI remains a
+known-URL reader; do not describe it as web search or a complete research
+agent. Continue the R0 policy work with tests and integration only when a real,
+authorized tool route exists.
+The focused agent and research suites, typecheck, lint, diff checks, and staged
+secret-pattern check pass. The source-policy diff scan completed with zero
+findings. Commit `6683f02` is on the sole GitHub `main` branch over HTTPS; no
+deployment was performed.
+
 GitHub Actions run 41392185432 passed after applying all migrations to an
 ephemeral PostgreSQL 16 database and checking tenant isolation, RLS, transaction
 context reset, cross-owner access rejection, and account-deletion cascades.

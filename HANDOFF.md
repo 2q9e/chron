@@ -2,6 +2,51 @@
 
 ## Current checkpoint — 2026-11-02
 
+Runtime research policy now distinguishes discovery from reading validated
+user-provided HTTPS URLs. Automatic external research requires both
+`research.web.read` and `research.web.discover`; a reader-only grant returns
+`capability-unavailable` when additional sources are requested. Source scope
+uses an opaque in-process token. The helper validates the mode, but does not
+authenticate the user or prove intent provenance. Reader-only scope requires
+an immutable snapshot of a parsed public HTTPS URL; forged or invalid scope
+returns clarification. The discovery skill requires both capabilities. All
+built-in skills carry a contract version, preserved with selected skill IDs in
+prepared turns. Individual source quality and corroboration are separate
+report fields. Fifteen focused agent-skill tests pass.
+
+This policy is not wired to an application route. No source-discovery service
+or server capability grant exists, and the signed-in Research screen remains
+a direct known-URL reader. Do not present this change as a functioning search
+agent, citation workflow, or model-backed feature. Meta inference remains
+gated, and no search or inference request was made. A future executor must
+authenticate the user, derive scope from an explicit choice, and bind the
+submitted URL to the exact approved snapshot before revalidating its fetch
+target. That execution path does not exist yet. HTTPS is required for all
+public, Git, and staging endpoints. Continue calendar work after recording
+this internal policy checkpoint; keep the landing page paused and the single
+GitHub `main` branch.
+
+Verification and publication: agent-skill tests (15), research tests (21),
+typecheck, lint, diff checks, and staged secret-pattern checks passed. The
+non-test source scan found no insecure URL schemes; HTTP test cases exist only
+to verify rejection. The focused Codex Security diff scan completed with zero
+findings across its nine-file source/test scope (scan
+`06f96306-3c7e-45de-b465-d4a5271e4cce`). Commit `6683f02` (`improve`) was
+pushed to `main` over HTTPS under author and committer `2q9e`; GitHub currently
+exposes only the `main` branch. No VPS or Cloudflare deployment changes were
+made.
+
+Next actions:
+
+1. Keep deployment unchanged until authorized VPS access is available; if it
+   is restored, change only the Chron release and service and verify via
+   `https://testing.uwu.markets`.
+2. Continue calendar behavior work; do not claim source discovery or agent
+   workflows are implemented until a real route and authorized capability
+   exist.
+
+## Current checkpoint — 2026-11-02
+
 `C1-category1` adds class, assignment, exam, study, personal, and other event
 categories. The additive migration is
 `apps/web/db/migrations/0018_calendar_event_categories.sql`; it leaves old

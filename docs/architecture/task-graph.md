@@ -7,6 +7,46 @@ The runtime does not enforce per-agent filesystem isolation, so this slice was
 implemented and reviewed sequentially by the primary agent; no worker received
 credentials or private data.
 
+## R0-a — runtime source-policy contracts
+
+- **Objective:** Keep known-URL reading distinct from source discovery, version
+  built-in skill contracts, and distinguish source usability from
+  corroboration.
+- **Assigned agent/model:** Primary agent; runtime identity/effort are not
+  independently attested. A read-only independent policy review is required
+  before closing this work.
+- **Dependencies:** Existing TypeScript runtime skill catalog and tests.
+- **Owned files:** `apps/web/features/agent/skills/{types,selection,catalog,prepare-turn,evidence,source-intent}.ts`,
+  `apps/web/features/agent/skills/agent-skills.test.mjs`,
+  `apps/web/features/research/server/{url-policy,web-source-reader}.ts`, and
+  project progress/handoff docs.
+- **Read-only files:** `AGENTS.md`, `SKILLS.md`, Meta policy report, HTTPS source
+  reader, and current Research route.
+- **Required skills:** S236, S238, S242, S243, S265, S266, S270, S276, S277,
+  and S288.
+- **Security permissions:** Read/edit project source and docs only; no
+  credentials, private user data, network retrieval, deployment, or unrelated
+  VPS/Cloudflare changes. Filesystem isolation is not technically enforced.
+- **Acceptance criteria:** A known-URL reader cannot satisfy discovery; missing
+  discovery returns a typed unavailable outcome; reader-only mode accepts only
+  helper-issued URL markers and opaque scope tokens; the helpers do not prove
+  user identity or intent provenance, so a future route must bind them to
+  authenticated explicit user input; forged/missing markers and invalid URL
+  values require clarification; source requests for additional sources cannot
+  be reduced to reading provided URLs;
+  approved URL snapshots are preserved for future exact-match checks; the
+  discovery skill itself requires both discovery and read; selected skill IDs
+  and versions are preserved; no app route or UI claims search is available.
+- **Tests:** Agent-skill policy suite, typecheck, lint, source/diff review, and
+  independent read-only policy review.
+- **Expected deliverables:** Deterministic source capability policy, versioned
+  catalog, explicit corroboration fields, tests, and honest roadmap status.
+- **Status:** Policy changes and 15 focused tests pass. Product route integration
+  and source discovery remain unimplemented; do not mark R0 complete. The
+  focused security diff review completed with zero findings; tests, typecheck,
+  lint, and HTTPS-only non-test URL scan passed. Commit `6683f02` is pushed to
+  the sole `main` branch. No deployment was performed.
+
 ## Active direct HTTPS source-reader graph
 
 ```text

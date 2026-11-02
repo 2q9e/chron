@@ -2,6 +2,36 @@
 
 ## Current checkpoint — 2026-11-02
 
+The runtime skill policy now separates discovery of new sources from reading
+validated user-provided HTTPS URLs. Automatic external research requires both
+the known-URL read capability and the separate source-discovery capability;
+the reader alone cannot satisfy a request for additional sources. Explicit
+source scope is represented by an opaque in-process token, and only a parsed
+public HTTPS URL can select reader-only work. These helpers do not authenticate
+the user or prove that input reflects explicit intent; a future route must
+bind both values to the authenticated user's request. Forged or invalid input
+stops for clarification. The evidence plan snapshots approved URL strings,
+but a future executor must revalidate and match that exact snapshot before
+fetch. A discovery skill requires both discovery and read capabilities. Every
+built-in skill has a versioned contract whose ID/version is carried by prepared
+turns. Source usability and corroboration limits are represented separately.
+
+Focused runtime skill tests pass (15). This remains an internal policy module:
+`prepareAgentTurn` has no product route caller, discovery has no implementation
+or server grant, and the Research screen only reads user-entered HTTPS URLs.
+No inference or search was run. All repository and public-site endpoints remain
+HTTPS; GitHub exposes only the `main` branch. Landing-page work remains paused
+and calendar work remains the product priority.
+
+The research-policy change was committed as `6683f02` (`improve`) and pushed to
+GitHub `main` over HTTPS. The repository currently has one remote branch.
+Research tests (21), typecheck, lint, diff checks, and a staged secret-pattern
+check passed. A focused Codex Security diff scan completed with zero findings;
+it did not cover runtime integration or deployment. No VPS or Cloudflare
+changes were made.
+
+## Current checkpoint — 2026-11-02
+
 `C1-category1` is pushed to the only GitHub branch, `main`, in four small
 commits (`5808b3a`, `c74fb87`, `4161ee5`, and `2ab3047`), all authored by
 `2q9e`. It adds six academic event categories with an additive nullable
