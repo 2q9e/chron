@@ -1014,3 +1014,39 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   and accurate progress/handoff evidence; changes committed on `main` only.
 - **Status:** Source implementation is pushed as `3b6028c improve`. Real
   pointer, touch, keyboard, visual, and persistence verification remains open.
+
+### C1-create0 — create a timed event from its calendar slot
+
+- **Task ID:** C1-create0
+- **Objective:** Let users start an event draft by selecting an empty timed
+  slot in day/week views while preserving exact quarter-hour and daylight
+  saving time semantics.
+- **Assigned agent:** Main integration owner.
+- **Required model:** Runtime model identity was not attested; no model claim.
+- **Required reasoning level:** Runtime reasoning configuration was not
+  attested; no level claim.
+- **Dependencies:** C1 day/week time grid, shared event editor, calendar
+  time-zone and local-time validation utilities.
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-model.ts`,
+  `calendar-model.test.mjs`, `calendar-views.tsx`, `calendar-workspace.tsx`,
+  and `calendar.module.css`.
+- **Read-only files:** Calendar create/conflict APIs, editor validation,
+  authentication middleware, database repository, and migrations.
+- **Required skills:** S346, S348, S356, S360, S361, S369, S422, and S423;
+  installed React, TypeScript, accessibility, touch interaction, and frontend
+  testing guidance. These were read and applied.
+- **Security permissions:** UI-only draft creation; no network request or
+  persistence until existing event review and explicit save. No credentials,
+  database data, reference material, unrelated VPS files, or deployment.
+- **Acceptance criteria:** Clicking an empty slot in a rendered day/week grid
+  opens the existing editor at the selected 15-minute slot. The default
+  duration is a 60-minute elapsed interval. Spring gaps are skipped and both
+  repeated fall-back times are distinguished; invalid dates, zones, and
+  offsets fail closed; focus returns to the date's Add event control.
+- **Tests:** Calendar presentation suite (46), typecheck, lint, and diff check
+  pass. Authenticated browser and persistence verification require a disposable
+  account and database unavailable in this runtime.
+- **Expected deliverables:** Slot-to-draft helper, time-grid interaction,
+  focused DST tests, audit entry, and updated progress/handoff on `main`.
+- **Status:** Source implementation is pushed as `833848a improve`. Real
+  browser interaction and persisted creation remain unverified.

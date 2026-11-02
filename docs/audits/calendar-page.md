@@ -13,10 +13,11 @@ authenticated calendar has not been exercised in a browser because this
 runtime has no configured PostgreSQL database or disposable account. Scores
 are source-review scores, not launch approval.
 
-The follow-up below reviews one-off movement source at `3b6028c`. It does not
-change the earlier score table: the new interaction has not been rendered or
-tested with a real authenticated account, and there was no independent reviewer
-with enforceable filesystem isolation available.
+The follow-up entries review one-off movement source at `3b6028c` and timed
+slot creation source at `833848a`. They do not change the earlier score table:
+these interactions have not been rendered or tested with a real authenticated
+account, and there was no independent reviewer with enforceable filesystem
+isolation available.
 
 ## Scores
 
@@ -263,3 +264,23 @@ invent successful results.
 - **Status:** Open. Source suites, typecheck, and lint pass. No PostgreSQL
   service/account is configured in this runtime; no live browser verification
   or deployment is claimed.
+
+### C-18 — Verify click-to-create from a time-grid slot
+
+- **Issue:** Click-to-create now opens a correctly timed draft in source, but
+  the rendered interaction has not been exercised in an authenticated browser.
+- **Severity:** P2, verification gap
+- **Affected files:** `apps/web/features/calendar/presentation/calendar-views.tsx`,
+  `calendar-workspace.tsx`, `calendar-model.ts`, and `calendar.module.css`.
+- **Why it is a problem:** Unit tests verify slot and DST conversion, but do not
+  prove hit position, target filtering around event controls, focus restoration,
+  editor display, conflict review, or persisted creation.
+- **Recommended correction:** Test empty slots and existing event controls in
+  day view on mobile and day/week views on desktop/tablet; verify the mobile
+  week list's Add event path. Create, review, save, reload, and inspect dates,
+  times, zones, and focus with a disposable account.
+- **Assigned agent:** Main integration owner.
+- **Verification method:** Authenticated browser interaction plus database
+  assertions; include both DST fold choices and the spring-forward transition.
+- **Status:** Open. The 46-test presentation suite, typecheck, and lint pass;
+  no database-backed browser session is available.

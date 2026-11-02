@@ -47,8 +47,10 @@ event drag scheduling is implemented in month, day, and week views. Grid drops
 snap to 15-minute slots, then open the existing editor with conflict preview
 and explicit save; recurring events continue through the series editor. Source
 tests cover time-zone and daylight-saving transitions, but a real
-database-backed browser walkthrough remains open. External calendar sync also
-remains open. See
+database-backed browser walkthrough remains open. Clicking an empty day/week
+time-grid slot now starts an event draft at its snapped time; its one-hour
+duration is based on elapsed time and retains the correct DST fold. External
+calendar sync also remains open. See
 `docs/architecture/calendar-reminders.md` for the reminder dependency graph
 and acceptance criteria.
 

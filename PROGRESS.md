@@ -38,10 +38,14 @@ tests, typecheck, and lint pass. Commit `3b6028c improve` adds one-off event
 drag movement to month/day/week views, with a review editor, conflict preview,
 15-minute time-grid snapping, preserved duration and timezone, and DST-aware
 handling. Calendar layout/time/API suites (42/39/89), typecheck, and lint pass.
-The production build and authenticated browser interaction were not verified:
-the workspace had 56 MB free, and no database/account was configured. All work
-remains on the same `main` branch; this documentation checkpoint brings public
-history to 619 non-merge commits.
+Commit `833848a improve` makes an empty day/week time-grid click open a timed
+event draft at the selected 15-minute slot. The default duration is one elapsed
+hour, with explicit choice of repeated DST times. Calendar presentation tests
+(46), typecheck, and lint pass. The production build and authenticated browser
+interaction were not verified: the workspace had 56 MB free, no database or
+account was configured, and HTTPS staging DNS is still absent. All work remains
+on the same `main` branch; this documentation checkpoint brings public history
+to 622 non-merge commits.
 
 The focused Codex Security diff review covered all ten changed files from
 `c7d9771` through `b0395ec` and found no source candidates. It was a sequential

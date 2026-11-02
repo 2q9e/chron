@@ -4,7 +4,7 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 619 non-merge commits after this
+remote branch. Public `main` contains 622 non-merge commits after this
 checkpoint. The reminder event and outbox integration was pushed as
 `be722e9`; bounded reminder delivery source was pushed in six small commits
 through `f44ed03`. Public history exceeds 600 non-merge commits. New commits
@@ -65,6 +65,12 @@ in an authenticated browser. Recurring-series drag, external sync,
 database-backed runtime verification, and a real authenticated browser
 walkthrough remain open. All public/staging access stays HTTPS-only; no VPS
 configuration was changed.
+Commit `833848a improve` adds click-to-create on empty day/week time-grid slots.
+The draft starts at the snapped 15-minute slot and defaults to one elapsed
+hour; repeated fall-back times retain the selected occurrence. The calendar
+presentation suite passes 46 tests, with typecheck and lint passing. The new
+interaction has source-level coverage only; authenticated browser and database
+verification remain open.
 C-01 through C-14 have
 source-level fixes recorded in the audit; C-15 tracks unverified PostgreSQL
 owner isolation and C-16 records the source-fixed return-focus issue. Rendered
@@ -241,6 +247,10 @@ awaits narrow and zoom browser checks.
   typecheck and lint passed. The new movement interaction has source-level
   coverage only. The production build was skipped with 56 MB free, and no
   configured PostgreSQL/database account permits authenticated browser checks.
+- After `833848a`, the calendar presentation suite passed 46 tests; typecheck,
+  lint, and `git diff --check` passed. Time-slot creation is covered for normal,
+  spring-forward, repeated-hour, and invalid inputs. No authenticated browser
+  or database verification was available.
 - Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
   is active but has no `testing.uwu.markets` DNS record. No hosting changes
   were made. The HTTPS-only check was repeated on 2026-11-01 and DNS still
