@@ -6,6 +6,10 @@ const migration = readFileSync(
   new URL("../../../db/migrations/0007_calendar_reminders.sql", import.meta.url),
   "utf8",
 );
+const workerMigration = readFileSync(
+  new URL("../../../db/migrations/0008_calendar_reminder_worker.sql", import.meta.url),
+  "utf8",
+);
 
 test("reminder schema defaults to no reminder and restricts values by event kind", () => {
   assert.match(migration, /reminder_choice text NOT NULL DEFAULT 'none'/u);
@@ -28,4 +32,12 @@ test("delivery attempts have bounded states and keep error storage sanitized", (
   assert.match(migration, /attempt_count BETWEEN 0 AND 5/u);
   assert.match(migration, /last_error_code ~ '\^\[A-Z0-9_\]\{1,64\}\$'/u);
   assert.match(migration, /provider messages, addresses, and event content must never be stored/iu);
+});
+
+test("the delivery worker stores only an RLS-protected opaque round-robin cursor", () => {
+  assert.match(workerMigration, /CREATE TABLE calendar_reminder_worker_state/u);
+  assert.match(workerMigration, /last_user_id text/u);
+  assert.match(workerMigration, /ENABLE ROW LEVEL SECURITY;[\s\S]*?FORCE ROW LEVEL SECURITY;/u);
+  assert.match(workerMigration, /current_setting\('chron\.calendar_reminder_worker', true\) = 'enabled'/u);
+  assert.match(workerMigration, /contains no recipient or event data/iu);
 });
