@@ -19,13 +19,16 @@ Calendar layout/API/time suites (29/66/28), typecheck, and lint pass. These
 repository checks do not replace live PostgreSQL or authenticated browser
 verification.
 
-The next C1 increment is on the same `main` branch. Reminder policy and task
-dependencies are committed in `f75155f`; the tested DST-aware schedule
+C1 reminder policy and task dependencies are committed in `f75155f`; the tested
+DST-aware schedule
 calculator is committed through `a906351`. Event reminder choices and
-transactional outbox persistence were pushed as `be722e9`. No reminder is
-delivered by the application yet. Public history had 598 non-merge commits
-with file changes before this increment; the documentation checkpoint brings
-the single published `main` branch to 600.
+transactional outbox persistence were pushed as `be722e9`. The current source
+increment adds bounded delivery, verified-email checks, generic reminder
+content, a protected internal route, and a Cloudflare Cron scheduler that calls
+the fixed HTTPS staging endpoint. These paths pass local tests but are not
+deployed or database-backed; the product still has no reminder editor or
+delivery status. The source was pushed in six small commits through `f44ed03`
+on the same `main` branch; public history now exceeds 600 non-merge commits.
 
 ## Completed
 
@@ -114,6 +117,13 @@ the single published `main` branch to 600.
   validation, and rejection of unexpected fields. Commits `521990b` and
   `8cda070` are on the single public `main` branch. The production build, lint,
   typecheck, and calendar API suite (42 tests) pass.
+- Implemented the reminder delivery worker in source. It leases bounded
+  owner-scoped outbox batches, sends only to a currently verified address,
+  records accepted/retry/permanent outcomes, and avoids logging recipient or
+  provider data. The internal route requires a long bearer secret; the
+  Cloudflare Cron worker targets only `https://testing.uwu.markets` with
+  redirects disabled. Public email links reject HTTP origins. Runtime delivery,
+  migration execution, and user-facing reminder controls remain unverified.
 
 ## Open work
 
@@ -123,17 +133,17 @@ the single published `main` branch to 600.
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
-- Continue C1 at C1-rmd2: implement bounded SMTP reminder delivery, then add
-  truthful editor/status behavior. Reminder event choices, schema, and
-  owner-scoped outbox writes are implemented and locally tested; live PostgreSQL
-  execution remains unverified.
+- Continue C1 at C1-rmd3: add truthful reminder editor/status behavior.
+  Reminder schedule, outbox, delivery worker, internal route, and HTTPS
+  scheduler are implemented in source and locally tested. Live PostgreSQL
+  execution and SMTP delivery remain unverified.
   Drag scheduling and external calendar synchronization remain later work.
   PostgreSQL ownership and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
   the user-authorized Chron-specific VPS and Cloudflare resources. Rechecked
   over HTTPS on 2026-11-01: DNS resolution still fails and Cloudflare has no
-  `testing.uwu.markets` DNS record. No remote change was made. Use HTTPS only
-  for all staging checks and public access.
+  `testing.uwu.markets` DNS record. No remote change was made. Continue to use
+  HTTPS only for staging checks and public access; do not fall back to HTTP.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -228,6 +238,11 @@ the single published `main` branch to 600.
   `npm run typecheck --workspace @chron/web` and `npm run lint --workspace
   @chron/web` passed. No production build, database, authenticated browser, or
   reminder delivery has been verified.
+- Current reminder source verification: calendar API/server tests (85), auth
+  config/email tests (13), scheduler tests (2), calendar time (39), layout (29),
+  and recovery (5) pass. Typecheck and lint pass. The HTTPS probe to the staging
+  hostname cannot resolve because its DNS record is absent. No database,
+  scheduler deployment, SMTP send, or browser reminder flow was exercised.
 - Rendered the production build in Chrome at an available 1230×480 desktop
   viewport. Inspected opening, Week, Study, Research, and closing sections;
   tested chapter navigation, `#week` reload, and reverse navigation. The scene

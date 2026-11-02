@@ -34,9 +34,11 @@ and a server-side conflict check before approval. Bounded event-title search is
 implemented in source with a date and event-kind filter. Finite recurrence and
 the reminder delivery contract plus DST-aware time calculation are implemented
 in source. Reminder choices and owner-scoped outbox writes now persist
-atomically for one-off events and approved series; delivery and editor controls
-remain open. Drag scheduling, external sync, and a real database/browser
-walkthrough remain open until integrated and verified. See
+atomically for one-off events and approved series. A bounded delivery worker,
+protected internal endpoint, and HTTPS scheduler are also implemented in
+source. Editor/status controls and live database, SMTP, and staging
+verification remain open. Drag scheduling, external sync, and a real
+database/browser walkthrough remain open until integrated and verified. See
 `docs/architecture/calendar-reminders.md` for the reminder dependency graph
 and acceptance criteria.
 

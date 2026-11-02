@@ -122,14 +122,23 @@ C1-rmd0 time and delivery contract
 - **Tests:** concurrent claims, retries, lease expiry, missing SMTP config,
   unverified email, send acceptance, cancellation race and output redaction.
 - **Expected deliverables:** runnable worker and accurately reported outcomes.
+- **Status:** Implemented in source across the repository claim/outcome methods,
+  bounded delivery worker, private bearer-protected route, and the separate
+  Cloudflare Cron scheduler. Email links and the fixed scheduler endpoint use
+  HTTPS; public HTTP origins fail closed. Calendar API/server (85), auth/email
+  (13), and scheduler (2) tests pass with the calendar time/layout/recovery
+  suites, lint, and typecheck. PostgreSQL migrations were not applied, SMTP was
+  not contacted, and the scheduler was not deployed. `testing.uwu.markets` has
+  no Cloudflare DNS record, so HTTPS staging cannot resolve. This is source
+  complete only, not operationally verified.
 
 ### C1-rmd3 — editor, review and status
 
 - **Assigned agent:** main integration owner.
 - **Required model:** runtime model identity is not independently available;
   no model identity is claimed.
-- **Dependencies:** C1-rmd1; can be developed against the frozen mutation
-  contract while C1-rmd2 is in progress.
+- **Dependencies:** C1-rmd1; the mutation contract and bounded delivery source
+  are available, while database and scheduler runtime gates remain open.
 - **Owned files:** calendar types, draft model, API adapter, editor/workspace,
   status presentation, styles and focused tests.
 - **Read-only files:** migration/API contract, five theme tokens, recurrence
