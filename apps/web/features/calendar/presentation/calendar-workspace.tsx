@@ -2,9 +2,10 @@
 
 import { Temporal } from "@js-temporal/polyfill";
 import { authClient } from "../../auth/client";
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
 import { calendarEventSeries, type CalendarEvent, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
+import { accessibleCalendarAccent } from "../domain/calendar-accent";
 import { expandCalendarRecurrenceRange } from "../domain/recurrence-range";
 import type { CalendarRecurrenceOccurrence } from "../domain/recurrence.ts";
 import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
@@ -1108,7 +1109,22 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setSigningOut(false);
     }
   }
-  return <main className={styles.workspace} data-theme={preferences?.theme} data-density={preferences?.density}>
+  const previewPreferences = settings ?? preferences;
+  const previewAccent = previewPreferences?.accentColor === null || !previewPreferences
+    ? null
+    : accessibleCalendarAccent(previewPreferences.accentColor, previewPreferences.theme);
+  const previewStyle = previewAccent === null
+    ? undefined
+    : {
+        "--accent": previewAccent,
+        "--focus": previewAccent,
+      } as CSSProperties;
+  return <main
+    className={styles.workspace}
+    data-theme={previewPreferences?.theme}
+    data-density={previewPreferences?.density}
+    style={previewStyle}
+  >
     <header className={styles.header}>
       <div>
         <p className={styles.eyebrow}>Chron / Calendar</p>

@@ -703,6 +703,32 @@
   border-radius: .3rem;
   padding: .55rem;
 }
+.accentPreference {
+  display: grid;
+  gap: .35rem;
+}
+.accentPreference > label {
+  font-weight: 600;
+}
+.accentPreference > p {
+  max-width: 38rem;
+  line-height: 1.45;
+}
+.accentControl {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+.form .accentControl input[type="color"] {
+  width: 3.25rem;
+  min-height: 2.75rem;
+  padding: .2rem;
+  cursor: pointer;
+}
+.accentControl button {
+  min-height: 2.75rem;
+}
 .form textarea {
   min-height: 6rem;
   resize: vertical;

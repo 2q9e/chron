@@ -1,4 +1,5 @@
 import type { FormEvent } from "react";
+import { calendarThemeAccentDefaults } from "../domain/calendar-accent";
 import { calendarThemes, type CalendarPreferences } from "../domain/types";
 import styles from "./calendar.module.css";
 
@@ -30,6 +31,27 @@ export function CalendarPreferencesForm({ settings, busy, error, onChange, onSav
             {calendarThemes.map((theme) => <option value={theme} key={theme}>{themeNames[theme]}</option>)}
           </select>
         </label>
+        <div className={styles.accentPreference}>
+          <label htmlFor="calendar-accent-color">Accent color</label>
+          <div className={styles.accentControl}>
+            <input
+              id="calendar-accent-color"
+              type="color"
+              value={settings.accentColor ?? calendarThemeAccentDefaults[settings.theme]}
+              aria-describedby="calendar-accent-color-help"
+              disabled={busy}
+              onChange={(event) => onChange({ ...settings, accentColor: event.target.value })}
+            />
+            <button
+              type="button"
+              disabled={busy || settings.accentColor === null}
+              onClick={() => onChange({ ...settings, accentColor: null })}
+            >Use theme default</button>
+          </div>
+          <p id="calendar-accent-color-help">
+            The calendar previews this color now. Save preferences to keep it. Low-contrast accents are adjusted for readability.
+          </p>
+        </div>
         <label>
           Density
           <select disabled={busy} value={settings.density} onChange={(e) => onChange({ ...settings, density: e.target.value as CalendarPreferences["density"] })}>

@@ -6,7 +6,9 @@ import {
   createCalendarSeriesDraft,
   fetchCalendarCancelledOccurrences,
   fetchCalendarEvents,
+  fetchCalendarPreferences,
   fetchCalendarReminderStatus,
+  saveCalendarPreferences,
 } from "./calendar-api.ts";
 
 const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
@@ -52,6 +54,55 @@ function response(payload, status = 200) {
     headers: { "Content-Type": "application/json" },
   });
 }
+
+test("loads and saves the complete per-account calendar preference contract", async () => {
+  const preferences = {
+    theme: "premium-dark",
+    accentColor: "#c36b8e",
+    density: "compact",
+    weekStartsOn: 1,
+    timeZone: "America/Montreal",
+  };
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init });
+    return response({ preferences });
+  };
+
+  try {
+    assert.deepEqual(await fetchCalendarPreferences(), preferences);
+    assert.deepEqual(await saveCalendarPreferences(preferences), preferences);
+    assert.equal(calls[0].url, "/api/calendar/preferences");
+    assert.equal(calls[0].init.method, "GET");
+    assert.equal(calls[0].init.cache, "no-store");
+    assert.equal(calls[0].init.credentials, "same-origin");
+    assert.equal(calls[1].init.method, "PUT");
+    assert.deepEqual(JSON.parse(calls[1].init.body), preferences);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rejects an invalid accent returned by the calendar preference API", async () => {
+  globalThis.fetch = async () => response({
+    preferences: {
+      theme: "minimal-light",
+      accentColor: "#ffffff; color: red",
+      density: "comfortable",
+      weekStartsOn: 0,
+      timeZone: "UTC",
+    },
+  });
+
+  try {
+    await assert.rejects(
+      fetchCalendarPreferences(),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
 
 function proposedOccurrences() {
   return [1, 8, 15, 22].map((day) => {
