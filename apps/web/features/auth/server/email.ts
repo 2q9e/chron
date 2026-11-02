@@ -1,3 +1,4 @@
+import { Temporal } from "@js-temporal/polyfill";
 import nodemailer from "nodemailer";
 import { AuthConfigurationError } from "./environment.ts";
 
@@ -20,6 +21,33 @@ type SmtpConfiguration = Readonly<{
   password: string;
   sender: string;
 }>;
+
+export type CalendarReminderEmailInput = Readonly<{
+  recipient: string;
+  eventKind: "timed" | "all-day";
+  eventStart: string;
+  timeZone: string;
+}>;
+
+export type CalendarReminderEmailContent = Readonly<{
+  subject: string;
+  text: string;
+}>;
+
+export class CalendarReminderDeliveryError extends Error {
+  readonly code: "INVALID_RECIPIENT" | "INVALID_SCHEDULE" | "SMTP_CONFIGURATION" | "SMTP_REJECTED" | "SMTP_TRANSIENT";
+  readonly retryable: boolean;
+
+  constructor(
+    code: "INVALID_RECIPIENT" | "INVALID_SCHEDULE" | "SMTP_CONFIGURATION" | "SMTP_REJECTED" | "SMTP_TRANSIENT",
+    retryable: boolean,
+  ) {
+    super("Chron could not deliver a calendar reminder.");
+    this.name = "CalendarReminderDeliveryError";
+    this.code = code;
+    this.retryable = retryable;
+  }
+}
 
 function requireSmtpValue(name: string): string {
   const value = process.env[name]?.trim();
@@ -75,6 +103,79 @@ function createTransport(configuration: SmtpConfiguration) {
   });
 }
 
+function applicationCalendarURL(): string {
+  const configured = process.env.BETTER_AUTH_URL?.trim();
+  if (!configured) throw new AuthConfigurationError("Missing application origin for calendar email links.");
+
+  let origin: URL;
+  try {
+    origin = new URL(configured);
+  } catch {
+    throw new AuthConfigurationError("The application origin for calendar email links is invalid.");
+  }
+
+  const loopback = ["localhost", "127.0.0.1", "[::1]"].includes(origin.hostname);
+  if ((origin.protocol !== "https:" && !(loopback && origin.protocol === "http:"))
+    || origin.username || origin.password || origin.pathname !== "/" || origin.search || origin.hash) {
+    throw new AuthConfigurationError("Public calendar email links require an HTTPS application origin.");
+  }
+
+  return new URL("/calendar", origin).href;
+}
+
+export function buildCalendarReminderEmail(
+  message: Omit<CalendarReminderEmailInput, "recipient">,
+): CalendarReminderEmailContent {
+  const timeZone = message.timeZone;
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone }).format(0);
+  } catch {
+    throw new CalendarReminderDeliveryError("INVALID_SCHEDULE", false);
+  }
+
+  let eventTime: string;
+  if (message.eventKind === "timed") {
+    const instant = new Date(message.eventStart);
+    if (!Number.isFinite(instant.valueOf())) {
+      throw new CalendarReminderDeliveryError("INVALID_SCHEDULE", false);
+    }
+    eventTime = new Intl.DateTimeFormat("en-US", {
+      dateStyle: "full",
+      timeStyle: "short",
+      timeZone,
+    }).format(instant);
+  } else {
+    try {
+      const date = Temporal.PlainDate.from(message.eventStart, { overflow: "reject" });
+      if (date.toString() !== message.eventStart) throw new RangeError("Invalid date");
+      eventTime = `all day on ${date.toLocaleString("en-US", { dateStyle: "full" })}`;
+    } catch {
+      throw new CalendarReminderDeliveryError("INVALID_SCHEDULE", false);
+    }
+  }
+
+  return {
+    subject: "Your Chron calendar reminder",
+    text: `A calendar event is scheduled for ${eventTime} (${timeZone}).\n\nOpen your Chron calendar: ${applicationCalendarURL()}`,
+  };
+}
+
+async function sendTextEmail(recipient: string, subject: string, text: string): Promise<void> {
+  const configuration = getSmtpConfiguration();
+  const transport = createTransport(configuration);
+
+  try {
+    await transport.sendMail({
+      from: configuration.sender,
+      to: recipient,
+      subject,
+      text,
+    });
+  } finally {
+    transport.close();
+  }
+}
+
 export function isValidAuthActionURL(message: Pick<
   AuthEmail,
   "actionURL" | "expectedOrigin" | "expectedPath" | "token" | "tokenLocation"
@@ -102,17 +203,35 @@ export async function sendAuthEmail(message: AuthEmail): Promise<void> {
   }
 
   const action = new URL(message.actionURL);
-  const configuration = getSmtpConfiguration();
-  const transport = createTransport(configuration);
+  await sendTextEmail(
+    message.recipient,
+    message.subject,
+    `${message.instructions}\n\n${action.href}\n\nIf you did not request this, you can ignore this email.`,
+  );
+}
+
+export async function sendCalendarReminderEmail(
+  message: CalendarReminderEmailInput,
+): Promise<void> {
+  if (message.recipient.length > 320 || /[\r\n\u0000]/u.test(message.recipient)
+    || !message.recipient.includes("@")) {
+    throw new CalendarReminderDeliveryError("INVALID_RECIPIENT", false);
+  }
 
   try {
-    await transport.sendMail({
-      from: configuration.sender,
-      to: message.recipient,
-      subject: message.subject,
-      text: `${message.instructions}\n\n${action.href}\n\nIf you did not request this, you can ignore this email.`,
-    });
-  } finally {
-    transport.close();
+    const content = buildCalendarReminderEmail(message);
+    await sendTextEmail(message.recipient, content.subject, content.text);
+  } catch (error) {
+    if (error instanceof CalendarReminderDeliveryError) throw error;
+    if (error instanceof AuthConfigurationError) {
+      throw new CalendarReminderDeliveryError("SMTP_CONFIGURATION", false);
+    }
+    const responseCode = error && typeof error === "object" && "responseCode" in error
+      ? (error as { responseCode?: unknown }).responseCode
+      : undefined;
+    if (typeof responseCode === "number" && responseCode >= 500) {
+      throw new CalendarReminderDeliveryError("SMTP_REJECTED", false);
+    }
+    throw new CalendarReminderDeliveryError("SMTP_TRANSIENT", true);
   }
 }
