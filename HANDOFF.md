@@ -2,6 +2,28 @@
 
 ## Current checkpoint — 2026-11-02
 
+Visible-range `.ics` exports now preserve each known explicit event category:
+class, assignment, exam, study, personal, and other. Missing, null, and
+unrecognized legacy values are omitted. Tests cover all category mappings,
+all-day events, and recurring timed events.
+
+Task/review notes were pushed in `e5f7013 update`; serializer and tests were
+pushed in `8946d55 improve`. Both are on the sole published `main` branch,
+authored as `2q9e`, with the Git remote set to HTTPS. The 67-test calendar
+domain suite, typecheck, lint, and diff check pass locally. Independent
+read-only review found no actionable issue. GitHub Actions run `41472151344`
+passed. The staging calendar responds over HTTPS with
+a sign-in redirect and HSTS; this source change has not been deployed, and
+signed-in export behavior was not browser verified. No VPS files or services
+were changed.
+
+Next: continue the calendar-first roadmap on `main`, keep the landing page
+paused, and browser-verify export with an authorized test account when
+available. Use HTTPS for GitHub and `https://testing.uwu.markets`; do not edit
+unrelated VPS files or services.
+
+## Current checkpoint — 2026-11-02
+
 Calendar visible-range `.ics` export now shares a cancellable single-flight
 runner. The workspace aborts it on sign-out, navigation, view/time-zone change,
 editor entry, and component cleanup. The runner ignores stale successes and

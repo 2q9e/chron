@@ -83,8 +83,11 @@ credentials or private data.
   snapshots with no new dependency, placeholder, or mutation to stored events.
 - **Status:** Serializer and regression tests are implemented. The 67-test
   calendar-domain suite, typecheck, lint, and diff check pass locally. An
-  independent read-only review found no actionable issue. No source push or
-  staging deploy has occurred yet.
+  independent read-only review found no actionable issue. Task notes were
+  pushed in `e5f7013`; source/tests were pushed in `8946d55` to the only
+  published branch, `main`, authored as `2q9e` through HTTPS. GitHub Actions
+  run `41472151344` passed. No staging deployment was performed; no VPS files
+  or services were changed.
 
 ## C1-focus-return — calendar create-editor focus restoration
 

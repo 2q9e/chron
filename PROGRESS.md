@@ -2,6 +2,23 @@
 
 ## Current checkpoint — 2026-11-02
 
+Visible-range iCalendar exports now carry the event's explicit category for
+class, assignment, exam, study, personal, and other events. Missing, null, and
+unrecognized legacy categories are omitted. The focused cases cover all-day,
+timed, and recurring events.
+
+Task/review notes were pushed in `e5f7013 update`; serializer and regression
+tests were pushed in `8946d55 improve`. Both commits are on the single `main`
+branch, authored as `2q9e`, through the HTTPS Git remote. The 67-test calendar
+domain suite, typecheck, lint, and diff check pass locally. An independent
+read-only review found no actionable issue. GitHub Actions run `41472151344`
+passed. The HTTPS staging calendar responds with a
+sign-in redirect and HSTS; this source change has not been deployed and
+signed-in export behavior has not been browser verified. No VPS files or
+services were changed.
+
+## Current checkpoint — 2026-11-02
+
 Visible-range calendar export now uses an abortable single-flight lifecycle.
 It cancels on sign-out, editor entry, navigation, view/time-zone changes, and
 component cleanup; a stale response cannot download an `.ics` file or override
