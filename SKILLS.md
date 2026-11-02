@@ -1956,7 +1956,7 @@ This is development guidance, not user-facing product content. Do not ship sampl
 - **Name:** SSRF-safe retrieval
 - **Purpose:** Prevent URL fetches reaching private services
 - **When to use:** When backend retrieves web sources
-- **Implementation approach:** Allow HTTP(S), block private IPs, recheck redirects
+- **Implementation approach:** Require HTTPS, block private IPs, recheck redirects
 - **Recommended tools:** WHATWG URL, egress proxy
 - **Security considerations:** Reject loopback, link-local, private, metadata targets
 - **Verification method:** Test redirect chains to private addresses

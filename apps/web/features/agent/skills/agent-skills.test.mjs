@@ -117,6 +117,22 @@ test("missing web access remains visible and cannot be represented as research",
   assert.ok(plan.reasons.some((reason) => reason.includes("no source lookup may be claimed")));
 });
 
+test("prepared web research instructions require HTTPS-only source retrieval", () => {
+  const prepared = prepareAgentTurn(
+    {
+      ...userOnlyRequest,
+      task: "research",
+      usesUserMaterials: false,
+      userMaterialsOnly: false,
+    },
+    new Set(["research.web.read", "inference.meta.authorized"]),
+  );
+
+  assert.equal(prepared.status, "ready");
+  assert.ok(prepared.instructions.includes("Allow only public HTTPS destinations"));
+  assert.ok(!prepared.instructions.includes("Allow only public HTTP or HTTPS"));
+});
+
 test("Meta inference permission is required before agent instructions are prepared", () => {
   const request = {
     ...userOnlyRequest,
@@ -234,6 +250,7 @@ test("citations must resolve to the right owner, source version, role, and exact
       makeWebCitation({ citationId: "citation-d", sourceId: "deleted-from-index", sourceDeleted: true }),
       makeWebCitation({ citationId: "citation-e", sourceChangedSinceRetrieval: true }),
       makeWebCitation({ citationId: "citation-f", excerptEnd: 2 }),
+      makeWebCitation({ citationId: "citation-http", url: "http://records.example.org/item" }),
     ],
     sources,
     expectedOwnerId: "user-a",
@@ -247,6 +264,7 @@ test("citations must resolve to the right owner, source version, role, and exact
   assert.ok(codes.has("deleted-source"));
   assert.ok(codes.has("changed-source"));
   assert.ok(codes.has("excerpt-range-mismatch"));
+  assert.ok(issues.some((issue) => issue.citationId === "citation-http" && issue.code === "invalid-source-url"));
   assert.ok(codes.has("unknown-citation"));
   assert.ok(codes.has("uncited-sourced-claim"));
 });

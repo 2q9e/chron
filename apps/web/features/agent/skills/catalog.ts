@@ -276,7 +276,7 @@ export const builtinAgentSkills = [
     doNotUseWhen: "No external URL is requested or opened.",
     requiredCapabilities: web,
     workflow: [
-      "Allow only public HTTP or HTTPS destinations; reject credentials in URLs and non-public, loopback, link-local, private, or reserved IP ranges.",
+      "Allow only public HTTPS destinations; reject plain HTTP, credentials in URLs, and non-public, loopback, link-local, private, or reserved IP ranges.",
       "Revalidate DNS and destination on every redirect and connection to prevent SSRF and rebinding.",
       "Bound redirects, response bytes, content types, elapsed time, and extracted text; stop on policy violation or limit.",
       "Do not fetch cloud metadata, internal service names, authenticated user sessions, or arbitrary network protocols.",
