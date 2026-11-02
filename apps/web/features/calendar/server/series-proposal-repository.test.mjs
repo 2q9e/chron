@@ -452,7 +452,23 @@ class SeriesProposalPool {
         }
         if (statement.startsWith("INSERT INTO calendar_event_reminders")) {
           if (statement.includes("jsonb_to_recordset")) {
-            this.reminderJobs.push(...JSON.parse(values[3]));
+            const jobs = JSON.parse(values[3]);
+            this.reminderJobs.push(...jobs.map((job) => ({
+              id: job.id,
+              user_id: values[0],
+              event_id: values[1],
+              event_revision: values[2],
+              occurrence_key: job.occurrence_key,
+              scheduled_at: job.scheduled_at,
+              time_zone: job.time_zone,
+              next_attempt_at: job.scheduled_at,
+              status: "pending",
+              attempt_count: 0,
+              lease_token: null,
+              lease_expires_at: null,
+              sent_at: null,
+              last_error_code: null,
+            })));
           } else {
             const [id, user_id, event_id, event_revision, occurrence_key, scheduled_at, time_zone] = values;
             const occurrenceWasAttempted = this.reminderJobs.some((job) =>
@@ -587,9 +603,9 @@ test("approved recurring reminders are generated per finite occurrence", async (
   assert.equal(approval.event.reminderChoice, "event-day-9am");
   assert.equal(approval.event.reminderTimeZone, "America/Montreal");
   assert.equal(pool.reminderJobs.length, 3);
-  assert.equal(new Set(pool.reminderJobs.map(({ occurrenceKey }) => occurrenceKey)).size, 3);
+  assert.equal(new Set(pool.reminderJobs.map(({ occurrence_key }) => occurrence_key)).size, 3);
   assert.deepEqual(
-    pool.reminderJobs.map(({ scheduledAt, timeZone }) => [scheduledAt, timeZone]),
+    pool.reminderJobs.map(({ scheduled_at, time_zone }) => [scheduled_at, time_zone]),
     [
       ["2026-11-02T14:00:00Z", "America/Montreal"],
       ["2026-11-09T14:00:00Z", "America/Montreal"],

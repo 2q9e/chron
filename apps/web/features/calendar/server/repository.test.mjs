@@ -131,9 +131,9 @@ test("persists an opted-in timed reminder with its event in the owner transactio
   assert.match(reminderInsert.sql, /WHERE job\.scheduled_at > clock_timestamp\(\)/u);
   assert.deepEqual(reminderInsert.values.slice(0, 3), [ownerId, eventId, 1]);
   const [job] = JSON.parse(reminderInsert.values[3]);
-  assert.equal(job.occurrenceKey, `${eventId}:single`);
-  assert.equal(job.scheduledAt, "2026-11-10T13:45:00Z");
-  assert.equal(job.timeZone, "America/Montreal");
+  assert.equal(job.occurrence_key, `${eventId}:single`);
+  assert.equal(job.scheduled_at, "2026-11-10T13:45:00Z");
+  assert.equal(job.time_zone, "America/Montreal");
   assert.equal(calls.at(-1).sql, "COMMIT");
 });
 
@@ -187,7 +187,7 @@ test("updates cancel stale reminder work and insert only the current revision", 
   assert.ok(insert);
   assert.deepEqual(insert.values.slice(0, 3), [ownerId, eventId, 2]);
   const [job] = JSON.parse(insert.values[3]);
-  assert.equal(job.scheduledAt, "2026-11-12T13:30:00Z");
+  assert.equal(job.scheduled_at, "2026-11-12T13:30:00Z");
   assert.equal(calls.at(-1).sql, "COMMIT");
 });
 
@@ -237,9 +237,9 @@ test("captures the calendar zone for an all-day reminder without storing event t
   const reminderInsert = calls.find(({ sql }) => sql.includes("INSERT INTO calendar_event_reminders"));
   assert.ok(reminderInsert);
   const [job] = JSON.parse(reminderInsert.values[3]);
-  assert.equal(job.scheduledAt, "2026-11-09T14:00:00Z");
-  assert.equal(job.timeZone, "America/Montreal");
-  assert.deepEqual(Object.keys(job).sort(), ["id", "occurrenceKey", "scheduledAt", "timeZone"]);
+  assert.equal(job.scheduled_at, "2026-11-09T14:00:00Z");
+  assert.equal(job.time_zone, "America/Montreal");
+  assert.deepEqual(Object.keys(job).sort(), ["id", "occurrence_key", "scheduled_at", "time_zone"]);
   assert.equal(JSON.stringify(job).includes("Private location"), false);
 });
 

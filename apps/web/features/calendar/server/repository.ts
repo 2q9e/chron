@@ -581,7 +581,13 @@ async function insertCalendarReminderJobs(
   blockedOccurrenceKeys: ReadonlySet<string> = new Set(),
 ): Promise<void> {
   const jobs = reminderJobsForEvent(event, cancelledOccurrenceKeys, movements)
-    .filter(({ occurrenceKey }) => !blockedOccurrenceKeys.has(occurrenceKey));
+    .filter(({ occurrenceKey }) => !blockedOccurrenceKeys.has(occurrenceKey))
+    .map(({ id, occurrenceKey, scheduledAt, timeZone }) => ({
+      id,
+      occurrence_key: occurrenceKey,
+      scheduled_at: scheduledAt,
+      time_zone: timeZone,
+    }));
   if (jobs.length === 0) return;
 
   await client.query(
