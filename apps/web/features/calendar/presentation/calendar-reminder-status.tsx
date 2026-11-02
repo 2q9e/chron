@@ -58,9 +58,15 @@ export function CalendarReminderStatus({ event }: { event: CalendarEvent }) {
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted) return;
+        const offline = reason instanceof CalendarRequestError
+          && reason.code === "NETWORK_ERROR"
+          && typeof navigator !== "undefined"
+          && !navigator.onLine;
         setState({
           kind: "error",
-          message: reason instanceof Error ? reason.message : "Chron could not load saved reminder status.",
+          message: offline
+            ? "You’re offline. Reminder status isn’t cached. Reconnect and retry to check the saved delivery state."
+            : reason instanceof Error ? reason.message : "Chron could not load saved reminder status.",
           signInRequired: reason instanceof CalendarRequestError && reason.status === 401,
         });
       });
