@@ -4,7 +4,7 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 615 non-merge commits after this
+remote branch. Public `main` contains 617 non-merge commits after this
 checkpoint. The reminder event and outbox integration was pushed as
 `be722e9`; bounded reminder delivery source was pushed in six small commits
 through `f44ed03`. Public history exceeds 600 non-merge commits. New commits
@@ -51,6 +51,10 @@ rendering remain unverified. A focused security diff review of these ten
 changed files found no source candidates; it ran sequentially without an
 isolated independent reviewer. Staging is HTTPS-only; `testing.uwu.markets`
 has no DNS record, so there is no HTTP fallback.
+Follow-up commit `42f789b` enforces HTTPS for every non-loopback
+`BETTER_AUTH_URL` in all environments; loopback HTTP remains available for
+local development. The auth configuration/email suite now passes 14 tests,
+with typecheck and lint passing.
 Drag scheduling, external sync, database-backed runtime verification, and a
 real authenticated browser walkthrough remain open.
 C-01 through C-14 have
@@ -221,7 +225,7 @@ awaits narrow and zoom browser checks.
   still unverified without configured PostgreSQL/auth services.
 - After `a906351`, calendar domain/time tests passed (39), typecheck passed, and
   lint passed. The current reminder increment passes calendar API/server (89),
-  auth-config/email (13), scheduler (2), calendar time (39), layout (34), and
+  auth-config/email (14), scheduler (2), calendar time (39), layout (34), and
   recovery (5) tests, plus typecheck and lint. No production build was run
   because free disk space is low. No configured database, authenticated browser,
   migration execution, or SMTP delivery was verified.

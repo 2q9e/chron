@@ -125,8 +125,10 @@ C1-rmd0 time and delivery contract
 - **Status:** Implemented in source across the repository claim/outcome methods,
   bounded delivery worker, private bearer-protected route, and the separate
   Cloudflare Cron scheduler. Email links and the fixed scheduler endpoint use
-  HTTPS; public HTTP origins fail closed. Calendar API/server (85), auth/email
-  (13), and scheduler (2) tests pass with the calendar time/layout/recovery
+  HTTPS; public HTTP origins fail closed. Follow-up auth configuration enforces
+  HTTPS for non-loopback origins in every environment, permitting loopback HTTP
+  only for local development. Calendar API/server (85), auth/email (14), and
+  scheduler (2) tests pass with the calendar time/layout/recovery
   suites, lint, and typecheck. PostgreSQL migrations were not applied, SMTP was
   not contacted, and the scheduler was not deployed. `testing.uwu.markets` has
   no Cloudflare DNS record, so HTTPS staging cannot resolve. This is source

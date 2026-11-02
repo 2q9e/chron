@@ -41,7 +41,9 @@ calculated local delivery time before saving. A private, authenticated status
 read and editor panel now show persisted job counts and safe failure categories.
 Database-backed behavior, SMTP delivery, and staging remain unverified. Public
 staging and email URLs must use HTTPS; the testing hostname currently has no
-DNS record. Drag scheduling, external sync, and a real database/browser
+DNS record. Non-loopback authentication origins are enforced as HTTPS in every
+environment; loopback HTTP is accepted only for local development. Drag
+scheduling, external sync, and a real database/browser
 walkthrough remain open until integrated and verified. See
 `docs/architecture/calendar-reminders.md` for the reminder dependency graph
 and acceptance criteria.

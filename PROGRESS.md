@@ -31,9 +31,11 @@ calculated local delivery-time preview. Commits `162f358`, `e50477b`,
 `4b6eb42`, and `b0395ec` add an authenticated owner-scoped status read,
 bounded sanitized delivery summaries, and editor status, retry, failure,
 empty, and offline states. Status source is implemented; database-backed
-delivery, SMTP, and staging remain unverified. All work remains on the same
-`main` branch; this documentation checkpoint brings public history to 615
-non-merge commits.
+delivery, SMTP, and staging remain unverified. Commit `42f789b` now enforces
+HTTPS for non-loopback authentication origins in every environment; loopback
+HTTP is accepted only for local development. Its 14 auth-configuration/email
+tests, typecheck, and lint pass. All work remains on the same `main` branch;
+this documentation checkpoint brings public history to 617 non-merge commits.
 
 The focused Codex Security diff review covered all ten changed files from
 `c7d9771` through `b0395ec` and found no source candidates. It was a sequential
@@ -254,7 +256,7 @@ database, browser, SMTP, and staging checks remain open.
   @chron/web` passed. No production build, database, authenticated browser, or
   reminder delivery has been verified.
 - Current reminder source verification: calendar API/server tests (89), auth
-  config/email tests (13), scheduler tests (2), calendar time (39), layout (34),
+  config/email tests (14), scheduler tests (2), calendar time (39), layout (34),
   and recovery (5) pass. Typecheck and lint pass. The HTTPS probe to the staging
   hostname cannot resolve because its DNS record is absent. No database,
   scheduler deployment, SMTP send, or browser reminder flow was exercised.
