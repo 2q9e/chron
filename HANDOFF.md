@@ -3,10 +3,11 @@
 ## Current state
 
 Chron is a standalone repository on public GitHub `main`. At the start of this
-checkpoint, local and remote `main` matched at code commit `a906351`; `main` is
-the only remote branch. Public history had 596 non-merge commits with file
-changes before this checkpoint; this handoff snapshot records 597 after the
-progress/documentation update. New commits are authored as `2q9e`, not `codex`.
+checkpoint, local and remote `main` matched at code commit `4673380`; `main` is
+the only remote branch. The reminder event and outbox integration was pushed
+as `be722e9`. Public history had 598 non-merge commits with file changes
+before this checkpoint; this handoff checkpoint brings it to 600. New commits
+are authored as `2q9e`, not `codex`.
 The calendar API, protected route, sign-in, views, preferences, and conflict
 review are pushed. Idempotent event creation, safe recovery, reload-safe focus,
 and accessible short-event targets were pushed as `f304c19` and `ec93688`;
@@ -32,8 +33,10 @@ creation, review, update, delete, explicit approval, and uncertain-approval
 recovery are implemented and pushed through `f66e449` on the single public
 `main` branch. Reminder policy and task dependencies are committed in
 `f75155f`; the DST-aware reminder time calculator and its tests are pushed
-through `a906351`. The calculator is not yet connected to event persistence,
-an outbox, delivery, or the UI, so reminders are not available in the product.
+through `a906351`. Reminder choices and a durable owner-scoped outbox are now
+connected to one-off writes and explicitly approved recurring-series writes.
+The outbox is not yet delivered and the UI has no reminder controls, so
+reminders remain unavailable in the product.
 Drag scheduling, external sync, database-backed runtime verification, and a
 real authenticated browser walkthrough remain open.
 C-01 through C-14 have
@@ -98,13 +101,14 @@ and database-backed verification remains pending.
   in user and retries the same idempotent approval after an uncertain result.
   Source tests pass, but the database-backed and authenticated browser path is
   not verified in this environment.
-- Reminder scheduling contract and dependency graph: `docs/architecture/calendar-reminders.md`.
-  Pure time calculation: `apps/web/features/calendar/domain/reminders.ts`, with
-  11 reminder-specific cases in `reminders.test.mjs`. Choices resolve using
-  event time zones for timed events and the captured calendar zone for all-day
-  events. The existing event types, mutations, persistence, delivery worker,
-  status API, and editor do not use this helper yet; reminders are not
-  user-visible or delivered.
+- Reminder scheduling contract and dependency graph:
+  `docs/architecture/calendar-reminders.md`. Pure time calculation lives in
+  `apps/web/features/calendar/domain/reminders.ts`; event mutations and
+  owner-scoped outbox writes now use its schedules for one-off and approved
+  recurring events. Calendar API and time suites, lint, and typecheck pass.
+  No live PostgreSQL instance is configured, so migration execution and real
+  transaction/RLS behavior are unverified. Delivery worker, status API, and
+  editor controls remain open; reminders are not user-visible or delivered.
 - The user requested staging at `https://testing.uwu.markets` through the
   supplied VPS and Cloudflare setup, without changing other VPS services.
   An HTTPS-only request could not resolve the hostname, and Cloudflare shows no

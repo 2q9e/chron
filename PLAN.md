@@ -33,10 +33,12 @@ protected sign-in/route, day/week/month/agenda views, editable events, themes,
 and a server-side conflict check before approval. Bounded event-title search is
 implemented in source with a date and event-kind filter. Finite recurrence and
 the reminder delivery contract plus DST-aware time calculation are implemented
-in source. Reminder persistence, delivery, editor controls, drag scheduling,
-external sync, and a real database/browser walkthrough remain open until each
-is integrated and verified. See `docs/architecture/calendar-reminders.md` for
-the reminder dependency graph and acceptance criteria.
+in source. Reminder choices and owner-scoped outbox writes now persist
+atomically for one-off events and approved series; delivery and editor controls
+remain open. Drag scheduling, external sync, and a real database/browser
+walkthrough remain open until integrated and verified. See
+`docs/architecture/calendar-reminders.md` for the reminder dependency graph
+and acceptance criteria.
 
 ## Skill library category allocation
 

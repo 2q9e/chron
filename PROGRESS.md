@@ -19,13 +19,13 @@ Calendar layout/API/time suites (29/66/28), typecheck, and lint pass. These
 repository checks do not replace live PostgreSQL or authenticated browser
 verification.
 
-The next C1 increment has begun on the same `main` branch. Reminder policy and
-task dependencies are committed in `f75155f`; the tested DST-aware schedule
-calculator is committed through `a906351`. The calendar time suite now passes
-39 tests; typecheck and lint pass. This calculator is domain code only: event
-mutations do not yet persist reminder choices or outbox jobs, and no reminder
-is scheduled or delivered by the application yet. This checkpoint records 597
-non-merge commits with file changes on the only published branch, `main`.
+The next C1 increment is on the same `main` branch. Reminder policy and task
+dependencies are committed in `f75155f`; the tested DST-aware schedule
+calculator is committed through `a906351`. Event reminder choices and
+transactional outbox persistence were pushed as `be722e9`. No reminder is
+delivered by the application yet. Public history had 598 non-merge commits
+with file changes before this increment; the documentation checkpoint brings
+the single published `main` branch to 600.
 
 ## Completed
 
@@ -123,9 +123,10 @@ non-merge commits with file changes on the only published branch, `main`.
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
-- Continue C1 at C1-rmd1: add the owner-scoped reminder outbox and integrate it
-  atomically with one-off event writes and approved recurring-series writes.
-  Then implement bounded SMTP delivery and truthful editor/status behavior.
+- Continue C1 at C1-rmd2: implement bounded SMTP reminder delivery, then add
+  truthful editor/status behavior. Reminder event choices, schema, and
+  owner-scoped outbox writes are implemented and locally tested; live PostgreSQL
+  execution remains unverified.
   Drag scheduling and external calendar synchronization remain later work.
   PostgreSQL ownership and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only

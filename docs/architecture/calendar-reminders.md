@@ -87,11 +87,20 @@ C1-rmd0 time and delivery contract
   persist, replace, or cancel reminder jobs atomically; RLS and ownership match
   calendar events; uniqueness prevents duplicate jobs for an event revision
   and occurrence.
-- **Tests:** one-off and recurring writes, no-reminder default, opt-out,
-  reschedule, deletion, rollback, duplicate proposal replay and owner scope.
+- **Tests:** one-off and recurring writes, no-reminder default, reschedule,
+  outbox rollback, deletion cascade schema, and owner-scoped migration policy.
 - **Expected deliverables:** migration, repository integration and tests.
-- **Status:** Active; no reminder schema or event/outbox transaction is
-  implemented yet.
+- **Status:** Source implementation complete. Migration
+  `apps/web/db/migrations/0007_calendar_reminders.sql` adds validated reminder
+  choices, an owner/event composite foreign key, RLS, and unique revision and
+  occurrence jobs. Typed validation and repository paths create the outbox in
+  the same transaction as one-off writes and approved series changes; updates
+  cancel stale jobs before inserting the current revision. Tests cover timed
+  and all-day scheduling, finite recurring occurrences, and rollback when the
+  outbox write fails. The calendar API suite passes 75 tests; the calendar
+  time suite passes 39, layout suite 29, recovery suite 5, and auth config suite
+  9. Typecheck and lint pass. A real PostgreSQL migration/application check is
+  still unavailable.
 
 ### C1-rmd2 — bounded email delivery worker
 
