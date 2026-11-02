@@ -1,8 +1,8 @@
 import { Temporal } from "@js-temporal/polyfill";
-import type { CalendarEvent } from "../domain/types.ts";
+import type { CalendarEventEntry } from "../domain/types.ts";
 
 export function calendarSearchEventDateLabel(
-  event: CalendarEvent,
+  event: CalendarEventEntry,
   locale: string,
   displayTimeZone: string,
 ): string {

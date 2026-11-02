@@ -12,6 +12,7 @@ import {
   fetchCalendarReminderStatus,
   saveCalendarPreferences,
   saveStudyPlannerPreferences,
+  searchCalendarEvents,
   updateCalendarEvent,
 } from "./calendar-api.ts";
 
@@ -258,6 +259,39 @@ test("calendar list accepts dated occurrences only when their series root matche
     globalThis.fetch = async () => response({ events: [categorized] });
     await assert.rejects(
       fetchCalendarEvents("2026-06-01", "2026-07-01", "UTC"),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("calendar search accepts selectable occurrences and rejects mismatched series results", async () => {
+  const request = {
+    query: "seminar",
+    from: "2026-06-08",
+    to: "2026-06-15",
+    timeZone: "UTC",
+  };
+  let captured;
+  const searchedOccurrence = occurrence();
+  globalThis.fetch = async (url, init) => {
+    captured = { url, init };
+    return response({ events: [searchedOccurrence] });
+  };
+
+  try {
+    assert.deepEqual(await searchCalendarEvents(request), [searchedOccurrence]);
+    assert.equal(captured.url, "/api/calendar/events/search");
+    assert.equal(captured.init.method, "POST");
+    assert.equal(captured.init.credentials, "same-origin");
+    assert.deepEqual(JSON.parse(captured.init.body), request);
+
+    const invalid = occurrence();
+    invalid.seriesId = "another-series";
+    globalThis.fetch = async () => response({ events: [invalid] });
+    await assert.rejects(
+      searchCalendarEvents(request),
       (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
     );
   } finally {

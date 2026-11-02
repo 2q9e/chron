@@ -52,6 +52,10 @@ import { CalendarRouteError, calendarSearchTimeoutError } from "./errors.ts";
 
 const maximumEventsPerRange = 1000;
 const maximumEventsPerSearch = 1000;
+const maximumSearchCandidateRows = 10_000;
+// Each of the cancellation and movement reads is capped at half this amount.
+const maximumSearchExceptionRowsPerQuery = 5_000;
+const maximumSearchRecurrenceCandidateWork = 20_000;
 const calendarSearchStatementTimeout = "2000ms";
 const maximumConflictResults = 32;
 const maximumSeriesProposalCandidateRows = 1000;
@@ -1568,6 +1572,7 @@ function occurrencesForCalendarRange(
   range: Readonly<{ fromDate: string; toDate: string; startsAt: string; endsAt: string }>,
   timeZone: string,
   movements: ReadonlyMap<string, CalendarOccurrenceMovement>,
+  onCandidate?: () => void,
 ): readonly CalendarRecurrenceOccurrence[] {
   if (!event.recurrenceRule) return [];
   if (movements.size === 0) {
@@ -1575,9 +1580,9 @@ function occurrencesForCalendarRange(
       fromDate: range.fromDate,
       toDate: range.toDate,
       timeZone,
-    });
+    }, onCandidate);
   }
-  return expandFullCalendarSeries(event, event.recurrenceRule)
+  return expandFullCalendarSeries(event, event.recurrenceRule, onCandidate)
     .map((occurrence) => applySavedOccurrenceMovement(occurrence, movements))
     .filter((occurrence) => occurrenceOverlapsCalendarInterval(
       occurrence,
@@ -1808,9 +1813,11 @@ async function loadCancelledOccurrenceKeys(
   client: PoolClient,
   ownerId: string,
   eventIds: readonly string[],
+  maximumRows?: number,
 ): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
   const uniqueIds = [...new Set(eventIds)];
   if (uniqueIds.length === 0) return new Map();
+  const rowLimit = maximumRows === undefined ? "" : " LIMIT $3";
   const result = await client.query<{
     event_id: string;
     occurrence_key: string;
@@ -1818,9 +1825,16 @@ async function loadCancelledOccurrenceKeys(
     `SELECT event_id, occurrence_key
      FROM calendar_event_occurrence_exceptions
      WHERE user_id = $1 AND event_id = ANY($2::uuid[]) AND is_cancelled
-     ORDER BY event_id, occurrence_key`,
-    [ownerId, uniqueIds],
+     ORDER BY event_id, occurrence_key${rowLimit}`,
+    maximumRows === undefined ? [ownerId, uniqueIds] : [ownerId, uniqueIds, maximumRows + 1],
   );
+  if (maximumRows !== undefined && result.rows.length > maximumRows) {
+    throw new CalendarRouteError(
+      422,
+      "SEARCH_WORK_LIMIT",
+      "Too many occurrence exceptions to verify in one search. Refine the title or narrow the date range and try again.",
+    );
+  }
   const keys = new Map<string, Set<string>>();
   for (const row of result.rows) {
     let eventKeys = keys.get(row.event_id);
@@ -1837,9 +1851,11 @@ async function loadOccurrenceMovements(
   client: PoolClient,
   ownerId: string,
   eventIds: readonly string[],
+  maximumRows?: number,
 ): Promise<CalendarOccurrenceMovements> {
   const uniqueIds = [...new Set(eventIds)];
   if (uniqueIds.length === 0) return new Map();
+  const rowLimit = maximumRows === undefined ? "" : " LIMIT $3";
   const result = await client.query<OccurrenceMovementRow>(
     `SELECT event_id, occurrence_key,
             to_char(moved_start_local, 'YYYY-MM-DD"T"HH24:MI') AS moved_start_local,
@@ -1853,9 +1869,16 @@ async function loadOccurrenceMovements(
      WHERE user_id = $1
        AND event_id = ANY($2::uuid[])
        AND (moved_start_local IS NOT NULL OR moved_start_date IS NOT NULL)
-     ORDER BY event_id, occurrence_key`,
-    [ownerId, uniqueIds],
+     ORDER BY event_id, occurrence_key${rowLimit}`,
+    maximumRows === undefined ? [ownerId, uniqueIds] : [ownerId, uniqueIds, maximumRows + 1],
   );
+  if (maximumRows !== undefined && result.rows.length > maximumRows) {
+    throw new CalendarRouteError(
+      422,
+      "SEARCH_WORK_LIMIT",
+      "Too many occurrence exceptions to verify in one search. Refine the title or narrow the date range and try again.",
+    );
+  }
   const movements = new Map<string, Map<string, CalendarOccurrenceMovement>>();
   for (const row of result.rows) {
     let movement: CalendarOccurrenceMovement;
@@ -3198,7 +3221,7 @@ export class CalendarRepository {
   searchEvents(
     ownerId: string,
     search: CalendarEventSearchRequest,
-  ): Promise<CalendarEvent[]> {
+  ): Promise<CalendarEventEntry[]> {
     const range = resolveCalendarRange(search.from, search.to, search.timeZone);
     const escapedQuery = search.query.replace(/[\\%_]/gu, (character) => `\\${character}`);
     const pattern = `%${escapedQuery}%`;
@@ -3213,9 +3236,41 @@ export class CalendarRepository {
          WHERE user_id = $1
            AND title ILIKE $2 ESCAPE E'\\\\'
            AND (
-             (kind = 'all-day' AND start_date < $4::date AND end_date > $3::date)
+             (
+               recurrence_frequency IS NULL
+               AND (
+                 (kind = 'all-day' AND start_date < $4::date AND end_date > $3::date)
+                 OR
+                 (kind = 'timed' AND starts_at < $7::timestamptz AND ends_at > $6::timestamptz)
+               )
+             )
              OR
-             (kind = 'timed' AND starts_at < $7::timestamptz AND ends_at > $6::timestamptz)
+             (
+               recurrence_frequency IS NOT NULL
+               AND (
+                 (kind = 'all-day' AND start_date < $4::date
+                   AND start_date >= $3::date - 374)
+                 OR
+                 (kind = 'timed' AND starts_at < $7::timestamptz
+                   AND starts_at >= $6::timestamptz - interval '374 days')
+                 OR EXISTS (
+                   SELECT 1
+                   FROM calendar_event_occurrence_exceptions exception
+                   WHERE exception.user_id = $1
+                     AND exception.event_id = calendar_events.id
+                     AND NOT exception.is_cancelled
+                     AND (
+                       (exception.moved_start_local IS NOT NULL
+                         AND exception.moved_starts_at < $7::timestamptz
+                         AND exception.moved_ends_at > $6::timestamptz)
+                       OR
+                       (exception.moved_start_date IS NOT NULL
+                         AND exception.moved_start_date < $4::date
+                         AND exception.moved_end_date > $3::date)
+                     )
+                 )
+               )
+             )
            )
            AND ($8::text IS NULL OR kind = $8::text)
          ORDER BY
@@ -3234,21 +3289,120 @@ export class CalendarRepository {
           range.startsAt,
           range.endsAt,
           search.kind ?? null,
-          maximumEventsPerSearch + 1,
+          maximumSearchCandidateRows + 1,
         ],
       ).catch((error: unknown) => {
         if (isPostgresQueryCancelled(error)) throw calendarSearchTimeoutError();
         throw error;
       });
 
-      if (result.rows.length > maximumEventsPerSearch) {
+      const candidateRowsExceeded = result.rows.length > maximumSearchCandidateRows;
+
+      const eventRows = result.rows.slice(0, maximumSearchCandidateRows).map(toCalendarEvent);
+      let cancelledOccurrenceKeys: ReadonlyMap<string, ReadonlySet<string>>;
+      let occurrenceMovements: CalendarOccurrenceMovements;
+      try {
+        const recurringIds = eventRows
+          .filter((event) => event.recurrenceRule)
+          .map(({ id }) => id);
+        cancelledOccurrenceKeys = await loadCancelledOccurrenceKeys(
+          client,
+          ownerId,
+          recurringIds,
+          maximumSearchExceptionRowsPerQuery,
+        );
+        occurrenceMovements = await loadOccurrenceMovements(
+          client,
+          ownerId,
+          recurringIds,
+          maximumSearchExceptionRowsPerQuery,
+        );
+      } catch (error) {
+        if (isPostgresQueryCancelled(error)) throw calendarSearchTimeoutError();
+        throw error;
+      }
+
+      const events: CalendarEventEntry[] = [];
+      let recurrenceCandidateWork = 0;
+      const onRecurrenceCandidate = () => {
+        recurrenceCandidateWork += 1;
+        if (recurrenceCandidateWork > maximumSearchRecurrenceCandidateWork) {
+          throw new CalendarRouteError(
+            422,
+            "SEARCH_WORK_LIMIT",
+            "Too many recurring events to verify in one search. Refine the title or narrow the date range and try again.",
+          );
+        }
+      };
+      try {
+        for (const event of eventRows) {
+          if (!event.recurrenceRule) {
+            events.push(event);
+          } else {
+            const occurrences = occurrencesForCalendarRange(
+              event,
+              range,
+              search.timeZone,
+              occurrenceMovements.get(event.id) ?? new Map(),
+              onRecurrenceCandidate,
+            );
+            for (const occurrence of occurrences) {
+              if (cancelledOccurrenceKeys.get(event.id)?.has(occurrence.occurrenceKey)) {
+                continue;
+              }
+              events.push({
+                ...occurrence,
+                id: occurrence.occurrenceKey,
+                series: event,
+              });
+              if (events.length > maximumEventsPerSearch) {
+                throw new CalendarRouteError(
+                  422,
+                  "SEARCH_RESULT_LIMIT",
+                  "Refine the title or narrow the date range to see these events.",
+                );
+              }
+            }
+          }
+          if (events.length > maximumEventsPerSearch) {
+            throw new CalendarRouteError(
+              422,
+              "SEARCH_RESULT_LIMIT",
+              "Refine the title or narrow the date range to see these events.",
+            );
+          }
+        }
+      } catch (error) {
+        if (error instanceof CalendarRouteError) throw error;
+        if (error instanceof RangeError || error instanceof RecurrenceError) {
+          throw new CalendarRouteError(
+            422,
+            "RECURRENCE_RANGE_UNVERIFIABLE",
+            "Chron could not verify every recurring event in this search. Narrow the date range and try again.",
+          );
+        }
+        throw error;
+      }
+
+      if (candidateRowsExceeded) {
         throw new CalendarRouteError(
           422,
-          "SEARCH_RESULT_LIMIT",
-          "Refine the title or narrow the date range to see these events.",
+          "SEARCH_WORK_LIMIT",
+          "Too many calendar entries to verify in one search. Refine the title or narrow the date range and try again.",
         );
       }
-      return result.rows.map(toCalendarEvent);
+
+      const startForOrder = (event: CalendarEventEntry) => event.kind === "timed"
+        ? event.startsAt
+        : Temporal.PlainDate.from(event.startDate).toZonedDateTime(search.timeZone).toInstant().toString();
+      const seriesIdForOrder = (event: CalendarEventEntry) =>
+        "series" in event ? event.series.id : event.id;
+      return events.sort((left, right) =>
+        startForOrder(left).localeCompare(startForOrder(right))
+        || seriesIdForOrder(left).localeCompare(seriesIdForOrder(right))
+        || ("occurrenceKey" in left ? left.occurrenceKey : "")
+          .localeCompare("occurrenceKey" in right ? right.occurrenceKey : ""),
+      );
     });
   }
 

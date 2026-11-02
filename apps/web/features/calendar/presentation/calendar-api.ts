@@ -751,7 +751,7 @@ export function prepareCalendarEventSearchRequest(
 export async function searchCalendarEvents(
   request: CalendarEventSearchRequest,
   signal?: AbortSignal,
-): Promise<readonly CalendarEvent[]> {
+): Promise<readonly CalendarEventEntry[]> {
   let response: Response;
   try {
     response = await fetch("/api/calendar/events/search", {
@@ -775,7 +775,7 @@ export async function searchCalendarEvents(
   }
   if (!response.ok) throw await readCalendarError(response);
   const payload = await parseJson(response);
-  if (!isRecord(payload) || !Array.isArray(payload.events) || !payload.events.every(isCalendarEvent)) {
+  if (!isRecord(payload) || !Array.isArray(payload.events) || !payload.events.every(isCalendarEventEntry)) {
     throw new CalendarRequestError(
       "Chron returned search results in an unexpected format. Search again to retry.",
       response.status,

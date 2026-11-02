@@ -291,7 +291,7 @@ export type CalendarEventSearchRequest = Readonly<{
 }>;
 
 export type CalendarEventSearchResponse = Readonly<{
-  events: readonly CalendarEvent[];
+  events: readonly CalendarEventEntry[];
 }>;
 
 export type CalendarConflict =

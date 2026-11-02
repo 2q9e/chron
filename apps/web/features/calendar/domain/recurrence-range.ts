@@ -30,6 +30,7 @@ export function expandCalendarRecurrenceRange(
   series: CalendarEvent,
   rule: RecurrenceRule,
   range: CalendarRecurrenceReadRange,
+  onCandidate?: () => void,
 ): readonly CalendarRecurrenceOccurrence[] {
   const fromDate = parseCalendarDate(range.fromDate);
   const toDate = parseCalendarDate(range.toDate);
@@ -54,7 +55,7 @@ export function expandCalendarRecurrenceRange(
       fromDate: cursor.toString(),
       toDate: sliceEnd.toString(),
       ...(range.timeZone === undefined ? {} : { timeZone: range.timeZone }),
-    });
+    }, onCandidate);
 
     for (const occurrence of occurrences) {
       byKey.set(occurrence.occurrenceKey, occurrence);

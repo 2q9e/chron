@@ -63,6 +63,7 @@ function recurrenceStartDate(series: CalendarEvent): Temporal.PlainDate {
 export function expandFullCalendarSeries(
   series: CalendarEvent,
   ruleValue: CalendarRecurrenceRule,
+  onCandidate?: () => void,
 ): readonly CalendarRecurrenceOccurrence[] {
   const rule = normalizeRecurrenceRule(ruleValue);
   const startDate = recurrenceStartDate(series);
@@ -75,7 +76,7 @@ export function expandFullCalendarSeries(
     toDate: lastCandidateDate.add({ days: 1 }).toString(),
     ...(series.kind === "timed" ? { timeZone: validateTimeZone(series.timeZone) } : {}),
   };
-  return expandCalendarRecurrenceRange(series, rule, range);
+  return expandCalendarRecurrenceRange(series, rule, range, onCandidate);
 }
 
 function singleEventOccurrence(event: CalendarEvent): CalendarRecurrenceOccurrence {

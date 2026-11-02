@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { calendarEventCategoryLabels, type CalendarEvent } from "../domain/types";
+import { calendarEventCategoryLabels, type CalendarEventEntry } from "../domain/types";
 import {
   prepareCalendarEventSearchRequest,
   searchCalendarEvents,
@@ -13,17 +13,17 @@ type Props = {
   locale: string;
   timeZone: string;
   disabled: boolean;
-  onSelect: (event: CalendarEvent, returnFocusTarget: HTMLElement | null) => void;
+  onSelect: (event: CalendarEventEntry, returnFocusTarget: HTMLElement | null) => void;
 };
 
 type SearchState =
   | Readonly<{ status: "idle" | "loading" | "empty" }>
-  | Readonly<{ status: "results"; events: readonly CalendarEvent[] }>
+  | Readonly<{ status: "results"; events: readonly CalendarEventEntry[] }>
   | Readonly<{ status: "error"; message: string }>;
 
 type SearchField = "query" | "from" | "through";
 
-function kindLabel(event: CalendarEvent): string {
+function kindLabel(event: CalendarEventEntry): string {
   return event.kind === "all-day" ? "All day" : "Timed";
 }
 
@@ -135,7 +135,7 @@ export function CalendarSearch({ initialDate, locale, timeZone, disabled, onSele
     });
   }
 
-  function selectEvent(event: CalendarEvent) {
+  function selectEvent(event: CalendarEventEntry) {
     invalidateSearch();
     onSelect(event, searchHeading.current);
   }

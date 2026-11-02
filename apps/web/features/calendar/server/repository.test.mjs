@@ -463,7 +463,10 @@ test("search uses a literal case-insensitive pattern, owner scope, and exclusive
   assert.ok(query);
   assert.match(query.sql, /WHERE user_id = \$1/u);
   assert.ok(query.sql.includes(String.raw`title ILIKE $2 ESCAPE E'\\'`));
-  assert.match(query.sql, /start_date < \$4::date AND end_date > \$3::date/u);
+  assert.match(query.sql, /recurrence_frequency IS NULL[\s\S]*start_date < \$4::date AND end_date > \$3::date/u);
+  assert.match(query.sql, /recurrence_frequency IS NOT NULL[\s\S]*start_date >= \$3::date - 374/u);
+  assert.match(query.sql, /recurrence_frequency IS NOT NULL[\s\S]*starts_at >= \$6::timestamptz - interval '374 days'/u);
+  assert.match(query.sql, /exception\.user_id = \$1/u);
   assert.match(query.sql, /starts_at < \$7::timestamptz AND ends_at > \$6::timestamptz/u);
   assert.match(query.sql, /\$8::text IS NULL OR kind = \$8::text/u);
   assert.match(query.sql, /ORDER BY[\s\S]*AT TIME ZONE \$5::text[\s\S]*,\s+id/u);
@@ -477,7 +480,7 @@ test("search uses a literal case-insensitive pattern, owner scope, and exclusive
     "2026-11-02T05:00:00Z",
     "timed",
   ]);
-  assert.equal(query.values[8], 1001);
+  assert.equal(query.values[8], 10001);
 });
 
 test("search returns only rows scoped to the authenticated owner", async () => {
@@ -539,6 +542,100 @@ test("search returns only rows scoped to the authenticated owner", async () => {
   assert.equal(query.values[0], "owner-one");
 });
 
+test("search expands owner-scoped recurring events and applies moved and cancelled occurrences", async () => {
+  const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const otherOwnerSeriesId = "de305d54-75b4-431b-adb2-eb6b9e546015";
+  const makeSeries = (id, userId) => ({
+    id,
+    user_id: userId,
+    kind: "all-day",
+    title: "Weekly seminar",
+    details: null,
+    category: "class",
+    revision: 3,
+    reminder_choice: "none",
+    reminder_time_zone: null,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-10-05",
+    end_date: "2026-10-06",
+    recurrence_frequency: "weekly",
+    recurrence_interval: 1,
+    recurrence_count: 4,
+    created_at: new Date("2026-10-01T12:00:00.000Z"),
+    updated_at: new Date("2026-10-01T12:00:00.000Z"),
+  });
+  const ownerSeries = makeSeries(seriesId, ownerId);
+  const otherOwnerSeries = makeSeries(otherOwnerSeriesId, "owner-two");
+  const cancelledKey = `${seriesId}:2026-10-12`;
+  const movedKey = `${seriesId}:2026-10-19`;
+  const { pool, calls } = createPool((sql, values) => {
+    if (sql.includes("FROM calendar_events")) {
+      assert.match(sql, /WHERE user_id = \$1/u);
+      return {
+        rows: [ownerSeries, otherOwnerSeries].filter(({ user_id }) => user_id === values[0]),
+      };
+    }
+    if (sql.includes("FROM calendar_event_occurrence_exceptions") && sql.includes("moved_start_local")) {
+      return {
+        rows: [{
+          event_id: seriesId,
+          occurrence_key: movedKey,
+          moved_start_local: null,
+          moved_end_local: null,
+          moved_time_zone: null,
+          moved_starts_at: null,
+          moved_ends_at: null,
+          moved_start_date: "2026-10-14",
+          moved_end_date: "2026-10-15",
+        }],
+      };
+    }
+    if (sql.includes("FROM calendar_event_occurrence_exceptions") && sql.includes("is_cancelled")) {
+      return { rows: [{ event_id: seriesId, occurrence_key: cancelledKey }] };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  const events = await repository.searchEvents(ownerId, {
+    query: "seminar",
+    from: "2026-10-12",
+    to: "2026-10-27",
+    timeZone: "UTC",
+  });
+
+  assert.deepEqual(events.map((event) => ({
+    id: event.id,
+    occurrenceKey: "occurrenceKey" in event ? event.occurrenceKey : null,
+    startDate: event.kind === "all-day" ? event.startDate : null,
+    seriesId: "series" in event ? event.series.id : null,
+  })), [
+    {
+      id: movedKey,
+      occurrenceKey: movedKey,
+      startDate: "2026-10-14",
+      seriesId,
+    },
+    {
+      id: `${seriesId}:2026-10-26`,
+      occurrenceKey: `${seriesId}:2026-10-26`,
+      startDate: "2026-10-26",
+      seriesId,
+    },
+  ]);
+  const eventQuery = calls.find(({ sql }) => sql.includes("FROM calendar_events"));
+  assert.equal(eventQuery.values[0], ownerId);
+  const exceptionQueries = calls.filter(({ sql }) =>
+    sql.startsWith("SELECT event_id, occurrence_key"),
+  );
+  assert.equal(exceptionQueries.length, 2);
+  assert.ok(exceptionQueries.every(({ values }) => values[0] === ownerId));
+});
+
 test("search treats the kind filter as optional and rejects more than 1,000 matches", async () => {
   let rows = [];
   const { pool, calls } = createPool((sql) => (
@@ -555,7 +652,7 @@ test("search treats the kind filter as optional and rejects more than 1,000 matc
   assert.deepEqual(await repository.searchEvents(ownerId, search), []);
   let query = calls.find(({ sql }) => sql.includes("FROM calendar_events"));
   assert.equal(query.values[7], null);
-  assert.equal(query.values[8], 1001);
+  assert.equal(query.values[8], 10001);
 
   rows = Array.from({ length: 1001 }, (_, index) => ({
     id: `de305d54-75b4-431b-adb2-eb6b9e54${String(index).padStart(4, "0")}`,
@@ -578,7 +675,257 @@ test("search treats the kind filter as optional and rejects more than 1,000 matc
     (error) => error.code === "SEARCH_RESULT_LIMIT" && error.status === 422,
   );
   query = calls.filter(({ sql }) => sql.includes("FROM calendar_events")).at(-1);
-  assert.equal(query.values[8], 1001);
+  assert.equal(query.values[8], 10001);
+});
+
+test("search ignores more than 1,000 stale recurring series without calling them results", async () => {
+  const rows = Array.from({ length: 1001 }, (_, index) => ({
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    kind: "all-day",
+    title: "Weekly seminar",
+    details: null,
+    category: "class",
+    revision: 1,
+    reminder_choice: "none",
+    reminder_time_zone: null,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-10-31",
+    end_date: "2026-11-01",
+    recurrence_frequency: "daily",
+    recurrence_interval: 1,
+    recurrence_count: 1,
+    created_at: new Date("2026-10-01T12:00:00.000Z"),
+    updated_at: new Date("2026-10-01T12:00:00.000Z"),
+  }));
+  const { pool, calls } = createPool((sql) => (
+    sql.includes("FROM calendar_events") ? { rows } : { rows: [] }
+  ));
+  const repository = new CalendarRepository(pool);
+
+  const events = await repository.searchEvents(ownerId, {
+    query: "seminar",
+    from: "2026-11-01",
+    to: "2026-11-02",
+    timeZone: "UTC",
+  });
+
+  assert.deepEqual(events, []);
+  const query = calls.find(({ sql }) => sql.includes("FROM calendar_events"));
+  assert.equal(query.values[8], 10001);
+});
+
+test("search bounds cumulative recurring-occurrence expansion work", async () => {
+  const rows = Array.from({ length: 55 }, (_, index) => ({
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    kind: "all-day",
+    title: "Daily review",
+    details: null,
+    category: "study",
+    revision: 1,
+    reminder_choice: "none",
+    reminder_time_zone: null,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-01-01",
+    end_date: "2026-01-02",
+    recurrence_frequency: "daily",
+    recurrence_interval: 1,
+    recurrence_count: 366,
+    created_at: new Date("2026-10-01T12:00:00.000Z"),
+    updated_at: new Date("2026-10-01T12:00:00.000Z"),
+  }));
+  const { pool } = createPool((sql) => (
+    sql.includes("FROM calendar_events") ? { rows } : { rows: [] }
+  ));
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(
+    repository.searchEvents(ownerId, {
+      query: "review",
+      from: "2026-11-01",
+      to: "2026-11-02",
+      timeZone: "UTC",
+    }),
+    (error) => error.code === "SEARCH_WORK_LIMIT" && error.status === 422,
+  );
+});
+
+test("search bounds exception rows before building occurrence maps", async () => {
+  const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const series = {
+    id: seriesId,
+    kind: "all-day",
+    title: "Daily review",
+    details: null,
+    category: "study",
+    revision: 1,
+    reminder_choice: "none",
+    reminder_time_zone: null,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-01-01",
+    end_date: "2026-01-02",
+    recurrence_frequency: "daily",
+    recurrence_interval: 1,
+    recurrence_count: 366,
+    created_at: new Date("2026-10-01T12:00:00.000Z"),
+    updated_at: new Date("2026-10-01T12:00:00.000Z"),
+  };
+  const { pool, calls } = createPool((sql) => {
+    if (sql.includes("FROM calendar_events")) return { rows: [series] };
+    if (sql.includes("FROM calendar_event_occurrence_exceptions") && sql.includes("is_cancelled")) {
+      return {
+        rows: Array.from({ length: 5001 }, (_, index) => ({
+          event_id: seriesId,
+          occurrence_key: `${seriesId}:2026-01-${String(index + 1).padStart(2, "0")}`,
+        })),
+      };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(
+    repository.searchEvents(ownerId, {
+      query: "review",
+      from: "2026-11-01",
+      to: "2026-11-02",
+      timeZone: "UTC",
+    }),
+    (error) => error.code === "SEARCH_WORK_LIMIT" && error.status === 422,
+  );
+
+  const cancellationQuery = calls.find(({ sql }) =>
+    sql.startsWith("SELECT event_id, occurrence_key") && sql.includes("is_cancelled"),
+  );
+  assert.match(cancellationQuery.sql, /LIMIT \$3/u);
+  assert.equal(cancellationQuery.values[2], 5001);
+  assert.equal(calls.some(({ sql }) => sql.includes("moved_start_local AS")), false);
+});
+
+test("search bounds moved-occurrence rows before building movement maps", async () => {
+  const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const series = {
+    id: seriesId,
+    kind: "all-day",
+    title: "Daily review",
+    details: null,
+    category: "study",
+    revision: 1,
+    reminder_choice: "none",
+    reminder_time_zone: null,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-01-01",
+    end_date: "2026-01-02",
+    recurrence_frequency: "daily",
+    recurrence_interval: 1,
+    recurrence_count: 366,
+    created_at: new Date("2026-10-01T12:00:00.000Z"),
+    updated_at: new Date("2026-10-01T12:00:00.000Z"),
+  };
+  const { pool, calls } = createPool((sql) => {
+    if (sql.includes("FROM calendar_events")) return { rows: [series] };
+    if (sql.startsWith("SELECT event_id, occurrence_key") && sql.includes("is_cancelled")) {
+      return { rows: [] };
+    }
+    if (sql.startsWith("SELECT event_id, occurrence_key") && sql.includes("moved_start_local")) {
+      return {
+        rows: Array.from({ length: 5001 }, (_, index) => ({
+          event_id: seriesId,
+          occurrence_key: `${seriesId}:2026-01-${String(index + 1).padStart(2, "0")}`,
+        })),
+      };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(
+    repository.searchEvents(ownerId, {
+      query: "review",
+      from: "2026-11-01",
+      to: "2026-11-02",
+      timeZone: "UTC",
+    }),
+    (error) => error.code === "SEARCH_WORK_LIMIT" && error.status === 422,
+  );
+
+  const movementQuery = calls.find(({ sql }) =>
+    sql.startsWith("SELECT event_id, occurrence_key") && sql.includes("moved_start_local"),
+  );
+  assert.match(movementQuery.sql, /LIMIT \$3/u);
+  assert.equal(movementQuery.values[2], 5001);
+});
+
+test("search applies its recurrence work budget while expanding moved series", async () => {
+  const rows = Array.from({ length: 14 }, (_, index) => ({
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    kind: "all-day",
+    title: "Daily review",
+    details: null,
+    category: "study",
+    revision: 1,
+    reminder_choice: "none",
+    reminder_time_zone: null,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-01-01",
+    end_date: "2026-01-02",
+    recurrence_frequency: "daily",
+    recurrence_interval: 1,
+    recurrence_count: 366,
+    created_at: new Date("2026-10-01T12:00:00.000Z"),
+    updated_at: new Date("2026-10-01T12:00:00.000Z"),
+  }));
+  const movementRows = rows.map(({ id }) => ({
+    event_id: id,
+    occurrence_key: `${id}:2026-01-01`,
+    moved_start_local: null,
+    moved_end_local: null,
+    moved_time_zone: null,
+    moved_starts_at: null,
+    moved_ends_at: null,
+    moved_start_date: "2026-11-01",
+    moved_end_date: "2026-11-02",
+  }));
+  const { pool } = createPool((sql) => {
+    if (sql.includes("FROM calendar_events")) return { rows };
+    if (sql.startsWith("SELECT event_id, occurrence_key") && sql.includes("is_cancelled")) {
+      return { rows: [] };
+    }
+    if (sql.startsWith("SELECT event_id, occurrence_key") && sql.includes("moved_start_local")) {
+      return { rows: movementRows };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(
+    repository.searchEvents(ownerId, {
+      query: "review",
+      from: "2026-11-01",
+      to: "2026-11-02",
+      timeZone: "UTC",
+    }),
+    (error) => error.code === "SEARCH_WORK_LIMIT" && error.status === 422,
+  );
 });
 
 test("search timeout cancels, rolls back, releases the client, and permits a clean retry", async () => {

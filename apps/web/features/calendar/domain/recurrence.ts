@@ -434,6 +434,7 @@ function expandTimedSeries(
   seriesValue: unknown,
   rule: RecurrenceRule,
   window: RecurrenceExpansionWindow,
+  onCandidate?: () => void,
 ): readonly TimedCalendarOccurrence[] {
   const state = readTimedSeries(seriesValue);
   if (typeof window.timeZone !== "string") return invalidRange();
@@ -459,6 +460,7 @@ function expandTimedSeries(
   let emitted = 0;
 
   while (emitted < rule.count) {
+    onCandidate?.();
     checkCandidateBounds(state.startDateTime.toPlainDate(), candidateDate, candidatesExamined);
     candidatesExamined += 1;
     const localStart = candidateDate.toPlainDateTime(state.startDateTime.toPlainTime());
@@ -539,6 +541,7 @@ function expandAllDaySeries(
   seriesValue: unknown,
   rule: RecurrenceRule,
   range: Readonly<{ fromDate: Temporal.PlainDate; toDate: Temporal.PlainDate }>,
+  onCandidate?: () => void,
 ): readonly AllDayCalendarOccurrence[] {
   const state = readAllDaySeries(seriesValue);
   const occurrences: AllDayCalendarOccurrence[] = [];
@@ -547,6 +550,7 @@ function expandAllDaySeries(
   let emitted = 0;
 
   while (emitted < rule.count) {
+    onCandidate?.();
     checkCandidateBounds(state.startDate, candidateDate, candidatesExamined);
     candidatesExamined += 1;
     if (emitted >= maximumRecurrenceCandidates) {
@@ -584,6 +588,7 @@ export function expandCalendarRecurrence(
   seriesValue: CalendarEvent,
   ruleValue: unknown,
   windowValue: unknown,
+  onCandidate?: () => void,
 ): readonly CalendarRecurrenceOccurrence[] {
   const rule = normalizeRecurrenceRule(ruleValue);
   const window = readWindow(windowValue);
@@ -596,7 +601,7 @@ export function expandCalendarRecurrence(
     } catch {
       return invalidSeries();
     }
-    return expandTimedSeries(seriesValue, rule, window);
+    return expandTimedSeries(seriesValue, rule, window, onCandidate);
   }
   if (seriesValue.kind === "all-day") {
     if (window.timeZone !== undefined) {
@@ -606,7 +611,7 @@ export function expandCalendarRecurrence(
         return invalidRange();
       }
     }
-    return expandAllDaySeries(seriesValue, rule, range);
+    return expandAllDaySeries(seriesValue, rule, range, onCandidate);
   }
   return invalidSeries();
 }
