@@ -1,4 +1,6 @@
 import { builtinAgentSkillsById } from "./catalog.ts";
+import { isUserProvidedPublicHttpsSourceURL } from "../../research/server/url-policy.ts";
+import { readTrustedExternalSourceIntent } from "./source-intent.ts";
 import type {
   AgentCapability,
   BuiltinAgentSkill,
@@ -57,22 +59,63 @@ export function planEvidence(
   request: SkillRequestSignals,
   availableCapabilities: ReadonlySet<AgentCapability>,
 ): EvidencePlan {
+  const externalSourceIntent = readTrustedExternalSourceIntent(request.externalSourceIntent);
   const userMaterialsOnlyConflict =
-    request.userMaterialsOnly && request.explicitlyRequestsExternalVerification;
+    request.userMaterialsOnly && (
+      request.explicitlyRequestsExternalVerification ||
+      externalSourceIntent === "discover-additional" ||
+      externalSourceIntent === "provided-only" ||
+      request.userProvidedSourceUrls.length > 0
+    );
   const useUserMaterials = request.usesUserMaterials || request.userMaterialsOnly;
   const externalResearchRequested =
     request.explicitlyRequestsExternalVerification ||
+    externalSourceIntent === "provided-only" ||
+    externalSourceIntent === "discover-additional" ||
+    request.userProvidedSourceUrls.length > 0 ||
     request.asksForSources ||
     request.requiresCurrentInformation ||
     request.involvesHighConsequenceClaims ||
     request.disputedOrComparative ||
     request.requiresPreciseFactualClaims ||
     externallyResearchableTasks.has(request.task);
-  const useExternalSources = externalResearchRequested && !request.userMaterialsOnly;
+  const hasInvalidUserProvidedSourceUrls =
+    request.userProvidedSourceUrls.length > 0 &&
+    !request.userProvidedSourceUrls.every(isUserProvidedPublicHttpsSourceURL);
+  const invalidUserProvidedSourceUrls = hasInvalidUserProvidedSourceUrls;
+  const missingUserProvidedSourceUrls =
+    externalSourceIntent === "provided-only" && request.userProvidedSourceUrls.length === 0;
+  const discoveryRequested =
+    externalSourceIntent === "discover-additional" ||
+    (externalSourceIntent === "automatic" && (
+      request.asksForSources ||
+      request.explicitlyRequestsExternalVerification ||
+      request.involvesHighConsequenceClaims ||
+      request.disputedOrComparative ||
+      ["verify", "compare", "public-discussion"].includes(request.task) ||
+      request.userProvidedSourceUrls.length === 0
+    ));
+  const clarificationReason = userMaterialsOnlyConflict
+    ? "conflicting-source-scopes"
+    : externalSourceIntent === null
+      ? "invalid-source-intent"
+    : invalidUserProvidedSourceUrls
+      ? "invalid-user-url"
+      : missingUserProvidedSourceUrls
+        ? "missing-user-url"
+        : "none";
+  const externalSourceMode =
+    externalResearchRequested && clarificationReason === "none" && !request.userMaterialsOnly
+      ? discoveryRequested
+        ? "discovery"
+        : "known-url"
+      : "none";
+  const useExternalSources = externalSourceMode !== "none";
   const requiredCapabilities: AgentCapability[] = [];
 
   if (useUserMaterials) requiredCapabilities.push("documents.user.read");
-  if (useExternalSources) requiredCapabilities.push("research.web.read");
+  if (externalSourceMode !== "none") requiredCapabilities.push("research.web.read");
+  if (externalSourceMode === "discovery") requiredCapabilities.push("research.web.discover");
 
   const missingCapabilities = requiredCapabilities.filter(
     (capability) => !availableCapabilities.has(capability),
@@ -89,6 +132,21 @@ export function planEvidence(
   if (externallyResearchableTasks.has(request.task)) reasons.push(`The ${request.task} task requires retrieval when external scope permits it.`);
   if (useUserMaterials) reasons.push("The task depends on user-provided material and owner-scoped retrieval.");
   if (request.userMaterialsOnly) reasons.push("The user's source boundary prohibits external lookup.");
+  if (externalSourceMode === "known-url") {
+    reasons.push("Only validated user-provided URLs may be read; this mode does not discover sources.");
+  }
+  if (externalSourceMode === "discovery") {
+    reasons.push("Finding sources requires a separate discovery capability in addition to reading the resulting URLs.");
+  }
+  if (invalidUserProvidedSourceUrls) {
+    reasons.push("One or more user-provided source URLs were not validated by the server's HTTPS URL policy.");
+  }
+  if (missingUserProvidedSourceUrls) {
+    reasons.push("The user requested work limited to supplied URLs but did not provide a valid URL.");
+  }
+  if (externalSourceIntent === null) {
+    reasons.push("The source scope was not issued by the server from explicit user intent.");
+  }
   if (userMaterialsOnlyConflict) {
     reasons.push("The request both limits evidence to supplied material and asks for outside verification; clarify before any external retrieval.");
   }
@@ -96,14 +154,23 @@ export function planEvidence(
     reasons.push("A required retrieval capability is unavailable; no source lookup may be claimed.");
   }
 
-  const retrieval = userMaterialsOnlyConflict
+  const retrieval = clarificationReason !== "none"
     ? "clarify"
     : requiredCapabilities.length > 0
       ? "required"
       : "not-needed";
 
+  const approvedUserSourceUrls = Object.freeze(
+    externalSourceMode === "known-url"
+      ? request.userProvidedSourceUrls.map((url) => url.href)
+      : [],
+  );
+
   return {
     retrieval,
+    externalSourceMode,
+    clarificationReason,
+    approvedUserSourceUrls,
     useUserMaterials,
     useExternalSources,
     freshness:
@@ -145,6 +212,10 @@ export function selectBuiltinSkills(
     selected.add("research.safe-web-retrieval");
     selected.add("research.claim-citation-audit");
     selected.add("research.official-primary-sources");
+  }
+
+  if (evidence.externalSourceMode === "discovery") {
+    selected.add("research.source-discovery");
   }
 
   if (evidence.freshness === "current" && evidence.useExternalSources) {

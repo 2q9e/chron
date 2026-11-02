@@ -5,6 +5,7 @@ import { ResearchRouteError } from "./errors.ts";
 import {
   parsePublicHttpsSourceURL,
   resolvePublicHttpsTarget,
+  type ValidatedPublicHttpsSourceURL,
   type ResolvedAddress,
   type SourceAddressResolver,
 } from "./url-policy.ts";
@@ -275,7 +276,10 @@ function extractPlainText(source: string): string {
     .slice(0, maximumSourceTextCharacters);
 }
 
-function sourceRedirectURL(location: string, currentURL: URL): URL {
+function sourceRedirectURL(
+  location: string,
+  currentURL: URL,
+): ValidatedPublicHttpsSourceURL {
   if (location.length === 0 || location.length > maximumSourceURLCharacters) {
     throw new ResearchRouteError(
       502,

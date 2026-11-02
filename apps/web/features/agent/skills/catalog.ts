@@ -1,6 +1,7 @@
 import type { BuiltinAgentSkill } from "./types.ts";
 
 const web = ["research.web.read"] as const;
+const webDiscovery = ["research.web.read", "research.web.discover"] as const;
 const documents = ["documents.user.read", "inference.meta.authorized"] as const;
 const studyGeneration = ["documents.user.read", "inference.meta.authorized"] as const;
 const calendarPlanning = [
@@ -12,6 +13,7 @@ const calendarPlanning = [
 export const builtinAgentSkills = [
   {
     id: "research.question-scoping",
+    version: 1,
     name: "Research question scoping",
     domain: "research",
     whenToUse: "The request needs evidence and its subject, timeframe, audience, or jurisdiction could change the answer.",
@@ -27,6 +29,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.evidence-need-triage",
+    version: 1,
     name: "Evidence need triage",
     domain: "research",
     whenToUse: "At the start of a task to decide whether user documents, external research, or neither is needed.",
@@ -42,6 +45,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.source-strategy",
+    version: 1,
     name: "Source strategy selection",
     domain: "research",
     whenToUse: "External evidence is required or useful and the agent must select source types for the claim.",
@@ -56,7 +60,28 @@ export const builtinAgentSkills = [
     outputRules: ["Explain why each source role fits the question.", "Keep source claims distinct from the agent's interpretation."],
   },
   {
+    id: "research.source-discovery",
+    version: 1,
+    name: "Source discovery",
+    domain: "research",
+    whenToUse: "External evidence is needed and the user has not supplied all source URLs to inspect.",
+    doNotUseWhen: "The user limits work to supplied material, or asks only to inspect specific URLs already provided.",
+    requiredCapabilities: webDiscovery,
+    workflow: [
+      "Translate the question into narrow search queries without including private document text or personal data.",
+      "Search only through an explicitly authorized source-discovery tool and record its query, time, and returned source URLs.",
+      "Treat result titles, snippets, rankings, and generated summaries as leads, not evidence; open each candidate through the bounded HTTPS reader.",
+      "Prefer primary records and source types appropriate to the claim, then compare independent origins and current versions.",
+      "If discovery is unavailable or returns no usable result, stop and disclose the gap; do not substitute memory or imply the web was searched.",
+    ],
+    outputRules: [
+      "Report which sources were actually opened and distinguish discovery results from inspected evidence.",
+      "Never treat a known-URL reader as a search engine or cite an unopened result snippet.",
+    ],
+  },
+  {
     id: "research.source-quality-assessment",
+    version: 1,
     name: "Source quality assessment",
     domain: "research",
     whenToUse: "A source is being considered as evidence for a material factual claim.",
@@ -73,6 +98,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.official-primary-sources",
+    version: 1,
     name: "Official and primary source research",
     domain: "research",
     whenToUse: "A claim concerns a law, policy, official deadline, public record, standard, product behavior, or original event record.",
@@ -88,6 +114,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.scholarly-evidence",
+    version: 1,
     name: "Scholarly evidence review",
     domain: "research",
     whenToUse: "The task asks what research shows or makes an academic, scientific, or educational-effect claim.",
@@ -104,6 +131,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.methodology-review",
+    version: 1,
     name: "Method and applicability review",
     domain: "research",
     whenToUse: "A source reports empirical findings and the answer depends on how they were produced or to whom they apply.",
@@ -119,6 +147,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.freshness-and-versioning",
+    version: 1,
     name: "Freshness and version verification",
     domain: "research",
     whenToUse: "The answer may change over time or depends on a dated policy, API, event, schedule, or research state.",
@@ -134,6 +163,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.independent-corroboration",
+    version: 1,
     name: "Independent corroboration",
     domain: "research",
     whenToUse: "A consequential or disputed claim needs confirmation beyond one source.",
@@ -149,6 +179,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.conflict-synthesis",
+    version: 1,
     name: "Conflicting evidence synthesis",
     domain: "research",
     whenToUse: "Credible sources disagree about a material fact, interpretation, or recommendation.",
@@ -164,6 +195,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.claim-citation-audit",
+    version: 1,
     name: "Claim-level citation audit",
     domain: "research",
     whenToUse: "An answer depends on retrieved evidence or the user asks for sources.",
@@ -179,6 +211,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.quote-and-locator-check",
+    version: 1,
     name: "Quote and locator verification",
     domain: "research",
     whenToUse: "A direct quotation, page, section, table, or document offset is included.",
@@ -194,6 +227,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.user-document-grounding",
+    version: 1,
     name: "User document grounding",
     domain: "research",
     whenToUse: "A question asks about documents, notes, slides, or other material the user supplied.",
@@ -210,6 +244,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.document-extraction-provenance",
+    version: 1,
     name: "Document extraction provenance",
     domain: "research",
     whenToUse: "Parsed or OCR text is used as evidence from a user-uploaded file.",
@@ -225,6 +260,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.policy-and-jurisdiction",
+    version: 1,
     name: "Policy and jurisdiction research",
     domain: "research",
     whenToUse: "A question concerns laws, regulation, institutional rules, terms, eligibility, or rights.",
@@ -240,6 +276,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.technical-documentation",
+    version: 1,
     name: "Technical documentation verification",
     domain: "research",
     whenToUse: "An answer depends on a software API, protocol, standard, library, or runtime behavior.",
@@ -255,6 +292,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.public-discourse-analysis",
+    version: 1,
     name: "Public discussion analysis",
     domain: "research",
     whenToUse: "The user asks what public posts, forums, or discussions express or how a public conversation is changing.",
@@ -270,6 +308,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.safe-web-retrieval",
+    version: 1,
     name: "Safe web retrieval boundaries",
     domain: "safety",
     whenToUse: "A tool fetches a user-provided or agent-selected URL or follows links from retrieved pages.",
@@ -285,6 +324,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "safety.retrieved-content-isolation",
+    version: 1,
     name: "Retrieved content isolation",
     domain: "safety",
     whenToUse: "Web pages, documents, OCR, source metadata, redirects, or tool errors enter agent context.",
@@ -300,6 +340,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "research.uncertainty-and-evidence-limits",
+    version: 1,
     name: "Uncertainty and evidence limits",
     domain: "research",
     whenToUse: "Evidence is missing, partial, stale, inaccessible, conflicting, or methodologically limited.",
@@ -315,6 +356,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "study.source-grounded-tutoring",
+    version: 1,
     name: "Source-grounded tutoring",
     domain: "study",
     whenToUse: "The learner asks for an explanation based on course notes or uploaded study material.",
@@ -330,6 +372,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "study.socratic-guidance",
+    version: 1,
     name: "Socratic learning guidance",
     domain: "study",
     whenToUse: "The learner wants guided practice, hints, or help reasoning through a problem.",
@@ -345,6 +388,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "study.quiz-from-material",
+    version: 1,
     name: "Source-linked quiz design",
     domain: "study",
     whenToUse: "A learner asks for an interactive quiz derived from accessible course material.",
@@ -360,6 +404,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "study.flashcards-from-material",
+    version: 1,
     name: "Source-linked flashcards",
     domain: "study",
     whenToUse: "A learner asks to create or review flashcards from their course materials.",
@@ -375,6 +420,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "study.spaced-repetition-review",
+    version: 1,
     name: "Spaced repetition scheduling",
     domain: "study",
     whenToUse: "A learner rates recall and the product schedules a future review using persisted progress.",
@@ -390,6 +436,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "calendar.deadline-to-study-plan",
+    version: 1,
     name: "Deadline-based study planning",
     domain: "calendar",
     whenToUse: "The learner asks to organize study time around confirmed deadlines and their calendar availability.",
@@ -405,6 +452,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "calendar.conflict-review",
+    version: 1,
     name: "Calendar conflict review",
     domain: "calendar",
     whenToUse: "A proposed study session overlaps a confirmed event, availability boundary, or another draft.",
@@ -420,6 +468,7 @@ export const builtinAgentSkills = [
   },
   {
     id: "calendar.time-zone-and-recurrence",
+    version: 1,
     name: "Time zone and recurrence handling",
     domain: "calendar",
     whenToUse: "A calendar operation involves local time, all-day dates, recurring events, or a time-zone transition.",

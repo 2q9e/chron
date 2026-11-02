@@ -13,6 +13,7 @@ export interface SourceQualityReview {
   readonly supportedClaimIds: readonly string[];
   readonly limitations: readonly string[];
   readonly corroboration: "shared-origin" | "no-shared-origin-identified" | "unknown";
+  readonly corroborationLimitations: readonly string[];
 }
 
 export interface SourceQualityReport {
@@ -107,10 +108,17 @@ export function reviewSourceQuality(
     if (!isValidTimestamp(source.retrievedAt) || !isValidTimestamp(source.publishedAt) || !isValidTimestamp(source.updatedAt)) {
       limitations.push("One or more source dates are malformed and need verification.");
     }
-    if (!source.independenceGroup) {
-      limitations.push("Independence from other sources has not been established.");
-    }
+    const corroboration = source.independenceGroup
+      ? (groupCounts.get(source.independenceGroup) ?? 0) > 1
+        ? "shared-origin"
+        : "no-shared-origin-identified"
+      : "unknown";
 
+    const corroborationLimitations = corroboration === "shared-origin"
+      ? ["This source shares a recorded origin group with another candidate and is not independent corroboration."]
+      : corroboration === "unknown"
+        ? ["This source's independence from other candidates has not been established."]
+        : [];
     const disposition: SourceDisposition =
       source.publicationStatus === "retracted" || supportedClaimIds.length === 0
         ? "exclude"
@@ -118,22 +126,13 @@ export function reviewSourceQuality(
           ? "usable"
           : "limited";
 
-    const corroboration = source.independenceGroup
-      ? (groupCounts.get(source.independenceGroup) ?? 0) > 1
-        ? "shared-origin"
-        : "no-shared-origin-identified"
-      : "unknown";
-
-    if (corroboration === "shared-origin") {
-      limitations.push("This source shares a recorded origin group with another candidate and is not independent corroboration.");
-    }
-
     return {
       sourceId: source.sourceId,
       disposition,
       supportedClaimIds,
       limitations,
       corroboration,
+      corroborationLimitations,
     };
   });
 

@@ -1,3 +1,6 @@
+import type { UserProvidedPublicHttpsSourceURL } from "../../research/server/url-policy.ts";
+import type { TrustedExternalSourceIntent } from "./source-intent.ts";
+
 export type SkillDomain = "research" | "study" | "calendar" | "safety";
 
 export type AgentTaskKind =
@@ -14,6 +17,7 @@ export type AgentTaskKind =
 
 export type AgentCapability =
   | "inference.meta.authorized"
+  | "research.web.discover"
   | "research.web.read"
   | "documents.user.read"
   | "calendar.read"
@@ -28,6 +32,10 @@ export type EvidenceDomain = "general" | "academic" | "policy" | "technical" | "
 export interface SkillRequestSignals {
   readonly task: AgentTaskKind;
   readonly evidenceDomain: EvidenceDomain;
+  /** Opaque server-issued scope derived from explicit user intent, not model output. */
+  readonly externalSourceIntent: TrustedExternalSourceIntent | null;
+  /** Parse only URLs explicitly supplied by the user with the user-input parser. */
+  readonly userProvidedSourceUrls: readonly UserProvidedPublicHttpsSourceURL[];
   readonly asksForSources: boolean;
   readonly requiresCurrentInformation: boolean;
   readonly usesUserMaterials: boolean;
@@ -40,6 +48,7 @@ export interface SkillRequestSignals {
 
 export interface BuiltinAgentSkill {
   readonly id: string;
+  readonly version: number;
   readonly name: string;
   readonly domain: SkillDomain;
   readonly whenToUse: string;
@@ -49,8 +58,21 @@ export interface BuiltinAgentSkill {
   readonly outputRules: readonly string[];
 }
 
+export interface SelectedSkillContract {
+  readonly id: string;
+  readonly version: number;
+}
+
 export interface EvidencePlan {
   readonly retrieval: "required" | "not-needed" | "clarify";
+  readonly externalSourceMode: "none" | "known-url" | "discovery";
+  readonly clarificationReason:
+    | "none"
+    | "conflicting-source-scopes"
+    | "invalid-source-intent"
+    | "invalid-user-url"
+    | "missing-user-url";
+  readonly approvedUserSourceUrls: readonly string[];
   readonly useUserMaterials: boolean;
   readonly useExternalSources: boolean;
   readonly freshness: FreshnessNeed;

@@ -8,6 +8,18 @@ export interface ResolvedAddress {
   readonly family: number;
 }
 
+declare const validatedPublicHttpsSourceURL: unique symbol;
+declare const userProvidedSourceURL: unique symbol;
+
+export type ValidatedPublicHttpsSourceURL = URL & {
+  readonly [validatedPublicHttpsSourceURL]: true;
+};
+export type UserProvidedPublicHttpsSourceURL = ValidatedPublicHttpsSourceURL & {
+  readonly [userProvidedSourceURL]: true;
+};
+
+const userProvidedSourceURLs = new WeakMap<URL, string>();
+
 export type SourceAddressResolver = (
   hostname: string,
 ) => Promise<readonly ResolvedAddress[]>;
@@ -33,7 +45,7 @@ function invalidSourceURL(): ResearchRouteError {
   );
 }
 
-export function parsePublicHttpsSourceURL(input: string | URL): URL {
+export function parsePublicHttpsSourceURL(input: string | URL): ValidatedPublicHttpsSourceURL {
   let url: URL;
   try {
     url = new URL(input instanceof URL ? input.href : input);
@@ -75,7 +87,22 @@ export function parsePublicHttpsSourceURL(input: string | URL): URL {
   url.hostname = hostname;
   url.port = "";
   url.hash = "";
-  return url;
+  return url as ValidatedPublicHttpsSourceURL;
+}
+
+/** Call after reading a URL from the authenticated user's request; this does not establish identity. */
+export function parseUserProvidedPublicHttpsSourceURL(
+  input: string | URL,
+): UserProvidedPublicHttpsSourceURL {
+  const url = parsePublicHttpsSourceURL(input);
+  userProvidedSourceURLs.set(url, url.href);
+  return url as UserProvidedPublicHttpsSourceURL;
+}
+
+export function isUserProvidedPublicHttpsSourceURL(
+  value: unknown,
+): value is UserProvidedPublicHttpsSourceURL {
+  return value instanceof URL && userProvidedSourceURLs.get(value) === value.href;
 }
 
 export function isPublicUnicastAddress(address: string): boolean {

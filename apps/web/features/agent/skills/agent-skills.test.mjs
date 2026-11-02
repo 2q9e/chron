@@ -1,12 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { builtinAgentSkills, builtinAgentSkillsById } from "./catalog.ts";
 import { reviewSourceQuality, validateClaimCitations } from "./evidence.ts";
 import { prepareAgentTurn } from "./prepare-turn.ts";
 import { activateSkills, planEvidence, selectBuiltinSkills } from "./selection.ts";
+import { resolveUserExternalSourceIntent } from "./source-intent.ts";
+import { parseUserProvidedPublicHttpsSourceURL } from "../../research/server/url-policy.ts";
 
 const userOnlyRequest = {
   task: "summarize",
   evidenceDomain: "academic",
+  externalSourceIntent: resolveUserExternalSourceIntent("automatic"),
+  userProvidedSourceUrls: [],
   asksForSources: false,
   requiresCurrentInformation: false,
   usesUserMaterials: true,
@@ -91,7 +96,7 @@ test("academic research routes to current, claim-aware evidence skills", () => {
     requiresPreciseFactualClaims: true,
     disputedOrComparative: true,
   };
-  const plan = planEvidence(request, new Set(["research.web.read"]));
+  const plan = planEvidence(request, new Set(["research.web.read", "research.web.discover"]));
   const skills = selectBuiltinSkills(request, plan);
   const ids = new Set(skills.map((skill) => skill.id));
 
@@ -112,7 +117,7 @@ test("missing web access remains visible and cannot be represented as research",
   const skills = selectBuiltinSkills(request, plan);
   const activation = activateSkills(skills, new Set());
 
-  assert.deepEqual(plan.missingCapabilities, ["research.web.read"]);
+  assert.deepEqual(plan.missingCapabilities, ["research.web.read", "research.web.discover"]);
   assert.ok(activation.blocked.some((item) => item.skill.id === "research.safe-web-retrieval"));
   assert.ok(plan.reasons.some((reason) => reason.includes("no source lookup may be claimed")));
 });
@@ -124,11 +129,15 @@ test("prepared web research instructions require HTTPS-only source retrieval", (
       task: "research",
       usesUserMaterials: false,
       userMaterialsOnly: false,
+      userProvidedSourceUrls: [parseUserProvidedPublicHttpsSourceURL("https://research.example.org/source")],
     },
     new Set(["research.web.read", "inference.meta.authorized"]),
   );
 
   assert.equal(prepared.status, "ready");
+  assert.equal(prepared.evidencePlan.externalSourceMode, "known-url");
+  assert.ok(!prepared.selectedSkillIds.includes("research.source-discovery"));
+  assert.ok(prepared.instructions.includes("Known-URL reading does not perform source discovery"));
   assert.ok(prepared.instructions.includes("Allow only public HTTPS destinations"));
   assert.ok(!prepared.instructions.includes("Allow only public HTTP or HTTPS"));
 });
@@ -139,6 +148,7 @@ test("Meta inference permission is required before agent instructions are prepar
     task: "research",
     usesUserMaterials: false,
     userMaterialsOnly: false,
+    userProvidedSourceUrls: [parseUserProvidedPublicHttpsSourceURL("https://research.example.org/source")],
   };
   const blocked = prepareAgentTurn(request, new Set(["research.web.read"]));
   const ready = prepareAgentTurn(
@@ -152,6 +162,190 @@ test("Meta inference permission is required before agent instructions are prepar
   assert.equal(ready.status, "ready");
   assert.ok(ready.instructions.includes("when the server has granted"));
   assert.ok(ready.instructions.includes("Never invent a source, quote, page, locator, or completed retrieval."));
+  assert.deepEqual(
+    ready.selectedSkills.map(({ id, version }) => ({ id, version })),
+    ready.selectedSkillIds.map((id) => ({ id, version: 1 })),
+  );
+  assert.ok(ready.instructions.includes("Skill contract version: 1"));
+});
+
+test("source discovery cannot be satisfied by the known-URL reader", () => {
+  const request = {
+    ...userOnlyRequest,
+    task: "research",
+    usesUserMaterials: false,
+    userMaterialsOnly: false,
+    externalSourceMode: "automatic",
+  };
+  const plan = planEvidence(request, new Set(["research.web.read"]));
+
+  assert.equal(plan.externalSourceMode, "discovery");
+  assert.deepEqual(plan.requiredCapabilities, ["research.web.read", "research.web.discover"]);
+  assert.deepEqual(plan.missingCapabilities, ["research.web.discover"]);
+  assert.ok(plan.reasons.some((reason) => reason.includes("separate discovery capability")));
+
+  const prepared = prepareAgentTurn(request, new Set(["research.web.read", "inference.meta.authorized"]));
+  assert.equal(prepared.status, "capability-unavailable");
+  assert.ok(prepared.missingCapabilities.includes("research.web.discover"));
+  assert.ok(prepared.selectedSkillIds.includes("research.source-discovery"));
+  assert.ok(!("instructions" in prepared));
+
+  const discoverySkill = builtinAgentSkillsById.get("research.source-discovery");
+  assert.ok(discoverySkill);
+  assert.equal(
+    activateSkills([discoverySkill], new Set(["research.web.discover"])).blocked[0]?.skill.id,
+    "research.source-discovery",
+  );
+  assert.equal(
+    activateSkills([discoverySkill], new Set(["research.web.read"])).blocked[0]?.skill.id,
+    "research.source-discovery",
+  );
+  assert.equal(
+    activateSkills(
+      [discoverySkill],
+      new Set(["research.web.read", "research.web.discover"]),
+    ).available[0]?.id,
+    "research.source-discovery",
+  );
+});
+
+test("a user-provided validated URL is required to select reader-only mode", () => {
+  const request = {
+    ...userOnlyRequest,
+    task: "research",
+    usesUserMaterials: false,
+    userMaterialsOnly: false,
+    userProvidedSourceUrls: [parseUserProvidedPublicHttpsSourceURL("https://research.example.org/source")],
+  };
+  const plan = planEvidence(request, new Set(["research.web.read"]));
+
+  assert.equal(plan.externalSourceMode, "known-url");
+  assert.deepEqual(plan.requiredCapabilities, ["research.web.read"]);
+  assert.deepEqual(plan.approvedUserSourceUrls, ["https://research.example.org/source"]);
+
+  const userLimitsToSuppliedUrls = planEvidence(
+    {
+      ...request,
+      task: "summarize",
+      asksForSources: true,
+      externalSourceIntent: resolveUserExternalSourceIntent("provided-only"),
+    },
+    new Set(["research.web.read"]),
+  );
+  assert.equal(userLimitsToSuppliedUrls.externalSourceMode, "known-url");
+  assert.deepEqual(userLimitsToSuppliedUrls.requiredCapabilities, ["research.web.read"]);
+
+  const suppliedURLSummary = planEvidence(
+    {
+      ...request,
+      task: "summarize",
+      asksForSources: false,
+      externalSourceIntent: resolveUserExternalSourceIntent("provided-only"),
+    },
+    new Set(["research.web.read"]),
+  );
+  assert.equal(suppliedURLSummary.retrieval, "required");
+  assert.equal(suppliedURLSummary.externalSourceMode, "known-url");
+  assert.deepEqual(suppliedURLSummary.requiredCapabilities, ["research.web.read"]);
+
+  const suppliedURLSummaryWithoutReader = planEvidence(
+    {
+      ...request,
+      task: "summarize",
+      asksForSources: false,
+      externalSourceIntent: resolveUserExternalSourceIntent("provided-only"),
+    },
+    new Set(),
+  );
+  assert.equal(suppliedURLSummaryWithoutReader.retrieval, "required");
+  assert.deepEqual(suppliedURLSummaryWithoutReader.missingCapabilities, ["research.web.read"]);
+
+  const requestedAdditionalSources = planEvidence(
+    {
+      ...request,
+      task: "summarize",
+      asksForSources: false,
+      externalSourceIntent: resolveUserExternalSourceIntent("discover-additional"),
+    },
+    new Set(["research.web.read", "research.web.discover"]),
+  );
+  assert.equal(requestedAdditionalSources.retrieval, "required");
+  assert.equal(requestedAdditionalSources.externalSourceMode, "discovery");
+  assert.deepEqual(requestedAdditionalSources.requiredCapabilities, [
+    "research.web.read",
+    "research.web.discover",
+  ]);
+
+  const forged = planEvidence(
+    { ...request, userProvidedSourceUrls: [new URL("https://research.example.org/forged")] },
+    new Set(["research.web.read", "research.web.discover"]),
+  );
+  assert.equal(forged.clarificationReason, "invalid-user-url");
+  assert.equal(forged.retrieval, "clarify");
+  assert.equal(forged.externalSourceMode, "none");
+
+  const forgedIntent = planEvidence(
+    { ...request, externalSourceIntent: { mode: "provided-only" } },
+    new Set(["research.web.read", "research.web.discover"]),
+  );
+  assert.equal(forgedIntent.clarificationReason, "invalid-source-intent");
+  assert.equal(forgedIntent.externalSourceMode, "none");
+
+  const mutatedURL = parseUserProvidedPublicHttpsSourceURL("https://research.example.org/source");
+  mutatedURL.hostname = "localhost";
+  const mutated = planEvidence(
+    { ...request, userProvidedSourceUrls: [mutatedURL] },
+    new Set(["research.web.read", "research.web.discover"]),
+  );
+  assert.equal(mutated.clarificationReason, "invalid-user-url");
+  assert.equal(mutated.retrieval, "clarify");
+
+  const snapshotURL = parseUserProvidedPublicHttpsSourceURL("https://research.example.org/snapshot");
+  const snapshotPlan = planEvidence(
+    { ...request, userProvidedSourceUrls: [snapshotURL] },
+    new Set(["research.web.read"]),
+  );
+  snapshotURL.hostname = "other.example.org";
+  assert.deepEqual(snapshotPlan.approvedUserSourceUrls, ["https://research.example.org/snapshot"]);
+
+  const forceDiscovery = planEvidence(
+    { ...request, externalSourceIntent: resolveUserExternalSourceIntent("discover-additional") },
+    new Set(["research.web.read"]),
+  );
+  assert.equal(forceDiscovery.externalSourceMode, "discovery");
+  assert.ok(forceDiscovery.missingCapabilities.includes("research.web.discover"));
+
+  const requestsAdditionalSources = planEvidence(
+    { ...request, asksForSources: true },
+    new Set(["research.web.read"]),
+  );
+  assert.equal(requestsAdditionalSources.externalSourceMode, "discovery");
+  assert.ok(requestsAdditionalSources.missingCapabilities.includes("research.web.discover"));
+
+  const providedOnlyWithoutURL = planEvidence(
+    {
+      ...request,
+      userProvidedSourceUrls: [],
+      externalSourceIntent: resolveUserExternalSourceIntent("provided-only"),
+    },
+    new Set(["research.web.read"]),
+  );
+  assert.equal(providedOnlyWithoutURL.clarificationReason, "missing-user-url");
+  assert.equal(providedOnlyWithoutURL.retrieval, "clarify");
+
+  const forgedPrepared = prepareAgentTurn(
+    { ...request, userProvidedSourceUrls: [new URL("https://research.example.org/forged")] },
+    new Set(["research.web.read", "research.web.discover", "inference.meta.authorized"]),
+  );
+  assert.equal(forgedPrepared.status, "clarification-required");
+  assert.ok(forgedPrepared.question.includes("public HTTPS source"));
+  assert.ok(!("instructions" in forgedPrepared));
+});
+
+test("every built-in skill exposes a positive versioned contract", () => {
+  assert.ok(builtinAgentSkills.length > 0);
+  assert.ok(builtinAgentSkills.every((skill) => Number.isSafeInteger(skill.version) && skill.version > 0));
+  assert.equal(new Set(builtinAgentSkills.map((skill) => skill.id)).size, builtinAgentSkills.length);
 });
 
 test("source-scope clarification is returned before any inference instructions", () => {
@@ -216,10 +410,46 @@ test("retracted and unsupported sources are excluded; preprints and unknown meth
   assert.equal(report.reviews[0].disposition, "usable");
   assert.equal(report.reviews[1].disposition, "limited");
   assert.equal(report.reviews[1].corroboration, "shared-origin");
+  assert.equal(report.reviews[2].disposition, "usable");
   assert.equal(report.reviews[2].corroboration, "shared-origin");
+  assert.ok(report.reviews[2].corroborationLimitations[0].includes("not independent corroboration"));
+  assert.ok(!report.reviews[2].limitations.some((limitation) => limitation.includes("independent corroboration")));
   assert.equal(report.reviews[3].disposition, "exclude");
   assert.equal(report.reviews[4].disposition, "exclude");
   assert.deepEqual(report.claimsWithoutUsableSupport, ["claim-without-evidence"]);
+});
+
+test("source usability is independent of corroboration status", () => {
+  const single = reviewSourceQuality(
+    [makeSource({ independenceGroup: undefined })],
+    ["claim-a"],
+  );
+  assert.equal(single.reviews[0].disposition, "usable");
+  assert.equal(single.reviews[0].corroboration, "unknown");
+  assert.ok(single.reviews[0].corroborationLimitations[0].includes("independence"));
+  assert.deepEqual(single.claimsWithoutUsableSupport, []);
+
+  const shared = reviewSourceQuality(
+    [
+      makeSource({ sourceId: "shared-a", independenceGroup: "origin-shared" }),
+      makeSource({ sourceId: "shared-b", independenceGroup: "origin-shared" }),
+    ],
+    ["claim-a"],
+  );
+  assert.ok(shared.reviews.every((review) => review.disposition === "usable"));
+  assert.ok(shared.reviews.every((review) => review.corroboration === "shared-origin"));
+  assert.deepEqual(shared.claimsWithoutUsableSupport, []);
+
+  const distinct = reviewSourceQuality(
+    [
+      makeSource({ sourceId: "distinct-a", independenceGroup: "origin-a" }),
+      makeSource({ sourceId: "distinct-b", independenceGroup: "origin-b" }),
+    ],
+    ["claim-a"],
+  );
+  assert.ok(distinct.reviews.every((review) => review.disposition === "usable"));
+  assert.ok(distinct.reviews.every((review) => review.corroboration === "no-shared-origin-identified"));
+  assert.deepEqual(distinct.claimsWithoutUsableSupport, []);
 });
 
 test("citations must resolve to the right owner, source version, role, and exact locator", () => {
