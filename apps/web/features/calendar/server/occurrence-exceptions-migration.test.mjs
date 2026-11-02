@@ -14,6 +14,10 @@ const movementMigration = readFileSync(
   new URL("../../../db/migrations/0011_calendar_occurrence_moves.sql", import.meta.url),
   "utf8",
 );
+const lineageMigration = readFileSync(
+  new URL("../../../db/migrations/0012_calendar_series_lineage.sql", import.meta.url),
+  "utf8",
+);
 
 test("occurrence cancellation is bounded, exact, owner scoped, and cascades with its series", () => {
   assert.match(migration, /action IN \('create', 'update', 'delete', 'cancel-occurrence'\)/u);
@@ -48,4 +52,12 @@ test("occurrence moves preserve original identity, cancellation state, and exact
   assert.match(movementMigration, /action IN \('cancel-occurrence', 'restore-occurrence', 'move-occurrence'\) AND scope = 'occurrence'/u);
   assert.match(movementMigration, /action IN \('delete', 'cancel-occurrence', 'restore-occurrence', 'move-occurrence'\)[\s\S]*?result_event_id IS NULL/u);
   assert.match(movementMigration, /BEGIN;[\s\S]*?COMMIT;/u);
+});
+
+test("recurring segments retain a stable owner-scoped lineage identity", () => {
+  assert.match(lineageMigration, /ADD COLUMN series_root_id uuid/u);
+  assert.match(lineageMigration, /SET series_root_id = id[\s\S]*?recurrence_frequency IS NOT NULL/u);
+  assert.match(lineageMigration, /recurrence_frequency IS NULL OR series_root_id IS NOT NULL/u);
+  assert.match(lineageMigration, /ON calendar_events \(user_id, series_root_id, id\)/u);
+  assert.match(lineageMigration, /BEGIN;[\s\S]*?COMMIT;/u);
 });

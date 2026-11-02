@@ -78,6 +78,7 @@ type EventRow = QueryResultRow & {
   recurrence_frequency: string | null;
   recurrence_interval: number | null;
   recurrence_count: number | null;
+  series_root_id: string | null;
   created_at: Date | string;
   updated_at: Date | string;
 };
@@ -255,6 +256,7 @@ const eventColumns = `
   recurrence_frequency,
   recurrence_interval,
   recurrence_count,
+  series_root_id,
   created_at,
   updated_at
 `;
@@ -2106,6 +2108,7 @@ async function insertSeriesEvent(
   eventId: string,
   mutation: CalendarEventMutation,
   rule: CalendarRecurrenceRule,
+  seriesRootId: string = eventId,
 ): Promise<CalendarEvent> {
   const recurrence = normalizeRecurrenceRule(rule);
   const result = mutation.kind === "timed"
@@ -2126,11 +2129,11 @@ async function insertSeriesEvent(
              id, user_id, kind, title, details, start_local, end_local,
              time_zone, starts_at, ends_at, recurrence_frequency,
              recurrence_interval, recurrence_count, reminder_choice,
-             reminder_time_zone, revision
+             reminder_time_zone, revision, series_root_id
            ) VALUES (
              $1, $2, 'timed', $3, $4, $5::timestamp, $6::timestamp,
              $7, $8::timestamptz, $9::timestamptz, $10, $11, $12, $13,
-             NULL, 1
+             NULL, 1, $14::uuid
            )
            RETURNING ${eventColumns}`,
           [
@@ -2147,6 +2150,7 @@ async function insertSeriesEvent(
             recurrence.interval,
             recurrence.count,
             mutation.reminderChoice ?? "none",
+            seriesRootId,
           ],
         );
       })()
@@ -2154,10 +2158,10 @@ async function insertSeriesEvent(
         `INSERT INTO calendar_events (
            id, user_id, kind, title, details, start_date, end_date,
            recurrence_frequency, recurrence_interval, recurrence_count,
-           reminder_choice, reminder_time_zone, revision
+           reminder_choice, reminder_time_zone, revision, series_root_id
          ) VALUES (
            $1, $2, 'all-day', $3, $4, $5::date, $6::date, $7, $8, $9,
-           $10, $11, 1
+           $10, $11, 1, $12::uuid
          )
          RETURNING ${eventColumns}`,
         [
@@ -2174,6 +2178,7 @@ async function insertSeriesEvent(
           mutation.reminderChoice === "none" || mutation.reminderChoice === undefined
             ? null
             : mutation.reminderTimeZone,
+          seriesRootId,
         ],
       );
   if (!result.rows[0]) throw new Error("Recurring event insert returned no row.");

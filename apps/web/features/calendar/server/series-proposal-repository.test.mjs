@@ -228,13 +228,13 @@ class SeriesProposalPool {
           if (statement.includes("VALUES ($1, $2, 'timed'")) {
             const [id, user_id, title, details, start_local, end_local, time_zone,
               starts_at, ends_at, recurrence_frequency, recurrence_interval,
-              recurrence_count, reminder_choice] = values;
+              recurrence_count, reminder_choice, series_root_id] = values;
             const row = {
               id, user_id, kind: "timed", title, details, revision: 1,
               start_local, end_local, time_zone, starts_at, ends_at,
               start_date: null, end_date: null,
               recurrence_frequency, recurrence_interval, recurrence_count,
-              reminder_choice, reminder_time_zone: null,
+              reminder_choice, reminder_time_zone: null, series_root_id,
               created_at: now, updated_at: now,
             };
             this.events.set(id, row);
@@ -242,13 +242,13 @@ class SeriesProposalPool {
           }
           const [id, user_id, title, details, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
-            reminder_choice, reminder_time_zone] = values;
+            reminder_choice, reminder_time_zone, series_root_id] = values;
           const row = {
             id, user_id, kind: "all-day", title, details, revision: 1,
             start_local: null, end_local: null, time_zone: null,
             starts_at: null, ends_at: null, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
-            reminder_choice, reminder_time_zone,
+            reminder_choice, reminder_time_zone, series_root_id,
             created_at: now, updated_at: now,
           };
           this.events.set(id, row);
@@ -553,6 +553,7 @@ test("approval creates once, binds the exact draft, and returns the saved event 
   assert.ok(approval.event);
   assert.deepEqual(approval.event.recurrenceRule, { frequency: "weekly", interval: 1, count: 3 });
   assert.equal(pool.events.size, 1);
+  assert.equal(pool.events.get(approval.event.id).series_root_id, approval.event.id);
   const ledger = pool.drafts.get(draft.id);
   assert.equal(ledger.outcome, "approved");
   assert.equal(ledger.normalized_payload, null);

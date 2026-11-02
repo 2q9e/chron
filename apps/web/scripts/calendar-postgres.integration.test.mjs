@@ -46,7 +46,36 @@ async function applyMigrations(client) {
     .sort();
   assert.ok(names.length > 0, "Expected calendar and authentication migrations.");
   for (const name of names) {
+    let lineageFixture;
+    if (name === "0012_calendar_series_lineage.sql") {
+      const userId = `chron-lineage-${randomUUID()}`;
+      const eventId = randomUUID();
+      await client.query(
+        `INSERT INTO "user" (id, name, email, "updatedAt")
+         VALUES ($1, 'Synthetic lineage migration fixture', $2, CURRENT_TIMESTAMP)`,
+        [userId, `${userId}@example.invalid`],
+      );
+      await client.query(
+        `INSERT INTO calendar_events (
+           id, user_id, kind, title, start_date, end_date,
+           recurrence_frequency, recurrence_interval, recurrence_count
+         ) VALUES (
+           $1::uuid, $2, 'all-day', 'Synthetic recurring migration fixture',
+           DATE '2026-11-02', DATE '2026-11-03', 'weekly', 1, 2
+         )`,
+        [eventId, userId],
+      );
+      lineageFixture = { userId, eventId };
+    }
     await client.query(await readFile(join(migrationDirectory, name), "utf8"));
+    if (lineageFixture) {
+      const backfill = await client.query(
+        `SELECT series_root_id::text FROM calendar_events WHERE id = $1::uuid`,
+        [lineageFixture.eventId],
+      );
+      assert.equal(backfill.rows[0]?.series_root_id, lineageFixture.eventId);
+      await client.query(`DELETE FROM "user" WHERE id = $1`, [lineageFixture.userId]);
+    }
   }
 }
 
@@ -141,10 +170,16 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       `UPDATE calendar_events
        SET start_date = DATE '2098-11-02', end_date = DATE '2098-11-03',
            recurrence_frequency = 'weekly', recurrence_interval = 1, recurrence_count = 6,
+           series_root_id = id,
            reminder_choice = 'event-day-9am', reminder_time_zone = 'UTC'
        WHERE user_id = $1 AND id = $2::uuid`,
       [accountA, eventA],
     );
+    const lineage = await databasePool.query(
+      `SELECT series_root_id::text FROM calendar_events WHERE id = $1::uuid`,
+      [eventA],
+    );
+    assert.equal(lineage.rows[0]?.series_root_id, eventA);
     await databasePool.query(
       `INSERT INTO calendar_event_reminders (
          id, user_id, event_id, event_revision, occurrence_key, scheduled_at,
