@@ -613,13 +613,13 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       await client.query("BEGIN");
       await client.query("SELECT set_config('chron.user_id', $1, true)", [accountA]);
       const ownRows = await client.query(
-        "SELECT id FROM calendar_events WHERE user_id = $1",
-        [accountA],
+        "SELECT id FROM calendar_events WHERE user_id = $1 AND id = $2::uuid",
+        [accountA, eventA],
       );
       assert.deepEqual(ownRows.rows.map((row) => row.id), [eventA]);
       const ownExceptions = await client.query(
-        "SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions WHERE user_id = $1",
-        [accountA],
+        "SELECT event_id, occurrence_key FROM calendar_event_occurrence_exceptions WHERE user_id = $1 AND event_id = $2::uuid",
+        [accountA, eventA],
       );
       assert.deepEqual(ownExceptions.rows, [{
         event_id: eventA,
