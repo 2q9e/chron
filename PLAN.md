@@ -34,6 +34,13 @@ conflict review, finite recurring series with full-series proposals, and
 time-zone-aware reminders. One-off drag movement, time-grid creation, and
 resize interactions open the existing explicit-review flow.
 
+`E1-spaced0` is an initial non-AI study increment: users author private decks
+and cards and review due cards with an explicit, versioned FSRS schedule. It
+does not implement notebook uploads, source-grounded answers, tutoring,
+AI-generated cards, or quizzes, and does not close E1. See the detailed task
+contract in `docs/architecture/task-graph.md`. It is pushed on `main`, but is
+not deployed or browser-verified.
+
 `C1-month1` makes dense month cells compact without hiding events from users:
 two events remain visible per date and the rest are available through a native
 disclosure with a date-specific accessible name. The open date persists while

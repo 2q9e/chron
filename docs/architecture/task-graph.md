@@ -7,6 +7,58 @@ The runtime does not enforce per-agent filesystem isolation, so this slice was
 implemented and reviewed sequentially by the primary agent; no worker received
 credentials or private data.
 
+## E1-spaced0 — manually authored cards and scheduled review
+
+- **Task ID:** E1-spaced0
+- **Objective:** Add private manual decks and cards with due-card review using a
+  persisted, versioned FSRS schedule. This is a partial E1 foundation, not
+  AI-generated study content or completion of E1.
+- **Assigned agent/model:** Primary integration agent; the runtime identity and
+  reasoning effort are not independently attested. An independent reviewer
+  performed source-only UI checks.
+- **Dependencies:** Existing authenticated Better Auth session, PostgreSQL
+  account table and owner-scoped transaction helper, shared app shell, and
+  release migration process.
+- **Owned files:** `apps/web/features/study/**`, `apps/web/app/study/page.tsx`,
+  `apps/web/db/migrations/0019_study_flashcards.sql`, study CI/test wiring,
+  navigation entry points, and progress/handoff records.
+- **Read-only files:** Authentication/session implementation, shared
+  transaction/RLS helpers, calendar and Research APIs, and existing release
+  and migration procedure.
+- **Required skills:** S007 (component-local state), S012 (effect lifecycle),
+  S013 (ref-based focus), S014 (controlled forms), S018 (race-safe fetching),
+  S020 (long-list pagination), S023/S034 (keyboard and semantic route
+  structure), S035/S036 (error and empty states), S045/S046 (idempotent writes
+  and keyset pagination), S181/S214 (tenant isolation and RLS), and
+  S330–S334 (spaced repetition, FSRS versioning, rating calibration, and review
+  flow), plus the installed React, TypeScript, accessibility, and frontend
+  security guidance. These were read and applied to the implementation.
+- **Security permissions:** Chron study source and tests only. Do not read
+  secrets, user data, or the excluded old reference folder. Every query and
+  mutation binds the owner to the authenticated session and transaction-local
+  RLS. Mutations are same-origin, HTTPS-configured for public origins, bounded,
+  and return private no-store responses. No external AI or network integration.
+- **Acceptance criteria:** Persist manually authored decks/cards and review
+  state; enforce owner isolation and safe deletion; prevent stale writes and
+  rating-key replay with changed request revisions; paginate by a stable
+  keyset; provide accessible loading, empty, error/retry, draft, and review
+  focus states; create no sample data; do not expose dead controls.
+- **Tests:** 11 focused study tests, 124 calendar API tests, typecheck, lint,
+  and diff checks pass locally. Local PostgreSQL integration skipped because
+  `CHRON_TEST_DATABASE_URL` is absent. GitHub Actions run `41460769609` passed
+  PostgreSQL tenant isolation/account cleanup, dependency audit, all configured
+  suites, and production build. Independent UI audit/re-audit was source-only;
+  browser verification remains open.
+- **Expected deliverables:** Migration, FSRS scheduler and repository/routes,
+  usable manual deck/card/review interface, focused tests, and honest handoff.
+- **Status:** Pushed in four small commits (`b5d206d`, `1446fe8`, `7ec5496`,
+  `84741e2`) to the only branch, `main`, authored as `2q9e` over HTTPS. Not
+  deployed: the HTTPS staging route returns 404 and prior read-only VPS
+  authentication failed because the required key is unavailable in this
+  session. No VPS or Cloudflare change was made. Deploy only the Chron release,
+  migration/grants, release symlink, and `chron-web.service` after authorized
+  access is restored; authenticated browser testing needs an authorized account.
+
 ## R0-a — runtime source-policy contracts
 
 - **Objective:** Keep known-URL reading distinct from source discovery, version

@@ -2,6 +2,40 @@
 
 ## Current checkpoint — 2026-11-02
 
+The first manual study-card slice is implemented on top of the active calendar
+work: signed-in users can create and rename private decks, author/edit/delete
+cards, and review due cards using saved FSRS schedules. The server enforces
+owner-scoped access, revision checks, replay-safe reviews, and keyset card
+pagination. No sample decks or cards are created. This is a manual study tool,
+not AI-generated study material or completion of E1.
+
+Commits `b5d206d update`, `1446fe8 fix`, `7ec5496 improve`, and `84741e2
+update` were pushed to the sole `main` branch over HTTPS, authored and
+committed as `2q9e`. GitHub Actions run `41460769609` passed lint, typecheck,
+all configured suites, PostgreSQL tenant-isolation/account-cleanup integration,
+dependency audit, and production build. Locally, 11 focused study tests, 124
+calendar API tests, typecheck, lint, and `git diff --check` pass. The local
+PostgreSQL test skips without `CHRON_TEST_DATABASE_URL`; the CI PostgreSQL
+integration passed.
+
+An independent read-only UI review found and rechecked fixes for stale editor
+state, pagination races, review-request cancellation, draft loss, focus return,
+and concurrent load-error masking. Review was source-only; no browser rendering
+was performed. `https://testing.uwu.markets/study` still returns 404 with HSTS,
+so this source has not been deployed. The earlier read-only VPS login check
+failed because the referenced SSH key was unavailable in this session; no VPS
+or Cloudflare changes were made. All Git and public/staging endpoints used in
+this increment are HTTPS. Deploy only the Chron release, its study migration
+and grants, release symlink, and `chron-web.service` when the authorized access
+key is restored. A signed-in browser test account is still unavailable.
+
+Next: keep the landing page paused, continue the calendar-first roadmap, and
+extend the manual study slice only after checkpointing this push. Do not label
+the study milestone complete until its AI/source-grounded and upload workflows
+are implemented and verified.
+
+## Current checkpoint — 2026-11-02
+
 Calendar search now returns individual recurring occurrences, applies moved
 and cancelled exceptions, and labels timed results in the configured calendar
 timezone. Search work is bounded across candidate rows, exception rows,

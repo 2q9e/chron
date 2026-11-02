@@ -2,6 +2,35 @@
 
 ## Current checkpoint — 2026-11-02
 
+The manual study workspace is pushed on the single public GitHub `main`
+branch. It supports owner-scoped decks and cards plus FSRS-based due review;
+it creates no sample data and does not claim AI-generated or source-grounded
+study functionality. Four commits (`b5d206d`, `1446fe8`, `7ec5496`, and
+`84741e2`) were pushed over HTTPS as `2q9e`.
+
+GitHub Actions run `41460769609` passed the production build, dependency audit,
+lint, typecheck, PostgreSQL tenant-isolation/account-cleanup integration, and
+all configured test suites. Locally, the 11 study tests and 124 calendar API
+tests pass; typecheck, lint, and diff checks pass. PostgreSQL integration
+skips locally because `CHRON_TEST_DATABASE_URL` is unset. Independent UI
+review was source-only, not a browser rendering. `https://testing.uwu.markets/study`
+returns 404 with HSTS, confirming the new route is not deployed. The previous
+read-only SSH login check failed because the required key is unavailable in
+this session. No VPS or Cloudflare changes were made. The public Git remote and
+staging URL use HTTPS.
+
+Next actions:
+
+1. Restore authorized VPS access before deployment. Then deploy only the Chron
+   release, migration/grants for study tables, release symlink, and
+   `chron-web.service`; verify the deployed route over HTTPS. Do not edit other
+   VPS resources.
+2. Use only an authorized test account for signed-in browser verification.
+3. Continue calendar-first work; keep the landing page paused. This manual
+   study slice is partial progress toward E1, not a completed study system.
+
+## Current checkpoint — 2026-11-02
+
 Calendar search now returns individual recurring occurrences, applies moved
 and cancelled exceptions, and labels timed results in the configured calendar
 timezone. Search work is bounded across candidate rows, exception rows,
