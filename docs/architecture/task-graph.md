@@ -32,9 +32,9 @@ are recorded in [calendar-recurrence.md](calendar-recurrence.md).
 Reminder policy, owner-scoped outbox persistence, delivery worker, protected
 route, HTTPS scheduler source, and editor status are implemented. The contract
 and dependency record remain in [calendar-reminders.md](calendar-reminders.md).
-Live SMTP delivery and scheduler deployment are still open. The current
-calendar increment adds reviewed restoration of one cancelled occurrence;
-moving an occurrence and split-series editing remain open.
+Live SMTP delivery and scheduler deployment are still open. Single-occurrence
+cancellation, restoration, and reviewed movement are implemented. Split-series
+editing remains open.
 
 ```text
 C1-rec0 recurrence contract + pure bounded expansion
@@ -46,9 +46,9 @@ C1-rec0 recurrence contract + pure bounded expansion
 ```
 
 Full-series recurring controls are connected to persisted proposals, conflict
-review, and explicit approval. Single-occurrence cancellation is pushed; the
-current follow-on implementation adds exact occurrence restoration under
-C1-rec6 below. Moving occurrences and following-occurrence edits remain open.
+review, and explicit approval. Single-occurrence cancellation and restoration
+are pushed under C1-rec6 below. The occurrence-move slice is under C1-rec6m;
+following-occurrence edits remain open.
 GitHub Actions run 41396381582 applied migrations, including 0009, and passed
 the PostgreSQL tenant-isolation checks on an ephemeral PostgreSQL 16 service.
 Run 41400318323 passed migration 0010 and the occurrence-restoration
@@ -237,6 +237,51 @@ verification remains gated on a test account.
   authenticated browser review, and final handoff evidence. Restore code and
   its regression tests are pushed on main; migration 0010 and PostgreSQL
   integration coverage passed in run 41400318323.
+
+### C1-rec6m — move one recurring occurrence
+
+- **Task ID:** C1-rec6m
+- **Status:** implementation is in the main worktree. Local calendar tests,
+  lint, typecheck, and production compilation pass. PostgreSQL integration is
+  skipped locally because `CHRON_TEST_DATABASE_URL` is unset; GitHub CI is
+  pending. Staging remains on the previous release because SSH activation is
+  unavailable; the staging URL is HTTPS-only.
+- **Objective:** Let a user drag one timed or all-day recurrence occurrence to
+  a new time while preserving the original occurrence key and neighboring
+  instances. Persist the move as an exact reviewed proposal.
+- **Assigned agent:** main integration owner; runtime model and reasoning
+  configuration are not independently attested
+- **Dependencies:** cancellation/restoration in C1-rec6 and its PostgreSQL CI
+  path in run 41400318323
+- **Owned files:** calendar event/exception types, validation, repository,
+  recurrence conflict logic, migration 0011, calendar API client/editor/
+  workspace, and focused unit/integration tests
+- **Read-only files:** migration 0010, proposal lifecycle, reminder schema and
+  schedule calculator, recurrence/time-zone domain, calendar views, SKILLS.md,
+  and the installed Next.js route/client guidance
+- **Required skills applied:** S192–S193, S201–S216, S346–S354, S363, and S369
+- **Security permissions:** use owner identity only from the session and
+  transaction-local RLS. The request may select an owned recurring root and
+  one existing occurrence key only. Persist schedule changes in the existing
+  proposal/approval transaction. No credentials, private user data, external
+  references, or VPS access.
+- **Acceptance criteria:** a move changes only the selected instance, retains
+  its original stable key, preserves type, zone, and elapsed duration, handles
+  DST gaps/folds deliberately, checks active siblings and owner-scoped events,
+  and requires approval bound to the exact prior exception, target revision,
+  moved bounds, and conflict snapshot. Cancellation/restoration and full-series
+  edits must continue to work. Existing reminders may be moved only when
+  future and never attempted; prior attempts are not replayed.
+- **Tests:** timed/all-day move, unchanged neighboring keys, DST gaps/folds,
+  conflict with one-offs, sibling and moved occurrences, stale/replayed and
+  cross-owner approvals, cancellation then restoration of a moved occurrence,
+  reminder timing/attempt history, and PostgreSQL RLS integration.
+- **Expected deliverables:** additive migration, exact occurrence proposal and
+  approval, effective occurrence projection in calendar/conflict reads, drag
+  review UI, tests, and updated recurrence/handoff records.
+- **Isolation note:** worktree boundaries are not enforced by this runtime.
+  Implementation remains in the main workspace; do not grant a subagent access
+  to the credential-bearing home directory.
 
 ## Task contracts
 
