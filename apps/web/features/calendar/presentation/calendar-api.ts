@@ -373,12 +373,20 @@ function isCalendarReminderStatusSummary(
   if (!isRecord(value) || !isRecord(value.failureCounts)) return false;
   const record = value;
   const failureCounts = value.failureCounts;
+  const expectedSummaryKeys = [
+    "total", "pending", "leased", "sent", "failed", "cancelled", "retrying",
+    "nextAttemptAt", "lastAcceptedAt", "failureCounts",
+  ];
+  if (Object.keys(record).length !== expectedSummaryKeys.length
+    || expectedSummaryKeys.some((key) => !Object.hasOwn(record, key))) return false;
   const isBoundedCount = (count: unknown): count is number =>
     typeof count === "number" && Number.isInteger(count) && count >= 0 && count <= 366;
   const stateKeys = ["total", "pending", "leased", "sent", "failed", "cancelled", "retrying"] as const;
   if (!stateKeys.every((key) => isBoundedCount(record[key]))) return false;
   const failureKeys = ["accountEmail", "configuration", "provider", "temporary", "other"] as const;
-  if (!failureKeys.every((key) => isBoundedCount(failureCounts[key]))) {
+  if (Object.keys(failureCounts).length !== failureKeys.length
+    || failureKeys.some((key) => !Object.hasOwn(failureCounts, key))
+    || !failureKeys.every((key) => isBoundedCount(failureCounts[key]))) {
     return false;
   }
   const timestampIsValid = (timestamp: unknown): timestamp is string => {
@@ -393,10 +401,16 @@ function isCalendarReminderStatusSummary(
   const failed = record.failed as number;
   const cancelled = record.cancelled as number;
   const retrying = record.retrying as number;
+  const totalFailures = failureKeys.reduce((sum, key) => sum + (failureCounts[key] as number), 0);
   return total === pending + leased + sent + failed + cancelled
     && retrying <= pending
-    && (record.nextAttemptAt === null || timestampIsValid(record.nextAttemptAt))
-    && (record.lastAcceptedAt === null || timestampIsValid(record.lastAcceptedAt));
+    && totalFailures <= total
+    && (pending === 0
+      ? record.nextAttemptAt === null
+      : timestampIsValid(record.nextAttemptAt))
+    && (sent === 0
+      ? record.lastAcceptedAt === null
+      : timestampIsValid(record.lastAcceptedAt));
 }
 
 export async function readCalendarError(response: Response): Promise<CalendarRequestError> {
@@ -573,16 +587,26 @@ export async function fetchCalendarReminderStatus(
   eventId: string,
   signal?: AbortSignal,
 ): Promise<CalendarReminderStatusSummary> {
-  const response = await fetch(
-    `/api/calendar/events/${encodeURIComponent(eventId)}/reminders`,
-    {
-      method: "GET",
-      cache: "no-store",
-      credentials: "same-origin",
-      headers: { Accept: "application/json" },
-      signal,
-    },
-  );
+  let response: Response;
+  try {
+    response = await fetch(
+      `/api/calendar/events/${encodeURIComponent(eventId)}/reminders`,
+      {
+        method: "GET",
+        cache: "no-store",
+        credentials: "same-origin",
+        headers: { Accept: "application/json" },
+        signal,
+      },
+    );
+  } catch (reason) {
+    if (signal?.aborted || isAbortError(reason)) throw reason;
+    throw new CalendarRequestError(
+      "Chron couldn't reach reminder status. Check your connection and try again.",
+      0,
+      "NETWORK_ERROR",
+    );
+  }
   if (!response.ok) throw await readCalendarError(response);
   const payload = await parseJson(response);
   if (!isRecord(payload) || !isCalendarReminderStatusSummary(payload.status)) {

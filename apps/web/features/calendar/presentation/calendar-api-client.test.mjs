@@ -141,6 +141,28 @@ test("reminder status uses a same-origin no-store read and validates persisted s
       fetchCalendarReminderStatus(seriesId),
       (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
     );
+
+    globalThis.fetch = async () => response({ status: { ...status, privateEmail: "person@example.test" } });
+    await assert.rejects(
+      fetchCalendarReminderStatus(seriesId),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+
+    globalThis.fetch = async () => response({
+      status: { ...status, failureCounts: { ...status.failureCounts, provider: 2 } },
+    });
+    await assert.rejects(
+      fetchCalendarReminderStatus(seriesId),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+
+    globalThis.fetch = async () => { throw new TypeError("private network details"); };
+    await assert.rejects(
+      fetchCalendarReminderStatus(seriesId),
+      (error) => error instanceof CalendarRequestError
+        && error.code === "NETWORK_ERROR"
+        && error.message === "Chron couldn't reach reminder status. Check your connection and try again.",
+    );
   } finally {
     globalThis.fetch = originalFetch;
   }

@@ -853,6 +853,7 @@ test("reads bounded reminder status only for the signed-in event owner and hides
   assert.match(eventLookup.sql, /WHERE user_id = \$1 AND id = \$2::uuid/u);
   assert.deepEqual(eventLookup.values, [ownerId, eventId]);
   assert.match(reminderLookup.sql, /WHERE user_id = \$1[\s\S]*event_id = \$2::uuid[\s\S]*event_revision = \$3/u);
+  assert.doesNotMatch(reminderLookup.sql, /\b(?:email|title|details|recipient)\b/iu);
   assert.match(reminderLookup.sql, /LIMIT 367/u);
   assert.deepEqual(reminderLookup.values, [ownerId, eventId, 4]);
   assert.equal(JSON.stringify(status).includes("SMTP_"), false);
@@ -871,4 +872,28 @@ test("does not expose reminder status when the event is not owned by the account
   );
   assert.equal(calls.some(({ sql }) => sql.includes("FROM calendar_event_reminders")), false);
   assert.equal(calls.at(-1).sql, "ROLLBACK");
+});
+
+test("fails closed if reminder status exceeds the maximum finite series size", async () => {
+  const { pool } = createPool((sql) => {
+    if (sql.includes("FROM calendar_events")) return { rows: [{ revision: 1 }] };
+    if (sql.includes("FROM calendar_event_reminders")) {
+      return { rows: Array.from({ length: 367 }, () => ({
+        status: "pending",
+        attempt_count: 0,
+        next_attempt_at: "2026-11-10T13:45:00.000Z",
+        sent_at: null,
+        last_error_code: null,
+      })) };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(
+    repository.getCalendarReminderStatus(ownerId, "de305d54-75b4-431b-adb2-eb6b9e546014"),
+    (error) => error instanceof CalendarRouteError
+      && error.status === 500
+      && error.code === "REMINDER_STATUS_LIMIT_EXCEEDED",
+  );
 });
