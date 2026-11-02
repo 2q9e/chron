@@ -1168,6 +1168,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         <p>Signed in as {userName}</p>
       </div>
       <div className={styles.actions}>
+        <a className={styles.researchLink} href="/research">Research</a>
         <button ref={newEventButton} type="button" onClick={() => openNew(date)} disabled={!preferences || !date || calendarLocked}>New event</button>
         <button
           type="button"

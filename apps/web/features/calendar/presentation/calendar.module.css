@@ -116,6 +116,21 @@
   gap: .35rem;
   flex-wrap: wrap;
 }
+.researchLink {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: .5rem .8rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  color: var(--text);
+  font-weight: 650;
+  text-decoration: none;
+}
+.researchLink:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .viewSwitcher button {
   text-transform: capitalize;
 }
