@@ -10,6 +10,10 @@ const restoreMigration = readFileSync(
   new URL("../../../db/migrations/0010_calendar_occurrence_restore.sql", import.meta.url),
   "utf8",
 );
+const movementMigration = readFileSync(
+  new URL("../../../db/migrations/0011_calendar_occurrence_moves.sql", import.meta.url),
+  "utf8",
+);
 
 test("occurrence cancellation is bounded, exact, owner scoped, and cascades with its series", () => {
   assert.match(migration, /action IN \('create', 'update', 'delete', 'cancel-occurrence'\)/u);
@@ -29,4 +33,19 @@ test("occurrence restoration keeps approval, idempotency, and owner constraints"
   assert.match(restoreMigration, /action IN \('create', 'update', 'cancel-occurrence', 'restore-occurrence'\)[\s\S]*?payload_hash IS NOT NULL/u);
   assert.match(restoreMigration, /action IN \('delete', 'cancel-occurrence', 'restore-occurrence'\)[\s\S]*?result_event_id IS NULL/u);
   assert.match(restoreMigration, /BEGIN;[\s\S]*?COMMIT;/u);
+});
+
+test("occurrence moves preserve original identity, cancellation state, and exact proposal scope", () => {
+  assert.match(movementMigration, /ADD COLUMN is_cancelled boolean NOT NULL DEFAULT true/u);
+  assert.match(movementMigration, /moved_start_local timestamp without time zone/u);
+  assert.match(movementMigration, /moved_starts_at timestamptz/u);
+  assert.match(movementMigration, /moved_start_date date/u);
+  assert.match(movementMigration, /CHECK \([\s\S]*?is_cancelled AND cancelled_at IS NOT NULL[\s\S]*?NOT is_cancelled AND cancelled_at IS NULL/u);
+  assert.match(movementMigration, /moved_ends_at > moved_starts_at/u);
+  assert.match(movementMigration, /moved_end_date > moved_start_date/u);
+  assert.match(movementMigration, /WHERE NOT is_cancelled AND moved_start_local IS NOT NULL/u);
+  assert.match(movementMigration, /action IN \('create', 'update', 'delete', 'cancel-occurrence', 'restore-occurrence', 'move-occurrence'\)/u);
+  assert.match(movementMigration, /action IN \('cancel-occurrence', 'restore-occurrence', 'move-occurrence'\) AND scope = 'occurrence'/u);
+  assert.match(movementMigration, /action IN \('delete', 'cancel-occurrence', 'restore-occurrence', 'move-occurrence'\)[\s\S]*?result_event_id IS NULL/u);
+  assert.match(movementMigration, /BEGIN;[\s\S]*?COMMIT;/u);
 });
