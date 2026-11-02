@@ -6,7 +6,8 @@ export type CalendarSeriesApprovalAction =
   | "update"
   | "delete"
   | "cancel-occurrence"
-  | "restore-occurrence";
+  | "restore-occurrence"
+  | "move-occurrence";
 export type PendingCalendarSeriesApproval = Readonly<{
   draftId: string;
   action: CalendarSeriesApprovalAction;
@@ -15,7 +16,8 @@ export type CalendarSeriesApprovalOutcome = "approved" | "stale" | "expired" | "
 
 function isApprovalAction(value: string | null): value is CalendarSeriesApprovalAction {
   return value === "create" || value === "update" || value === "delete"
-    || value === "cancel-occurrence" || value === "restore-occurrence";
+    || value === "cancel-occurrence" || value === "restore-occurrence"
+    || value === "move-occurrence";
 }
 
 function ownerPrefix(userId: string): string {
