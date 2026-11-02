@@ -569,6 +569,88 @@ test("persists a full-series conflict snapshot without writing an event and repl
   );
 });
 
+test("series idempotency keys bind timed and all-day reminder choices", async () => {
+  const pool = new SeriesProposalPool();
+  const repository = new CalendarRepository(pool);
+  const allDayReminder = proposal({
+    event: {
+      kind: "all-day",
+      title: "Study group",
+      startDate: "2026-11-02",
+      endDate: "2026-11-03",
+      reminderChoice: "event-day-9am",
+      reminderTimeZone: "America/Montreal",
+    },
+  });
+  const timedReminder = proposal({
+    event: {
+      kind: "timed",
+      title: "Study group",
+      startLocal: "2026-11-02T10:00",
+      endLocal: "2026-11-02T11:00",
+      timeZone: "America/Montreal",
+      reminderChoice: "15-minutes-before",
+    },
+  });
+
+  await repository.createSeriesDraft(ownerId, allDayReminder, "series-reminder-idem-1");
+  await repository.createSeriesDraft(ownerId, timedReminder, "series-reminder-idem-2");
+
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, proposal({
+      event: { ...allDayReminder.event, reminderChoice: "previous-day-9am" },
+    }), "series-reminder-idem-1"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "IDEMPOTENCY_KEY_REUSED"
+      && error.status === 409,
+  );
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, proposal({
+      event: { ...allDayReminder.event, reminderTimeZone: "America/Toronto" },
+    }), "series-reminder-idem-1"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "IDEMPOTENCY_KEY_REUSED"
+      && error.status === 409,
+  );
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, proposal({
+      event: { ...timedReminder.event, reminderChoice: "30-minutes-before" },
+    }), "series-reminder-idem-2"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "IDEMPOTENCY_KEY_REUSED"
+      && error.status === 409,
+  );
+});
+
+test("approval rejects a pending proposal whose stored reminder fields changed", async () => {
+  for (const [field, value] of [
+    ["reminderChoice", "previous-day-9am"],
+    ["reminderTimeZone", "America/Toronto"],
+  ]) {
+    const pool = new SeriesProposalPool();
+    const repository = new CalendarRepository(pool);
+    const draft = await repository.createSeriesDraft(ownerId, proposal({
+      event: {
+        kind: "all-day",
+        title: "Study group",
+        startDate: "2026-11-02",
+        endDate: "2026-11-03",
+        reminderChoice: "event-day-9am",
+        reminderTimeZone: "America/Montreal",
+      },
+    }), `series-reminder-tamper-${field}`);
+    pool.drafts.get(draft.id).normalized_payload.event[field] = value;
+
+    const approval = await repository.approveSeriesDraft(ownerId, draft.id);
+
+    assert.equal(approval.outcome, "stale", `${field} change must invalidate the approved payload hash`);
+    assert.equal(pool.events.size, 0);
+    assert.equal(pool.reminderJobs.length, 0);
+    assert.equal(pool.drafts.get(draft.id).normalized_payload, null);
+    assert.equal(pool.drafts.get(draft.id).payload_hash, null);
+  }
+});
+
 test("approval creates once, binds the exact draft, and returns the saved event on replay", async () => {
   const pool = new SeriesProposalPool();
   const repository = new CalendarRepository(pool);

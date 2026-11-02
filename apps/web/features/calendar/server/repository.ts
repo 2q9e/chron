@@ -1263,6 +1263,7 @@ function canonicalSeriesRequest(request: CalendarSeriesDraftRequest): Record<str
         startLocal: request.event.startLocal,
         endLocal: request.event.endLocal,
         timeZone: request.event.timeZone,
+        reminderChoice: request.event.reminderChoice ?? "none",
         startDisambiguation: request.event.startDisambiguation ?? null,
         endDisambiguation: request.event.endDisambiguation ?? null,
       }
@@ -1273,6 +1274,10 @@ function canonicalSeriesRequest(request: CalendarSeriesDraftRequest): Record<str
         ...(request.event.category === undefined ? {} : { category: request.event.category }),
         startDate: request.event.startDate,
         endDate: request.event.endDate,
+        reminderChoice: request.event.reminderChoice ?? "none",
+        reminderTimeZone: request.event.reminderChoice && request.event.reminderChoice !== "none"
+          ? request.event.reminderTimeZone ?? null
+          : null,
       };
 
   return {
