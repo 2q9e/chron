@@ -179,6 +179,33 @@ test("normalizes exact create and update series draft scopes", () => {
       (error) => error instanceof CalendarRouteError || error instanceof CalendarTimeError,
     );
   }
+
+  const move = {
+    action: "move-occurrence",
+    scope: "occurrence",
+    ...target,
+    occurrenceKey: `${target.targetEventId}:2026-11-02T09:00`,
+    calendarTimeZone: "America/Montreal",
+    movement: {
+      kind: "timed",
+      startLocal: "2026-11-04T10:00",
+      endLocal: "2026-11-04T11:00",
+      timeZone: "America/Montreal",
+    },
+  };
+  assert.deepEqual(parseCalendarSeriesDraftRequest(move), move);
+  for (const invalid of [
+    { ...move, scope: "series" },
+    { ...move, movement: { ...move.movement, ownerId: "another-user" } },
+    { ...move, movement: { ...move.movement, timeZone: "Not/AZone" } },
+    { ...move, movement: { ...move.movement, startLocal: "2026-11-04T09:00", endLocal: "2026-11-11T09:01" } },
+    { ...move, movement: { kind: "all-day", startDate: "2026-11-04", endDate: "2026-11-12" } },
+  ]) {
+    assert.throws(
+      () => parseCalendarSeriesDraftRequest(invalid),
+      (error) => error instanceof CalendarRouteError || error instanceof CalendarTimeError,
+    );
+  }
 });
 
 test("requires a finite supported rule, exact series scope, and current target revision", () => {
@@ -772,6 +799,9 @@ class MemoryCalendarPool {
                 && queryOwnerId === ownerId && eventIds.includes(eventId))
               .map(([, event_id, occurrence_key]) => ({ event_id, occurrence_key })),
           };
+        }
+        if (statement.startsWith("SELECT event_id, occurrence_key, to_char(moved_start_local")) {
+          return { rows: [] };
         }
         if (statement.startsWith("INSERT INTO calendar_events")) {
           const [id, rowOwnerId, title, details, startDate, endDate] = values;

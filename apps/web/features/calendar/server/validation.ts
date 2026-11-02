@@ -7,6 +7,7 @@ import {
   type CalendarEventCreateRequest,
   type CalendarEventCommit,
   type CalendarEventMutation,
+  type CalendarOccurrenceMovementRequest,
   type CalendarEventSearchRequest,
   type CalendarPreferences,
   type CalendarTheme,
@@ -227,7 +228,8 @@ function parseSeriesTarget(value: Record<string, unknown>): Readonly<{
 
 export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesDraftRequest {
   const value = objectRecord(input);
-  if (value.action === "cancel-occurrence" || value.action === "restore-occurrence") {
+  if (value.action === "cancel-occurrence" || value.action === "restore-occurrence"
+    || value.action === "move-occurrence") {
     if (value.scope !== "occurrence") {
       return invalidPayload("Choose one occurrence as the change scope.");
     }
@@ -238,6 +240,14 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
       "targetRevision",
       "occurrenceKey",
       "calendarTimeZone",
+    ] : value.action === "move-occurrence" ? [
+      "action",
+      "scope",
+      "targetEventId",
+      "targetRevision",
+      "occurrenceKey",
+      "calendarTimeZone",
+      "movement",
     ] : [
       "action",
       "scope",
@@ -259,6 +269,16 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
         ...target,
         occurrenceKey: value.occurrenceKey,
         calendarTimeZone: validateTimeZone(value.calendarTimeZone),
+      };
+    }
+    if (value.action === "move-occurrence") {
+      return {
+        action: "move-occurrence",
+        scope: "occurrence",
+        ...target,
+        occurrenceKey: value.occurrenceKey,
+        calendarTimeZone: validateTimeZone(value.calendarTimeZone),
+        movement: parseCalendarOccurrenceMovement(value.movement),
       };
     }
     return {
@@ -321,6 +341,53 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
   }
 
   return invalidPayload("Choose a supported calendar series action.");
+}
+
+function parseCalendarOccurrenceMovement(input: unknown): CalendarOccurrenceMovementRequest {
+  const value = objectRecord(input);
+  if (value.kind === "timed") {
+    assertAllowedFields(value, [
+      "kind",
+      "startLocal",
+      "endLocal",
+      "timeZone",
+      "startDisambiguation",
+      "endDisambiguation",
+    ]);
+    const timeZone = validateTimeZone(value.timeZone);
+    const startDisambiguation = optionalDisambiguation(value.startDisambiguation);
+    const endDisambiguation = optionalDisambiguation(value.endDisambiguation);
+    const start = resolveLocalDateTime(value.startLocal, timeZone, startDisambiguation);
+    const end = resolveLocalDateTime(value.endLocal, timeZone, endDisambiguation);
+    resolveTimedDuration(start.instant, end.instant);
+    const durationMilliseconds = Temporal.Instant.from(end.instant).epochMilliseconds
+      - Temporal.Instant.from(start.instant).epochMilliseconds;
+    const maximumMilliseconds = maximumRecurringEventDurationDays * 24 * 60 * 60 * 1000;
+    if (durationMilliseconds > maximumMilliseconds) {
+      return invalidPayload("A moved recurring occurrence may last up to 7 days.");
+    }
+    return {
+      kind: "timed",
+      startLocal: start.local,
+      endLocal: end.local,
+      timeZone: start.timeZone,
+      ...(startDisambiguation ? { startDisambiguation } : {}),
+      ...(endDisambiguation ? { endDisambiguation } : {}),
+    };
+  }
+
+  if (value.kind === "all-day") {
+    assertAllowedFields(value, ["kind", "startDate", "endDate"]);
+    const bounds = resolveAllDayRange(value.startDate, value.endDate);
+    const durationDays = parseCalendarDate(bounds.startDate)
+      .until(parseCalendarDate(bounds.endDate), { largestUnit: "day" }).days;
+    if (durationDays > maximumRecurringEventDurationDays) {
+      return invalidPayload("A moved recurring all-day occurrence may span up to 7 days.");
+    }
+    return { kind: "all-day", startDate: bounds.startDate, endDate: bounds.endDate };
+  }
+
+  return invalidPayload("Choose valid time or date bounds for this occurrence.");
 }
 
 export function parseCalendarEventMutation(input: unknown): CalendarEventMutation {
