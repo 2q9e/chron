@@ -13,6 +13,7 @@ import {
   reminderReviewText,
   splitMonthCellEvents,
   timedEventSegmentsForDate,
+  updateExpandedMonthOverflowDate,
   updateEventDraft,
   validateCalendarEventDraft,
 } from "./calendar-model.ts";
@@ -65,6 +66,13 @@ test("month cells cap visible events and preserve every overflow event in order"
     visible: events.slice(0, 2),
     overflow: [],
   });
+});
+
+test("a delayed close for the previous month cell preserves the newly opened date", () => {
+  const expanded = updateExpandedMonthOverflowDate("2026-06-15", "2026-06-16", true);
+
+  assert.equal(updateExpandedMonthOverflowDate(expanded, "2026-06-15", false), "2026-06-16");
+  assert.equal(updateExpandedMonthOverflowDate(expanded, "2026-06-16", false), null);
 });
 
 function timedEvent(id, startLocal, endLocal, timeZone, startsAt, endsAt) {

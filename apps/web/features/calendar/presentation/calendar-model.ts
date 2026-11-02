@@ -32,6 +32,15 @@ export type CalendarView = "day" | "week" | "month" | "agenda";
 export type CalendarRange = Readonly<{ from: string; to: string }>;
 export const monthCellVisibleEventLimit = 2;
 
+export function updateExpandedMonthOverflowDate(
+  currentDate: string | null,
+  changedDate: string,
+  open: boolean,
+): string | null {
+  if (open) return changedDate;
+  return currentDate === changedDate ? null : currentDate;
+}
+
 export function splitMonthCellEvents(
   events: readonly CalendarEventEntry[],
 ): Readonly<{

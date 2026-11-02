@@ -24,6 +24,7 @@ import {
   newEventDraftAtTimeSlot,
   rebaseCalendarPreferenceDraft,
   updateEventDraft,
+  updateExpandedMonthOverflowDate,
   validateCalendarEventDraft,
   visibleRange,
   type CalendarView,
@@ -346,10 +347,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setView(nextView);
   }
   const handleMonthOverflowToggle = useCallback((sourceDate: string, open: boolean) => {
-    setExpandedMonthOverflowDate((currentDate) => {
-      if (open) return sourceDate;
-      return currentDate === sourceDate ? null : currentDate;
-    });
+    setExpandedMonthOverflowDate((currentDate) =>
+      updateExpandedMonthOverflowDate(currentDate, sourceDate, open));
   }, []);
   function goToToday() {
     if (!preferences) return;
