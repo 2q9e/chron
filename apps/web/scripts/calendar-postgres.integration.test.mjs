@@ -140,7 +140,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     await databasePool.query(
       `UPDATE calendar_events
        SET start_date = DATE '2098-11-02', end_date = DATE '2098-11-03',
-           recurrence_frequency = 'weekly', recurrence_interval = 1, recurrence_count = 5,
+           recurrence_frequency = 'weekly', recurrence_interval = 1, recurrence_count = 6,
            reminder_choice = 'event-day-9am', reminder_time_zone = 'UTC'
        WHERE user_id = $1 AND id = $2::uuid`,
       [accountA, eventA],
@@ -236,9 +236,74 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       [],
     );
 
-    const attemptedOccurrenceKey = `${eventA}:2098-11-16`;
-    const attemptedWithoutCurrentJobKey = `${eventA}:2098-11-23`;
-    const noReminderHistoryKey = `${eventA}:2098-11-30`;
+    const movedOccurrenceKey = `${eventA}:2098-11-16`;
+    const moveDraft = await repository.createSeriesDraft(accountA, {
+      action: "move-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 1,
+      occurrenceKey: movedOccurrenceKey,
+      calendarTimeZone: "UTC",
+      movement: { kind: "all-day", startDate: "2098-12-01", endDate: "2098-12-02" },
+    }, "postgres-occurrence-move");
+    assert.equal(moveDraft.beforeOccurrences[0].startDate, "2098-11-16");
+    assert.equal(moveDraft.afterOccurrences[0].startDate, "2098-12-01");
+    assert.equal((await repository.approveSeriesDraft(accountA, moveDraft.id)).outcome, "approved");
+    assert.deepEqual(
+      (await repository.listEvents(accountA, "2098-12-01", "2098-12-02", "UTC"))
+        .filter((event) => event.occurrenceKey === movedOccurrenceKey)
+        .map((event) => event.startDate),
+      ["2098-12-01"],
+    );
+    assert.deepEqual(
+      (await repository.listEvents(accountA, "2098-11-16", "2098-11-17", "UTC"))
+        .filter((event) => event.occurrenceKey === movedOccurrenceKey),
+      [],
+    );
+    assert.deepEqual(
+      await repository.findConflicts(accountA, {
+        kind: "all-day",
+        title: "Old schedule",
+        startDate: "2098-11-16",
+        endDate: "2098-11-17",
+      }, "UTC"),
+      [],
+    );
+
+    const cancelMovedDraft = await repository.createSeriesDraft(accountA, {
+      action: "cancel-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 1,
+      occurrenceKey: movedOccurrenceKey,
+    }, "postgres-cancel-moved-occurrence");
+    assert.equal((await repository.approveSeriesDraft(accountA, cancelMovedDraft.id)).outcome, "approved");
+    assert.deepEqual(
+      (await repository.listCancelledOccurrences(accountA, "2098-12-01", "2098-12-02", "UTC"))
+        .map((event) => event.occurrenceKey),
+      [movedOccurrenceKey],
+    );
+    const restoreMovedDraft = await repository.createSeriesDraft(accountA, {
+      action: "restore-occurrence",
+      scope: "occurrence",
+      targetEventId: eventA,
+      targetRevision: 1,
+      occurrenceKey: movedOccurrenceKey,
+      calendarTimeZone: "UTC",
+    }, "postgres-restore-moved-occurrence");
+    assert.equal(restoreMovedDraft.afterOccurrences[0].startDate, "2098-12-01");
+    assert.equal((await repository.approveSeriesDraft(accountA, restoreMovedDraft.id)).outcome, "approved");
+    assert.deepEqual(
+      (await repository.listEvents(accountA, "2098-12-01", "2098-12-02", "UTC"))
+        .filter((event) => event.occurrenceKey === movedOccurrenceKey)
+        .map((event) => event.startDate),
+      ["2098-12-01"],
+    );
+    assert.equal((await repository.getCalendarReminderStatus(accountA, eventA)).pending, 2);
+
+    const attemptedOccurrenceKey = `${eventA}:2098-11-23`;
+    const attemptedWithoutCurrentJobKey = `${eventA}:2098-11-30`;
+    const noReminderHistoryKey = `${eventA}:2098-12-07`;
     await databasePool.query(
       `UPDATE calendar_events SET revision = 2 WHERE user_id = $1 AND id = $2::uuid`,
       [accountA, eventA],
