@@ -1,4 +1,8 @@
-import type { CalendarEventEntry } from "./types.ts";
+import {
+  calendarEventCategories,
+  calendarEventCategoryLabels,
+  type CalendarEventEntry,
+} from "./types.ts";
 import { calendarEventEntryKey } from "./types.ts";
 import { parseCalendarDate } from "./time.ts";
 
@@ -84,6 +88,9 @@ function eventLines(entry: CalendarEventEntry, stamp: string): string[] {
     lines.push(`DTEND:${endsAt}`);
   }
 
+  if (entry.category && calendarEventCategories.includes(entry.category)) {
+    lines.push(`CATEGORIES:${escapeText(calendarEventCategoryLabels[entry.category])}`);
+  }
   lines.push(`SUMMARY:${escapeText(entry.title)}`);
   if (entry.details) lines.push(`DESCRIPTION:${escapeText(entry.details)}`);
   lines.push("END:VEVENT");

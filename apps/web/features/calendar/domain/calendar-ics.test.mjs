@@ -27,6 +27,7 @@ test("exports timed events as UTC and escapes untrusted text", () => {
   assert.doesNotMatch(calendar, /TZID=/u);
   assert.match(calendar, /SUMMARY:Exam\\; final\\, written\\\\review\\nNext line\r\n/u);
   assert.match(calendar, /DESCRIPTION:Bring\\, notes\\; no\\\\sharing\\nRoom 5\r\n/u);
+  assert.doesNotMatch(calendar, /CATEGORIES:/u);
   assert.ok(calendar.startsWith("BEGIN:VCALENDAR\r\n"));
   assert.ok(calendar.endsWith("END:VCALENDAR\r\n"));
 });
@@ -36,6 +37,7 @@ test("keeps all-day values date-only and preserves their exclusive end", () => {
     id: "123e4567-e89b-42d3-a456-426614174001",
     kind: "all-day",
     title: "Study break",
+    category: "assignment",
     details: null,
     revision: 1,
     reminderChoice: "none",
@@ -48,7 +50,42 @@ test("keeps all-day values date-only and preserves their exclusive end", () => {
 
   assert.match(calendar, /DTSTART;VALUE=DATE:20261105\r\n/u);
   assert.match(calendar, /DTEND;VALUE=DATE:20261108\r\n/u);
+  assert.match(calendar, /CATEGORIES:Assignment\r\n/u);
   assert.doesNotMatch(calendar, /DTSTART:20261105T/u);
+});
+
+test("exports only known explicit categories with their display labels", () => {
+  const event = {
+    id: "123e4567-e89b-42d3-a456-426614174005",
+    kind: "all-day",
+    title: "Category check",
+    details: null,
+    revision: 1,
+    reminderChoice: "none",
+    reminderTimeZone: null,
+    startDate: "2026-11-05",
+    endDate: "2026-11-06",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+  };
+  const categories = [
+    ["class", "Class"],
+    ["assignment", "Assignment"],
+    ["exam", "Exam"],
+    ["study", "Study"],
+    ["personal", "Personal"],
+    ["other", "Other"],
+  ];
+
+  for (const [category, label] of categories) {
+    const calendar = buildCalendarIcs([{ ...event, category }], exportedAt);
+    assert.match(calendar, new RegExp(`^CATEGORIES:${label}\\r$`, "mu"));
+  }
+
+  for (const candidate of [event, { ...event, category: null }, { ...event, category: "unrecognized" }]) {
+    const calendar = buildCalendarIcs([candidate], exportedAt);
+    assert.doesNotMatch(calendar, /CATEGORIES:/u);
+  }
 });
 
 test("exports moved recurrence instances as separate stable events", () => {
@@ -57,6 +94,7 @@ test("exports moved recurrence instances as separate stable events", () => {
     kind: "timed",
     title: "Weekly seminar",
     details: null,
+    category: "class",
     revision: 4,
     recurrenceRule: { frequency: "weekly", interval: 1, count: 4 },
     reminderChoice: "none",
@@ -75,6 +113,7 @@ test("exports moved recurrence instances as separate stable events", () => {
     kind: "timed",
     title: series.title,
     details: null,
+    category: series.category,
     revision: series.revision,
     createdAt: series.createdAt,
     updatedAt: series.updatedAt,
@@ -93,6 +132,7 @@ test("exports moved recurrence instances as separate stable events", () => {
   const ids = calendar.match(/^UID:.+$/gmu);
   assert.equal(ids?.length, 2);
   assert.notEqual(ids?.[0], ids?.[1]);
+  assert.equal(calendar.match(/^CATEGORIES:Class$/gmu)?.length, 2);
   assert.ok(calendar.indexOf("DTSTART:20261102T140000Z") < calendar.indexOf("DTSTART:20261109T140000Z"));
   assert.doesNotMatch(calendar, /RRULE:/u);
 });
