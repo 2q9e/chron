@@ -168,6 +168,27 @@ test("a cancelled recurring occurrence no longer blocks a proposed series", () =
   assert.deepEqual(result.conflicts, []);
 });
 
+test("a cancelled proposed occurrence is not reported as a conflict", () => {
+  const rule = { frequency: "weekly", interval: 1, count: 2 };
+  const proposed = allDayEvent("series-proposed-cancel", "2026-11-02", "2026-11-03", rule);
+  const conflicting = allDayEvent("exam-proposed-cancel", "2026-11-09", "2026-11-10");
+
+  const result = findCalendarSeriesConflicts(
+    proposed,
+    rule,
+    [conflicting],
+    "America/Montreal",
+    undefined,
+    new Map(),
+    new Map(),
+    new Map(),
+    new Set([`${proposed.id}:2026-11-09`]),
+  );
+
+  assert.equal(result.occurrences.length, 2);
+  assert.deepEqual(result.conflicts, []);
+});
+
 test("restoration checks only the selected occurrence against active instances", () => {
   const rule = { frequency: "daily", interval: 1, count: 2 };
   const series = allDayEvent("series-restore", "2026-11-02", "2026-11-04", rule);

@@ -400,6 +400,169 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     assert.equal(currentReminderStatus.pending, 1);
     assert.equal(currentReminderStatus.cancelled, 1);
 
+    const splitSeed = await repository.createSeriesDraft(accountA, {
+      action: "create",
+      scope: "series",
+      event: {
+        kind: "all-day",
+        title: "Following segment source",
+        startDate: "2099-02-02",
+        endDate: "2099-02-03",
+        reminderChoice: "event-day-9am",
+        reminderTimeZone: "UTC",
+      },
+      recurrenceRule: { frequency: "weekly", interval: 1, count: 4 },
+      calendarTimeZone: "UTC",
+    }, `postgres-split-seed-${randomUUID()}`);
+    const splitSource = await repository.approveSeriesDraft(accountA, splitSeed.id);
+    assert.equal(splitSource.outcome, "approved");
+    const splitSourceId = splitSource.event.id;
+    const splitSourceKeys = [2, 9, 16, 23].map((day) =>
+      `${splitSourceId}:2099-02-${String(day).padStart(2, "0")}`
+    );
+    await databasePool.query(
+      `INSERT INTO calendar_event_occurrence_exceptions (
+         user_id, event_id, occurrence_key, is_cancelled, cancelled_at,
+         moved_start_date, moved_end_date
+       ) VALUES
+         ($1, $2::uuid, $3, TRUE, CURRENT_TIMESTAMP, NULL, NULL),
+         ($1, $2::uuid, $4, FALSE, NULL, DATE '2099-03-02', DATE '2099-03-03')`,
+      [accountA, splitSourceId, splitSourceKeys[3], splitSourceKeys[2]],
+    );
+    await databasePool.query(
+      `UPDATE calendar_event_reminders
+       SET status = 'failed', attempt_count = 1, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1 AND event_id = $2::uuid AND occurrence_key = $3`,
+      [accountA, splitSourceId, splitSourceKeys[1]],
+    );
+    const splitDraft = await repository.createSeriesDraft(accountA, {
+      action: "split-series",
+      scope: "following",
+      targetEventId: splitSourceId,
+      targetRevision: splitSource.event.revision,
+      occurrenceKey: splitSourceKeys[1],
+      event: {
+        kind: "all-day",
+        title: "Revised following segment",
+        startDate: "2099-02-09",
+        endDate: "2099-02-10",
+        reminderChoice: "event-day-9am",
+        reminderTimeZone: "UTC",
+      },
+      recurrenceRule: { frequency: "weekly", interval: 1, count: 3 },
+      calendarTimeZone: "UTC",
+    }, `postgres-split-review-${randomUUID()}`);
+    assert.equal(splitDraft.outcome, "pending");
+    assert.equal(splitDraft.beforeOccurrences.length, 4);
+    assert.equal(splitDraft.afterOccurrences.length, 4);
+    assert.equal(splitDraft.afterOccurrences[0].occurrenceKey, splitSourceKeys[0]);
+    assert.equal(splitDraft.afterOccurrences[1].kind, "all-day");
+    assert.equal(splitDraft.afterOccurrences[1].startDate, "2099-02-09");
+    const splitApproval = await repository.approveSeriesDraft(accountA, splitDraft.id);
+    assert.equal(splitApproval.outcome, "approved");
+    assert.notEqual(splitApproval.event.id, splitSourceId);
+    assert.equal(splitApproval.event.seriesRootId, splitSourceId);
+    assert.deepEqual(splitApproval.event.recurrenceRule, {
+      frequency: "weekly",
+      interval: 1,
+      count: 3,
+    });
+    const splitSourceRow = await databasePool.query(
+      `SELECT recurrence_count, revision, series_root_id::text
+       FROM calendar_events WHERE user_id = $1 AND id = $2::uuid`,
+      [accountA, splitSourceId],
+    );
+    assert.deepEqual(splitSourceRow.rows[0], {
+      recurrence_count: 1,
+      revision: 2,
+      series_root_id: splitSourceId,
+    });
+    const splitExceptions = await databasePool.query(
+      `SELECT event_id::text, occurrence_key, is_cancelled,
+              moved_start_date::text, moved_end_date::text
+       FROM calendar_event_occurrence_exceptions
+       WHERE user_id = $1 AND event_id = ANY($2::uuid[])
+       ORDER BY event_id, occurrence_key`,
+      [accountA, [splitSourceId, splitApproval.event.id]],
+    );
+    assert.deepEqual(splitExceptions.rows, [
+      {
+        event_id: splitApproval.event.id,
+        occurrence_key: `${splitApproval.event.id}:2099-02-16`,
+        is_cancelled: false,
+        moved_start_date: "2099-03-02",
+        moved_end_date: "2099-03-03",
+      },
+      {
+        event_id: splitApproval.event.id,
+        occurrence_key: `${splitApproval.event.id}:2099-02-23`,
+        is_cancelled: true,
+        moved_start_date: null,
+        moved_end_date: null,
+      },
+    ]);
+    assert.deepEqual(
+      (await repository.listEvents(accountA, "2099-03-02", "2099-03-03", "UTC"))
+        .filter((event) => event.seriesId === splitApproval.event.id)
+        .map((event) => [event.occurrenceKey, event.startDate]),
+      [[`${splitApproval.event.id}:2099-02-16`, "2099-03-02"]],
+    );
+    assert.deepEqual(
+      (await repository.listCancelledOccurrences(accountA, "2099-02-23", "2099-02-24", "UTC"))
+        .map((event) => event.occurrenceKey),
+      [`${splitApproval.event.id}:2099-02-23`],
+    );
+    const oldReminderRows = await databasePool.query(
+      `SELECT occurrence_key, event_revision, status, attempt_count
+       FROM calendar_event_reminders
+       WHERE user_id = $1 AND event_id = $2::uuid
+       ORDER BY occurrence_key`,
+      [accountA, splitSourceId],
+    );
+    assert.deepEqual(oldReminderRows.rows, [
+      { occurrence_key: splitSourceKeys[0], event_revision: 2, status: "pending", attempt_count: 0 },
+      { occurrence_key: splitSourceKeys[1], event_revision: 1, status: "failed", attempt_count: 1 },
+      { occurrence_key: splitSourceKeys[2], event_revision: 1, status: "cancelled", attempt_count: 0 },
+      { occurrence_key: splitSourceKeys[3], event_revision: 1, status: "cancelled", attempt_count: 0 },
+    ]);
+    const newReminderRows = await databasePool.query(
+      `SELECT occurrence_key, event_revision, status, attempt_count
+       FROM calendar_event_reminders
+       WHERE user_id = $1 AND event_id = $2::uuid
+       ORDER BY occurrence_key`,
+      [accountA, splitApproval.event.id],
+    );
+    assert.deepEqual(newReminderRows.rows, [{
+      occurrence_key: `${splitApproval.event.id}:2099-02-16`,
+      event_revision: 1,
+      status: "pending",
+      attempt_count: 0,
+    }]);
+
+    const staleSeed = await repository.createSeriesDraft(accountA, {
+      action: "create",
+      scope: "series",
+      event: { kind: "all-day", title: "Stale split source", startDate: "2099-04-01", endDate: "2099-04-02" },
+      recurrenceRule: { frequency: "weekly", interval: 1, count: 3 },
+      calendarTimeZone: "UTC",
+    }, `postgres-stale-split-seed-${randomUUID()}`);
+    const staleSource = await repository.approveSeriesDraft(accountA, staleSeed.id);
+    const staleSplit = await repository.createSeriesDraft(accountA, {
+      action: "split-series",
+      scope: "following",
+      targetEventId: staleSource.event.id,
+      targetRevision: staleSource.event.revision,
+      occurrenceKey: `${staleSource.event.id}:2099-04-08`,
+      event: { kind: "all-day", title: "Stale split source", startDate: "2099-04-08", endDate: "2099-04-09" },
+      recurrenceRule: { frequency: "weekly", interval: 1, count: 2 },
+      calendarTimeZone: "UTC",
+    }, `postgres-stale-split-review-${randomUUID()}`);
+    await databasePool.query(
+      "UPDATE calendar_events SET revision = revision + 1 WHERE user_id = $1 AND id = $2::uuid",
+      [accountA, staleSource.event.id],
+    );
+    assert.equal((await repository.approveSeriesDraft(accountA, staleSplit.id)).outcome, "stale");
+
     const appRole = await adminPool.query(
       "SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = $1",
       [roleName],

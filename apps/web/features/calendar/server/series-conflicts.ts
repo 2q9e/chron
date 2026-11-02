@@ -227,6 +227,7 @@ export function findCalendarSeriesConflicts(
   cancelledOccurrenceKeys: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
   occurrenceMovements: CalendarOccurrenceMovements = new Map(),
   proposedOccurrenceMovements: CalendarOccurrenceMovements = occurrenceMovements,
+  proposedCancelledOccurrenceKeys: ReadonlySet<string> = new Set(),
 ): Readonly<{
   occurrences: readonly CalendarRecurrenceOccurrence[];
   conflicts: readonly CalendarSeriesOccurrenceConflict[];
@@ -238,6 +239,7 @@ export function findCalendarSeriesConflicts(
   }
 
   const proposedIntervals = occurrences
+    .filter((occurrence) => !proposedCancelledOccurrenceKeys.has(occurrence.occurrenceKey))
     .map((occurrence) => applyMovement(occurrence, proposedOccurrenceMovements))
     .map((occurrence) => occurrenceInterval(occurrence, calendarTimeZone))
     .sort((left, right) => left.start - right.start

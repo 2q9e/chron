@@ -191,6 +191,7 @@ type SeriesProposalSnapshot = Readonly<{
     details: string | null;
     kind: "timed" | "all-day";
     recurrenceRule: CalendarRecurrenceRule;
+    seriesRootId?: string;
   }> | null;
   beforeOccurrences: readonly SeriesOccurrenceSnapshot[];
   afterOccurrences: readonly SeriesOccurrenceSnapshot[];
@@ -453,6 +454,7 @@ function toCalendarEvent(row: EventRow): CalendarEvent {
   const recurrenceRule = recurrenceRuleFromRow(row);
   const base = {
     id: row.id,
+    ...(row.series_root_id ? { seriesRootId: row.series_root_id } : {}),
     title: row.title,
     details: row.details,
     revision: row.revision,
@@ -576,8 +578,10 @@ async function insertCalendarReminderJobs(
   event: CalendarEvent,
   cancelledOccurrenceKeys: ReadonlySet<string> = new Set(),
   movements: ReadonlyMap<string, CalendarOccurrenceMovement> = new Map(),
+  blockedOccurrenceKeys: ReadonlySet<string> = new Set(),
 ): Promise<void> {
-  const jobs = reminderJobsForEvent(event, cancelledOccurrenceKeys, movements);
+  const jobs = reminderJobsForEvent(event, cancelledOccurrenceKeys, movements)
+    .filter(({ occurrenceKey }) => !blockedOccurrenceKeys.has(occurrenceKey));
   if (jobs.length === 0) return;
 
   await client.query(
@@ -1242,12 +1246,13 @@ function canonicalSeriesRequest(request: CalendarSeriesDraftRequest): Record<str
   return {
     action: request.action,
     scope: request.scope,
-    ...(request.action === "update"
+    ...(request.action === "update" || request.action === "split-series"
       ? {
           targetEventId: request.targetEventId.toLowerCase(),
           targetRevision: request.targetRevision,
         }
       : {}),
+    ...(request.action === "split-series" ? { occurrenceKey: request.occurrenceKey } : {}),
     event,
     recurrenceRule: {
       frequency: request.recurrenceRule.frequency,
@@ -1282,6 +1287,7 @@ function seriesEventFromMutation(
   revision: number,
   createdAt: string,
   updatedAt: string,
+  seriesRootId: string = id,
 ): CalendarEvent {
   const rule = normalizeRecurrenceRule(recurrenceRule);
   const base = {
@@ -1290,6 +1296,7 @@ function seriesEventFromMutation(
     details: mutation.details ?? null,
     revision,
     recurrenceRule: rule,
+    seriesRootId,
     createdAt,
     updatedAt,
   };
@@ -1326,6 +1333,121 @@ function seriesEventFromMutation(
       : null,
     startDate: bounds.startDate,
     endDate: bounds.endDate,
+  };
+}
+
+type CalendarSeriesSplitRequest = Extract<CalendarSeriesDraftRequest, { action: "split-series" }>;
+
+type CalendarSeriesSplitPlan = Readonly<{
+  splitIndex: number;
+  targetOccurrences: readonly CalendarRecurrenceOccurrence[];
+  segment: CalendarEvent;
+  segmentOccurrences: readonly CalendarRecurrenceOccurrence[];
+  cancelledOccurrenceKeys: ReadonlySet<string>;
+  occurrenceMovements: ReadonlyMap<string, CalendarOccurrenceMovement>;
+  sourceToFollowingOccurrenceKey: ReadonlyMap<string, string>;
+}>;
+
+function planCalendarSeriesSplit(
+  target: CalendarEvent,
+  request: CalendarSeriesSplitRequest,
+  newEventId: string,
+  now: string,
+  targetCancelledOccurrenceKeys: ReadonlySet<string>,
+  targetOccurrenceMovements: ReadonlyMap<string, CalendarOccurrenceMovement>,
+): CalendarSeriesSplitPlan {
+  if (!target.recurrenceRule || !target.seriesRootId) {
+    throw new CalendarRouteError(
+      409,
+      "SERIES_LINEAGE_UNAVAILABLE",
+      "Reload this recurring series before splitting it.",
+    );
+  }
+
+  const targetOccurrences = expandFullCalendarSeries(target, target.recurrenceRule);
+  const splitIndex = targetOccurrences.findIndex(({ occurrenceKey }) =>
+    occurrenceKey === request.occurrenceKey
+  );
+  if (splitIndex < 0) {
+    throw new CalendarRouteError(
+      409,
+      "OCCURRENCE_NOT_IN_SERIES",
+      "That occurrence no longer belongs to this recurring series. Reload the calendar.",
+    );
+  }
+  if (splitIndex === 0) {
+    throw new CalendarRouteError(
+      409,
+      "SERIES_SPLIT_HAS_NO_PREFIX",
+      "This is the first occurrence. Review a change for the whole series instead.",
+    );
+  }
+  if (targetCancelledOccurrenceKeys.has(request.occurrenceKey)) {
+    throw new CalendarRouteError(
+      409,
+      "OCCURRENCE_ALREADY_CANCELLED",
+      "A cancelled occurrence cannot start a following-series split.",
+    );
+  }
+
+  const suffixCount = targetOccurrences.length - splitIndex;
+  if (request.recurrenceRule.count !== suffixCount) {
+    throw new CalendarRouteError(
+      422,
+      "SERIES_SPLIT_COUNT_MISMATCH",
+      "The proposed segment must keep the remaining finite occurrence count.",
+    );
+  }
+
+  const segment = seriesEventFromMutation(
+    newEventId,
+    request.event,
+    request.recurrenceRule,
+    1,
+    target.createdAt,
+    now,
+    target.seriesRootId,
+  );
+  const segmentOccurrences = expandFullCalendarSeries(segment, request.recurrenceRule);
+  if (segmentOccurrences.length !== suffixCount) {
+    throw new CalendarRouteError(
+      422,
+      "SERIES_SPLIT_UNVERIFIABLE",
+      "Chron could not verify every occurrence in the proposed segment.",
+    );
+  }
+
+  const cancelledOccurrenceKeys = new Set<string>();
+  const occurrenceMovements = new Map<string, CalendarOccurrenceMovement>();
+  const sourceToFollowingOccurrenceKey = new Map<string, string>();
+  for (let offset = 0; offset < suffixCount; offset += 1) {
+    const previous = targetOccurrences[splitIndex + offset];
+    const following = segmentOccurrences[offset];
+    sourceToFollowingOccurrenceKey.set(previous.occurrenceKey, following.occurrenceKey);
+    if (targetCancelledOccurrenceKeys.has(previous.occurrenceKey)) {
+      cancelledOccurrenceKeys.add(following.occurrenceKey);
+    }
+    const movement = targetOccurrenceMovements.get(previous.occurrenceKey);
+    if (movement) {
+      if (movement.kind !== following.kind) {
+        throw new CalendarRouteError(
+          409,
+          "SERIES_SPLIT_MOVEMENT_NOT_PRESERVED",
+          "Resolve moved occurrences before changing the event type in a following-series split.",
+        );
+      }
+      occurrenceMovements.set(following.occurrenceKey, movement);
+    }
+  }
+
+  return {
+    splitIndex,
+    targetOccurrences,
+    segment,
+    segmentOccurrences,
+    cancelledOccurrenceKeys,
+    occurrenceMovements,
+    sourceToFollowingOccurrenceKey,
   };
 }
 
@@ -1424,7 +1546,10 @@ function occurrencesForCalendarRange(
     ));
 }
 
-function snapshotTarget(target: CalendarEvent): SeriesProposalSnapshot["target"] {
+function snapshotTarget(
+  target: CalendarEvent,
+  includeSeriesRoot = false,
+): SeriesProposalSnapshot["target"] {
   if (!target.recurrenceRule) return null;
   return {
     revision: target.revision,
@@ -1432,6 +1557,9 @@ function snapshotTarget(target: CalendarEvent): SeriesProposalSnapshot["target"]
     details: target.details,
     kind: target.kind,
     recurrenceRule: target.recurrenceRule,
+    ...(includeSeriesRoot && target.seriesRootId
+      ? { seriesRootId: target.seriesRootId }
+      : {}),
   };
 }
 
@@ -1498,7 +1626,11 @@ function readSeriesSnapshot(value: unknown): SeriesProposalSnapshot {
       || !Number.isSafeInteger(parsed.target.revision)
       || typeof parsed.target.title !== "string"
       || !(typeof parsed.target.details === "string" || parsed.target.details === null)
-      || (parsed.target.kind !== "timed" && parsed.target.kind !== "all-day")) {
+      || (parsed.target.kind !== "timed" && parsed.target.kind !== "all-day")
+      || (Object.hasOwn(parsed.target, "seriesRootId")
+        && (typeof parsed.target.seriesRootId !== "string"
+          || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+            .test(parsed.target.seriesRootId)))) {
       throw new Error("The saved recurring proposal target is invalid.");
     }
     target = {
@@ -1507,6 +1639,9 @@ function readSeriesSnapshot(value: unknown): SeriesProposalSnapshot {
       details: parsed.target.details,
       kind: parsed.target.kind,
       recurrenceRule: normalizeRecurrenceRule(parsed.target.recurrenceRule),
+      ...(typeof parsed.target.seriesRootId === "string"
+        ? { seriesRootId: parsed.target.seriesRootId }
+        : {}),
     };
   }
 
@@ -1732,7 +1867,9 @@ function buildSeriesProposalSnapshot(
       .map((occurrence) => applySavedOccurrenceMovement(occurrence, targetOccurrenceMovements))
       .map(occurrenceSnapshot)
     : [];
-  const targetSnapshot = target ? snapshotTarget(target) : null;
+  const targetSnapshot = target
+    ? snapshotTarget(target, request.action === "split-series")
+    : null;
 
   if (request.action === "cancel-occurrence") {
     if (!target || targetCancelledOccurrenceKeys.has(request.occurrenceKey)) {
@@ -1883,6 +2020,80 @@ function buildSeriesProposalSnapshot(
     };
   }
 
+  if (request.action === "split-series") {
+    if (!target) {
+      throw new CalendarRouteError(
+        409,
+        "SERIES_TARGET_REQUIRED",
+        "Choose a recurring event before splitting its following occurrences.",
+      );
+    }
+    const plan = planCalendarSeriesSplit(
+      target,
+      request,
+      eventId,
+      now,
+      targetCancelledOccurrenceKeys,
+      targetOccurrenceMovements,
+    );
+    const prefixKeys = new Set(plan.targetOccurrences
+      .slice(0, plan.splitIndex)
+      .map(({ occurrenceKey }) => occurrenceKey));
+    const prefixEvent: CalendarEvent = {
+      ...target,
+      recurrenceRule: { ...target.recurrenceRule!, count: plan.splitIndex },
+    };
+    const candidateCancelled = new Map(existingCandidates.cancelledOccurrenceKeys);
+    candidateCancelled.set(target.id, new Set([...targetCancelledOccurrenceKeys]
+      .filter((key) => prefixKeys.has(key))));
+    const candidateMovements = new Map(existingCandidates.occurrenceMovements);
+    candidateMovements.set(target.id, new Map([...targetOccurrenceMovements]
+      .filter(([key]) => prefixKeys.has(key))));
+
+    let comparison: ReturnType<typeof findCalendarSeriesConflicts>;
+    try {
+      comparison = findCalendarSeriesConflicts(
+        plan.segment,
+        request.recurrenceRule,
+        [...existingCandidates.events, prefixEvent],
+        request.calendarTimeZone,
+        undefined,
+        candidateCancelled,
+        candidateMovements,
+        new Map([[plan.segment.id, plan.occurrenceMovements]]),
+        plan.cancelledOccurrenceKeys,
+      );
+    } catch (error) {
+      if (error instanceof RangeError || error instanceof RecurrenceError) {
+        throw new CalendarRouteError(
+          422,
+          "SERIES_SPLIT_UNVERIFIABLE",
+          "Chron could not verify every overlap for the proposed following occurrences.",
+        );
+      }
+      throw error;
+    }
+
+    const afterOccurrences = [
+      ...beforeOccurrences.slice(0, plan.splitIndex),
+      ...plan.segmentOccurrences
+        .map((occurrence) => applySavedOccurrenceMovement(
+          occurrence,
+          plan.occurrenceMovements,
+        ))
+        .map(occurrenceSnapshot),
+    ];
+    return {
+      version: 1,
+      eventId,
+      calendarTimeZone: request.calendarTimeZone,
+      target: targetSnapshot,
+      beforeOccurrences,
+      afterOccurrences,
+      conflicts: comparison.conflicts,
+    };
+  }
+
   if (request.action === "delete") {
     return {
       version: 1,
@@ -1972,13 +2183,16 @@ function seriesDraftResult(row: SeriesDraftRow, replayed: boolean): CalendarSeri
     replayed,
     targetEventId: row.target_event_id,
     targetRevision: row.target_revision,
-    event: request && (request.action === "create" || request.action === "update")
+    event: request && (request.action === "create" || request.action === "update"
+      || request.action === "split-series")
       ? request.event
       : null,
-    recurrenceRule: request && (request.action === "create" || request.action === "update")
+    recurrenceRule: request && (request.action === "create" || request.action === "update"
+      || request.action === "split-series")
       ? request.recurrenceRule
       : null,
-    calendarTimeZone: request && (request.action === "create" || request.action === "update")
+    calendarTimeZone: request && (request.action === "create" || request.action === "update"
+      || request.action === "split-series")
       ? request.calendarTimeZone
       : snapshot?.calendarTimeZone ?? null,
     beforeOccurrences: snapshot?.beforeOccurrences ?? [],
@@ -2285,6 +2499,123 @@ async function updateSeriesEvent(
         ],
       );
   return result.rows[0] ? toCalendarEvent(result.rows[0]) : null;
+}
+
+async function truncateCalendarSeriesSegment(
+  client: PoolClient,
+  ownerId: string,
+  eventId: string,
+  expectedRevision: number,
+  prefixCount: number,
+): Promise<CalendarEvent | null> {
+  const result = await client.query<EventRow>(
+    `UPDATE calendar_events
+     SET recurrence_count = $4,
+         revision = revision + 1,
+         updated_at = clock_timestamp()
+     WHERE user_id = $1 AND id = $2::uuid AND revision = $3
+       AND recurrence_frequency IS NOT NULL
+     RETURNING ${eventColumns}`,
+    [ownerId, eventId, expectedRevision, prefixCount],
+  );
+  return result.rows[0] ? toCalendarEvent(result.rows[0]) : null;
+}
+
+async function transferSplitOccurrenceExceptions(
+  client: PoolClient,
+  ownerId: string,
+  sourceEventId: string,
+  followingEventId: string,
+  plan: CalendarSeriesSplitPlan,
+): Promise<void> {
+  const mapping = [...plan.sourceToFollowingOccurrenceKey]
+    .map(([sourceKey, followingKey]) => ({ sourceKey, followingKey }));
+  await client.query(
+    `INSERT INTO calendar_event_occurrence_exceptions (
+       user_id, event_id, occurrence_key, is_cancelled, cancelled_at,
+       moved_start_local, moved_end_local, moved_time_zone,
+       moved_starts_at, moved_ends_at, moved_start_date, moved_end_date, updated_at
+     )
+     SELECT exception.user_id,
+            $3::uuid,
+            mapping.following_key,
+            exception.is_cancelled,
+            exception.cancelled_at,
+            exception.moved_start_local,
+            exception.moved_end_local,
+            exception.moved_time_zone,
+            exception.moved_starts_at,
+            exception.moved_ends_at,
+            exception.moved_start_date,
+            exception.moved_end_date,
+            clock_timestamp()
+     FROM calendar_event_occurrence_exceptions AS exception
+     JOIN jsonb_to_recordset($4::jsonb) AS mapping(source_key text, following_key text)
+       ON mapping.source_key = exception.occurrence_key
+     WHERE exception.user_id = $1 AND exception.event_id = $2::uuid`,
+    [ownerId, sourceEventId, followingEventId, JSON.stringify(mapping)],
+  );
+  const sourceKeys = [...plan.sourceToFollowingOccurrenceKey.keys()];
+  await client.query(
+    `DELETE FROM calendar_event_occurrence_exceptions
+     WHERE user_id = $1 AND event_id = $2::uuid
+       AND occurrence_key = ANY($3::text[])`,
+    [ownerId, sourceEventId, sourceKeys],
+  );
+}
+
+async function reconcileSplitSeriesReminders(
+  client: PoolClient,
+  ownerId: string,
+  source: CalendarEvent,
+  prefixRevision: number,
+  plan: CalendarSeriesSplitPlan,
+  cancelledOccurrenceKeys: ReadonlySet<string>,
+): Promise<ReadonlySet<string>> {
+  const prefixKeys = plan.targetOccurrences
+    .slice(0, plan.splitIndex)
+    .map(({ occurrenceKey }) => occurrenceKey);
+  const suffixKeys = [...plan.sourceToFollowingOccurrenceKey.keys()];
+  const cancelledPrefixKeys = prefixKeys.filter((key) => cancelledOccurrenceKeys.has(key));
+  const activePrefixKeys = prefixKeys.filter((key) => !cancelledOccurrenceKeys.has(key));
+
+  await client.query(
+    `UPDATE calendar_event_reminders
+     SET event_revision = $3,
+         updated_at = clock_timestamp()
+     WHERE user_id = $1 AND event_id = $2::uuid
+       AND event_revision = $4
+       AND occurrence_key = ANY($5::text[])
+       AND status = 'pending'`,
+    [ownerId, source.id, prefixRevision, source.revision, activePrefixKeys],
+  );
+  await client.query(
+    `UPDATE calendar_event_reminders
+     SET status = 'cancelled',
+         lease_token = NULL,
+         lease_expires_at = NULL,
+         updated_at = clock_timestamp()
+     WHERE user_id = $1 AND event_id = $2::uuid
+       AND occurrence_key = ANY($3::text[])
+       AND status IN ('pending', 'leased')
+       AND (occurrence_key = ANY($4::text[])
+         OR occurrence_key = ANY($5::text[]))`,
+    [ownerId, source.id, [...prefixKeys, ...suffixKeys], cancelledPrefixKeys, suffixKeys],
+  );
+
+  const attemptedResult = await client.query<{ occurrence_key: string } & QueryResultRow>(
+    `SELECT DISTINCT occurrence_key
+     FROM calendar_event_reminders
+     WHERE user_id = $1 AND event_id = $2::uuid
+       AND occurrence_key = ANY($3::text[]) AND attempt_count > 0`,
+    [ownerId, source.id, suffixKeys],
+  );
+  const blockedFollowingKeys = new Set<string>();
+  for (const row of attemptedResult.rows) {
+    const followingKey = plan.sourceToFollowingOccurrenceKey.get(row.occurrence_key);
+    if (followingKey) blockedFollowingKeys.add(followingKey);
+  }
+  return blockedFollowingKeys;
 }
 
 function assertConflictReview(
@@ -3264,12 +3595,15 @@ export class CalendarRepository {
       }
 
       if (request.action === "create" || request.action === "update"
-        || request.action === "restore-occurrence" || request.action === "move-occurrence") {
+        || request.action === "split-series" || request.action === "restore-occurrence"
+        || request.action === "move-occurrence") {
         await requireCalendarTimeZone(client, ownerId, request.calendarTimeZone);
       }
 
       const draftId = randomUUID();
-      const eventId = target?.id ?? randomUUID();
+      const eventId = request.action === "create" || request.action === "split-series"
+        ? randomUUID()
+        : target?.id ?? randomUUID();
       const candidates = request.action === "delete" || request.action === "cancel-occurrence"
         ? emptySeriesCandidates
         : await loadSeriesCandidates(
@@ -3408,8 +3742,11 @@ export class CalendarRepository {
           || target.revision !== request.targetRevision
           || target.revision !== draft.target_revision
           || !target.recurrenceRule
-          || target.id !== savedSnapshot.eventId
-          || stableJson(snapshotTarget(target)) !== stableJson(savedSnapshot.target)) {
+          || (request.action === "split-series"
+            ? target.id === savedSnapshot.eventId
+            : target.id !== savedSnapshot.eventId)
+          || stableJson(snapshotTarget(target, request.action === "split-series"))
+            !== stableJson(savedSnapshot.target)) {
           const stale = await transitionPendingSeriesDraft(client, ownerId, draftId, "stale");
           return calendarSeriesApproval(stale);
         }
@@ -3421,6 +3758,7 @@ export class CalendarRepository {
       let recomputed: SeriesProposalSnapshot;
       try {
         if (request.action === "create" || request.action === "update"
+          || request.action === "split-series"
           || request.action === "restore-occurrence" || request.action === "move-occurrence") {
           await requireCalendarTimeZone(client, ownerId, request.calendarTimeZone);
         }
@@ -3461,7 +3799,12 @@ export class CalendarRepository {
             || error.code === "OCCURRENCE_NOT_IN_SERIES"
             || error.code === "OCCURRENCE_MOVE_UNVERIFIABLE"
             || error.code === "SERIES_MOVEMENT_NOT_PRESERVED"
-            || error.code === "SERIES_CANCELLATION_NOT_PRESERVED")) {
+            || error.code === "SERIES_CANCELLATION_NOT_PRESERVED"
+            || error.code === "SERIES_LINEAGE_UNAVAILABLE"
+            || error.code === "SERIES_SPLIT_HAS_NO_PREFIX"
+            || error.code === "SERIES_SPLIT_COUNT_MISMATCH"
+            || error.code === "SERIES_SPLIT_MOVEMENT_NOT_PRESERVED"
+            || error.code === "SERIES_SPLIT_UNVERIFIABLE")) {
           const stale = await transitionPendingSeriesDraft(client, ownerId, draftId, "stale");
           return calendarSeriesApproval(stale);
         }
@@ -3658,6 +4001,61 @@ export class CalendarRepository {
           return calendarSeriesApproval(stale);
         }
         await moveCalendarOccurrenceReminder(client, ownerId, target, movedOccurrence);
+        await staleOtherSeriesDraftsForTarget(client, ownerId, target.id, draftId);
+      } else if (request.action === "split-series") {
+        if (!target) throw new Error("A split recurring series lost its target.");
+        const targetCancelled = await loadCancelledOccurrenceKeys(client, ownerId, [target.id]);
+        const targetMovements = await loadOccurrenceMovements(client, ownerId, [target.id]);
+        const plan = planCalendarSeriesSplit(
+          target,
+          request,
+          savedSnapshot.eventId,
+          new Date().toISOString(),
+          targetCancelled.get(target.id) ?? new Set(),
+          targetMovements.get(target.id) ?? new Map(),
+        );
+        const prefix = await truncateCalendarSeriesSegment(
+          client,
+          ownerId,
+          target.id,
+          target.revision,
+          plan.splitIndex,
+        );
+        if (!prefix) {
+          const stale = await transitionPendingSeriesDraft(client, ownerId, draftId, "stale");
+          return calendarSeriesApproval(stale);
+        }
+        event = await insertSeriesEvent(
+          client,
+          ownerId,
+          savedSnapshot.eventId,
+          request.event,
+          request.recurrenceRule,
+          target.seriesRootId,
+        );
+        await transferSplitOccurrenceExceptions(
+          client,
+          ownerId,
+          target.id,
+          event.id,
+          plan,
+        );
+        const blockedReminderKeys = await reconcileSplitSeriesReminders(
+          client,
+          ownerId,
+          target,
+          prefix.revision,
+          plan,
+          targetCancelled.get(target.id) ?? new Set(),
+        );
+        await insertCalendarReminderJobs(
+          client,
+          ownerId,
+          event,
+          plan.cancelledOccurrenceKeys,
+          plan.occurrenceMovements,
+          blockedReminderKeys,
+        );
         await staleOtherSeriesDraftsForTarget(client, ownerId, target.id, draftId);
       } else {
         const deleted = await client.query(
