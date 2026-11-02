@@ -242,7 +242,7 @@ export function MonthCalendar(props: MonthCalendarProps) {
                 className={styles.monthDate}
                 id={`month-date-${dateKey}`}
                 type="button"
-                onClick={() => onCreate(dateKey)}
+                onClick={(event) => onCreate(dateKey, undefined, event.currentTarget)}
                 aria-label={`Create an event on ${day.toLocaleString(locale, { month: "long", day: "numeric", year: "numeric" })}`}
                 aria-current={dateKey === selectedDate ? "date" : undefined}
               >
@@ -340,7 +340,7 @@ function DayColumn({
           className={styles.addDayEvent}
           type="button"
           ref={addEventButton}
-          onClick={() => onCreate(date)}
+          onClick={(event) => onCreate(date, undefined, event.currentTarget)}
           aria-label={`Create an event on ${dateTitle}`}
         >
           Add event
@@ -520,7 +520,7 @@ export function AgendaCalendar(props: CalendarViewProps) {
             <button
               className={styles.addDayEvent}
               type="button"
-              onClick={() => onCreate(date)}
+              onClick={(event) => onCreate(date, undefined, event.currentTarget)}
               aria-label={`Create an event on ${formatDateOnly(date, locale, { month: "long", day: "numeric", year: "numeric" })}`}
             >
               Add event
