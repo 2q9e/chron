@@ -8,6 +8,7 @@ import type { CalendarEventEntry } from "./types";
 
 const maximumPlanningDays = 60;
 const maximumStudyMinutes = 10_080;
+const maximumStudySessions = 120;
 const quarterHourTimePattern = /^(?:[01]\d|2[0-3]):(?:00|15|30|45)$/u;
 
 export type StudyPlannerInput = Readonly<{
@@ -216,7 +217,7 @@ function makeSession(
   const startDisambiguation = disambiguationFor(startLocal, timeZone, start);
   const endDisambiguation = disambiguationFor(endLocal, timeZone, end);
   return {
-    id: `${start.epochNanoseconds.toString()}:${durationMinutes}`,
+    id: `${encodeURIComponent(topic)}:${timeZone}:${start.epochNanoseconds.toString()}:${durationMinutes}`,
     date,
     title: `Study: ${topic}`,
     startLocal,
@@ -232,6 +233,7 @@ function makeSession(
 
 export function studyPlannerInputErrors(
   input: StudyPlannerInput,
+  now: Temporal.Instant = Temporal.Now.instant(),
 ): Partial<Record<StudyPlannerField, string>> {
   const errors: Partial<Record<StudyPlannerField, string>> = {};
   const topic = typeof input.topic === "string" ? input.topic.trim() : "";
@@ -243,6 +245,11 @@ export function studyPlannerInputErrors(
   }
   if (!isValidMultiple(input.sessionMinutes, 15, 180)) {
     errors.sessionMinutes = "Use 15-minute increments from 15 to 180 minutes.";
+  }
+  if (isValidMultiple(input.totalMinutes, 15, maximumStudyMinutes)
+    && isValidMultiple(input.sessionMinutes, 15, 180)
+    && Math.ceil(input.totalMinutes / input.sessionMinutes) > maximumStudySessions) {
+    errors.sessionMinutes = `Choose a session length that keeps the plan to ${maximumStudySessions} or fewer sessions.`;
   }
   if (!isValidMultiple(input.eventBufferMinutes, 0, 60)) {
     errors.eventBufferMinutes = "Use 15-minute increments from 0 to 60 minutes.";
@@ -278,10 +285,15 @@ export function studyPlannerInputErrors(
     }
   }
 
+  let timeZone: string | null = null;
   try {
-    validateTimeZone(input.timeZone);
+    timeZone = validateTimeZone(input.timeZone);
   } catch {
     errors.timeZone = "The saved calendar time zone is invalid. Update calendar settings before planning.";
+  }
+  if (start && timeZone
+    && Temporal.PlainDate.compare(start, now.toZonedDateTimeISO(timeZone).toPlainDate()) < 0) {
+    errors.startDate = "Choose today or a future date in your calendar time zone.";
   }
 
   const weekdayValues = Array.isArray(input.weekdays) ? input.weekdays : [];
@@ -294,13 +306,13 @@ export function studyPlannerInputErrors(
   return errors;
 }
 
-function validateInput(input: StudyPlannerInput): Readonly<{
+function validateInput(input: StudyPlannerInput, now: Temporal.Instant): Readonly<{
   topic: string;
   timeZone: string;
   start: Temporal.PlainDate;
   deadline: Temporal.PlainDate;
 }> {
-  const errors = studyPlannerInputErrors(input);
+  const errors = studyPlannerInputErrors(input, now);
   if (Object.keys(errors).length > 0) invalidPlan(Object.values(errors)[0]!);
   const topic = typeof input.topic === "string" ? input.topic.trim() : "";
   const timeZone = validateTimeZone(input.timeZone);
@@ -320,8 +332,9 @@ function validateInput(input: StudyPlannerInput): Readonly<{
 export function planStudyTime(
   input: StudyPlannerInput,
   events: readonly CalendarEventEntry[],
+  now: Temporal.Instant = Temporal.Now.instant(),
 ): StudyPlan {
-  const { topic, timeZone, start, deadline } = validateInput(input);
+  const { topic, timeZone, start, deadline } = validateInput(input, now);
   const busy = events.map((event) => eventInterval(event, timeZone, input.eventBufferMinutes));
   const weekdays = new Set(input.weekdays);
   const days: DayAvailability[] = [];
@@ -340,7 +353,8 @@ export function planStudyTime(
       skippedDates.push({ date: dateText, reason: "clock-change" });
       continue;
     }
-    days.push({ date: dateText, intervals: getFreeIntervals(dayStart, dayEnd, busy) });
+    const availableStart = Temporal.Instant.compare(dayStart, now) < 0 ? now : dayStart;
+    days.push({ date: dateText, intervals: getFreeIntervals(availableStart, dayEnd, busy) });
   }
 
   const requestedSessions = Math.ceil(input.totalMinutes / input.sessionMinutes);
