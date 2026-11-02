@@ -1,5 +1,33 @@
 # Progress
 
+## Current checkpoint — 2026-11-02
+
+`C1-category1` is implemented in the working tree on `main`. It adds six
+academic event categories with an additive nullable migration. Existing
+records are left unchanged. The client distinguishes an explicitly empty
+category from a field omitted by an older API, omits unedited categories on
+create/update, and retains “Leave category unchanged” while editing an older
+event. Categories are displayed in the event editor, timeline, search results,
+and series review. The feature is not yet pushed, deployed, or active on staging.
+
+Calendar domain (66), presentation (68), and server (115) tests pass, as do
+typecheck, lint, and `git diff --check`. The authenticated capability route
+keeps category entry unavailable against older releases and mutations
+recheck support before category-bearing writes. The PostgreSQL integration
+test was not run because `CHRON_TEST_DATABASE_URL` is unset. A production
+build has not been run locally because the workspace volume has 93 MB free;
+GitHub Actions must provide the build and migration verification after the
+push. Independent review drove fixes for mixed-version category clearing,
+unchanged-field submissions, the legacy select’s revert option, and the
+study-planner category preselection.
+The independent read-only re-review found no remaining category blocker under
+the documented single-service rollout and rollback constraints.
+
+External, Git, and staging endpoints stay on HTTPS. Plain HTTP literals found
+in the source scan are confined to loopback or negative security-test inputs;
+no product fetch target or deployment URL uses HTTP. Staging remains on
+release `6ddcaf1`; no VPS files or services were changed.
+
 ## Latest checkpoint — 2026-11-02
 
 `C1-study1` is implemented and pushed to the single GitHub `main` branch in

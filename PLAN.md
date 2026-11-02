@@ -78,6 +78,26 @@ deployment URL files contain no plain-HTTP URLs. Staging remains on release
 deployment only after authorized VPS access is restored, and record signed-in
 browser verification as unavailable without an authorized test account.
 
+`C1-category1` adds academic event categories (`class`, `assignment`, `exam`,
+`study`, `personal`, and `other`). Database `NULL` means explicitly
+uncategorized; an omitted category from an older API remains unknown in client
+state. Untouched new and existing event drafts omit the category field, while
+an explicit category choice is validated, persisted, shown in event controls,
+and carried through finite-series edits. Migration 0018 leaves existing rows
+unchanged and categorizes no historical event by guess. New category writes
+require deploying the matching Chron frontend and backend release together;
+the authenticated `/api/calendar/capabilities` response gates the UI and the
+client rechecks capability before category writes. Older releases return 404,
+so the category field stays unavailable and planner proposals omit it. The
+staging release procedure must stop and drain the single `chron-web.service`
+before replacing its app process, apply the migration before starting the new
+release, and never run mixed app versions against one origin. If staging later
+adds multiple app instances, capability exposure must wait until all write
+handlers are upgraded or routing affinity is enforced. Do not roll back to a
+pre-0018 handler while category-bearing series drafts remain pending; resolve
+or expire those drafts on a compatible release first. This task uses S014,
+S201, S203, and S456 and keeps all network and staging URLs on HTTPS.
+
 The first R1 implementation is a direct public HTTPS source reader on the
 single main branch. Commits 2019687, 054f060, and b71d104 add URL validation,
 pinned HTTPS retrieval, an authenticated same-origin route, per-account quota,

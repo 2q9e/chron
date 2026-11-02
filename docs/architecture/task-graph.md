@@ -1503,3 +1503,57 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   `d1b123f update`, `1b88ebb update`, `7315413 refine`, and `b11a677 improve`.
   CI passed. Deployment and signed-in HTTPS staging verification remain open
   until authorized VPS access and a test account are available.
+
+### C1-category1 — academic calendar event categories
+
+- **Task ID:** C1-category1
+- **Objective:** Add persisted class, assignment, exam, study, personal, and
+  other categories to calendar events and expose the choice in event editing,
+  recurring-series review, search results, and the calendar timeline.
+- **Assigned agent:** Main integration owner; independent review is read-only.
+- **Required model:** Runtime model identity was not attested; no model claim.
+- **Required reasoning level:** Runtime reasoning configuration was not
+  attested; no level claim.
+- **Dependencies:** Existing calendar event schema, authenticated event API,
+  event editor, recurrence repository, and conflict-review flow.
+- **Owned files:** Migration `0018_calendar_event_categories.sql`; calendar
+  domain event types and recurrence; API client/model/editor/search/event
+  controls/workspace styles; event validation/repository/series conflict code;
+  focused tests and current plan/progress/handoff records.
+- **Read-only files:** Authentication/session authorization, unrelated
+  calendar preferences and reminder jobs.
+- **Excluded materials:** The old calendar reference folder and private VPS
+  configuration are not inspected or used.
+- **Required skills:** S014 (controlled forms), S201 (relational domain
+  modeling), S203 (expand-contract migrations), and S456 (database migration
+  pipeline), plus installed TypeScript, API integration, frontend security,
+  and accessibility guidance. The relevant instructions were read and applied.
+- **Security permissions:** Only Chron calendar source, tests, and docs. No
+  credentials, reference material, VPS access, or external writes. Keep
+  owner-scoped transactions and exact server validation. Existing rows remain
+  SQL `NULL`; do not infer categories from titles or other user data.
+- **Acceptance criteria:** Persist only the six allowed values or `NULL`;
+  preserve omitted values on update; allow explicit `NULL` to clear; preserve
+  unknown fields from legacy API responses; omit unedited categories from
+  requests; keep the leave-unchanged choice available while editing legacy
+  events; keep category in reviewed recurring drafts and split inheritance.
+  The authenticated capability route gates category UI; older releases hide
+  the control and the client rechecks support before writes. Apply migration
+  0018 before starting the matching frontend/backend release. Stop and drain
+  the single `chron-web.service` before switching app versions; do not run
+  mixed versions behind one origin. If multiple app instances are introduced,
+  deploy only after all are upgraded or version-affine routing is enforced.
+  Do not roll back to pre-0018 handlers while category-bearing series drafts
+  remain pending; resolve or expire those drafts on a compatible release first.
+- **Tests:** Calendar domain (66), presentation (68), server (115), typecheck,
+  lint, and `git diff --check` pass locally. PostgreSQL integration is not run
+  locally because `CHRON_TEST_DATABASE_URL` is unset. HTTPS runtime scans found
+  no plain-HTTP product or deployment URLs; HTTP appears only in local test
+  inputs for secure-origin rejection checks.
+- **Expected deliverables:** Additive nullable migration, typed and validated
+  category flow, reviewed UI controls, mixed-version omission safety, tests,
+  and resumable deployment notes.
+- **Status:** Implemented locally on the only branch, `main`; not yet pushed or
+  deployed at this checkpoint. HTTPS staging still serves release `6ddcaf1`.
+  Independent read-only review found no category blocker within the documented
+  single-service rollout and pending-draft rollback constraints.
