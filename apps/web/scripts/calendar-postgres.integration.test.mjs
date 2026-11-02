@@ -7,6 +7,7 @@ import test from "node:test";
 import pg from "pg";
 import { CalendarRepository } from "../features/calendar/server/repository.ts";
 import { ResearchRateLimitRepository } from "../features/research/server/rate-limit-repository.ts";
+import { StudyRepository } from "../features/study/server/repository.ts";
 
 const { Pool } = pg;
 const migrationDirectory = fileURLToPath(new URL("../db/migrations/", import.meta.url));
@@ -128,6 +129,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
   const adminPool = new Pool({ connectionString: adminUrl.toString(), max: 1 });
   let databasePool;
   let applicationPool;
+  let studyPool;
   let databaseCreated = false;
   let roleCreated = false;
 
@@ -157,6 +159,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     applicationUrl.username = roleName;
     applicationUrl.password = appPassword;
     applicationPool = new Pool({ connectionString: applicationUrl.toString(), max: 1 });
+    studyPool = new Pool({ connectionString: applicationUrl.toString(), max: 2 });
 
     const accountA = `chron-integration-a-${suffix}`;
     const accountB = `chron-integration-b-${suffix}`;
@@ -177,6 +180,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
 
     const repository = new CalendarRepository(applicationPool);
     const researchRateLimit = new ResearchRateLimitRepository(applicationPool);
+    const studyRepository = new StudyRepository(studyPool);
     const researchWindowStart = new Date("2026-11-02T12:00:00.000Z");
     for (let attempt = 0; attempt < 5; attempt += 1) {
       assert.equal(await researchRateLimit.consume(accountA, researchWindowStart), true);
@@ -201,6 +205,78 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     });
     assert.deepEqual(matchesA.map((event) => event.id), [eventA]);
     assert.deepEqual(await repository.getPreferences(accountB), null);
+
+    const studyDeckA = await studyRepository.createDeck(accountA, "Owner A study deck");
+    const studyDeckB = await studyRepository.createDeck(accountB, "Owner B study deck");
+    const studyCardA = await studyRepository.createCard(
+      accountA,
+      studyDeckA.id,
+      "Owner A prompt",
+      "Owner A answer",
+    );
+    assert.equal(studyCardA.revision, 1);
+    assert.equal((await studyRepository.listDecks(accountA))[0]?.totalCards, 1);
+    assert.equal((await studyRepository.listDecks(accountB))[0]?.totalCards, 0);
+    await assert.rejects(
+      studyRepository.getDeck(accountB, studyDeckA.id, 50, null),
+      (error) => error?.status === 404,
+    );
+    await assert.rejects(
+      studyRepository.createCard(accountA, studyDeckB.id, "Unauthorized prompt", "Unauthorized answer"),
+      (error) => error?.status === 404,
+    );
+
+    const reviewKey = `study-review-${randomUUID()}`;
+    const concurrentReviews = await Promise.all([
+      studyRepository.reviewCard(accountA, studyCardA.id, reviewKey, studyCardA.revision, "good"),
+      studyRepository.reviewCard(accountA, studyCardA.id, reviewKey, studyCardA.revision, "good"),
+    ]);
+    assert.deepEqual(concurrentReviews.map((review) => review.revision), [2, 2]);
+    assert.deepEqual(concurrentReviews.map((review) => review.replayed).sort(), [false, true]);
+    await assert.rejects(
+      studyRepository.reviewCard(accountA, studyCardA.id, reviewKey, studyCardA.revision, "again"),
+      (error) => error?.status === 409,
+    );
+    await assert.rejects(
+      studyRepository.reviewCard(accountA, studyCardA.id, reviewKey, studyCardA.revision + 1, "good"),
+      (error) => error?.status === 409,
+    );
+    await assert.rejects(
+      studyRepository.reviewCard(accountA, studyCardA.id, `stale-${randomUUID()}`, studyCardA.revision, "again"),
+      (error) => error?.status === 412,
+    );
+    assert.equal(await studyRepository.getDueCard(accountA, studyDeckA.id), null);
+    const studyDeckAfterReview = await studyRepository.getDeck(accountA, studyDeckA.id, 50, null);
+    assert.equal(studyDeckAfterReview.cards[0]?.revision, 2);
+    assert.equal(studyDeckAfterReview.deck.dueCards, 0);
+
+    const secondStudyCard = await studyRepository.createCard(accountA, studyDeckA.id, "Second prompt", "Second answer");
+    const thirdStudyCard = await studyRepository.createCard(accountA, studyDeckA.id, "Third prompt", "Third answer");
+    const firstStudyPage = await studyRepository.getDeck(accountA, studyDeckA.id, 1, null);
+    assert.ok(firstStudyPage.nextCursor);
+    const secondStudyPage = await studyRepository.getDeck(accountA, studyDeckA.id, 1, {
+      createdAt: firstStudyPage.nextCursor.split("|")[0] ?? "",
+      id: firstStudyPage.nextCursor.split("|")[1] ?? "",
+    });
+    assert.ok(secondStudyPage.nextCursor);
+    const thirdStudyPage = await studyRepository.getDeck(accountA, studyDeckA.id, 1, {
+      createdAt: secondStudyPage.nextCursor.split("|")[0] ?? "",
+      id: secondStudyPage.nextCursor.split("|")[1] ?? "",
+    });
+    assert.equal(thirdStudyPage.nextCursor, null);
+    assert.deepEqual(
+      [
+        ...firstStudyPage.cards,
+        ...secondStudyPage.cards,
+        ...thirdStudyPage.cards,
+      ].map((card) => card.id).sort(),
+      [studyCardA.id, secondStudyCard.id, thirdStudyCard.id].sort(),
+    );
+
+    const unscopedStudyRead = await applicationPool.query(
+      "SELECT count(*)::integer AS count FROM study_decks",
+    );
+    assert.equal(unscopedStudyRead.rows[0]?.count, 0);
     const preferences = {
       theme: "minimal-light",
       accentColor: "#b44772",
@@ -731,6 +807,9 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       "calendar_event_reminders",
       "calendar_reminder_worker_state",
       "research_web_rate_limits",
+      "study_decks",
+      "study_cards",
+      "study_card_reviews",
     ];
     const rlsResult = await databasePool.query(
       `SELECT relation.relname, relation.relrowsecurity, relation.relforcerowsecurity
@@ -754,6 +833,13 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       "SELECT count(*)::integer AS count FROM research_web_rate_limits",
     );
     assert.equal(unscopedResearchLimits.rows[0].count, 0);
+    const unscopedStudyRows = await applicationPool.query(
+      `SELECT
+         (SELECT count(*) FROM study_decks)::integer AS decks,
+         (SELECT count(*) FROM study_cards)::integer AS cards,
+         (SELECT count(*) FROM study_card_reviews)::integer AS reviews`,
+    );
+    assert.deepEqual(unscopedStudyRows.rows[0], { decks: 0, cards: 0, reviews: 0 });
 
     const client = await applicationPool.connect();
     try {
@@ -782,6 +868,19 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
         [accountB],
       );
       assert.deepEqual(crossOwnerRows.rows, []);
+      const ownStudyCards = await client.query(
+        "SELECT id::text FROM study_cards WHERE user_id = $1",
+        [accountA],
+      );
+      assert.deepEqual(
+        ownStudyCards.rows.map((row) => row.id).sort(),
+        [studyCardA.id, secondStudyCard.id, thirdStudyCard.id].sort(),
+      );
+      const crossOwnerStudyCards = await client.query(
+        "SELECT id::text FROM study_cards WHERE user_id = $1",
+        [accountB],
+      );
+      assert.deepEqual(crossOwnerStudyCards.rows, []);
       await assertQueryRejectedInTransaction(
         client,
         () => client.query(
@@ -799,6 +898,22 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
           [accountB, eventA, `${eventA}:2026-11-16`],
         ),
         (error) => error?.code === "42501" || error?.code === "23503",
+      );
+      await assertQueryRejectedInTransaction(
+        client,
+        () => client.query(
+          `INSERT INTO study_cards (
+             id, user_id, deck_id, front, back, algorithm_version,
+             algorithm_parameters, due_at, stability, difficulty, elapsed_days,
+             scheduled_days, learning_steps, reps, lapses, state
+           ) VALUES (
+             $1::uuid, $2, $3::uuid, 'Cross-owner prompt', 'Cross-owner answer',
+             'fsrs-v5-ts-fsrs-5.4.2-chron-1', '{}'::jsonb, CURRENT_TIMESTAMP,
+             0, 0, 0, 0, 0, 0, 0, 0
+           )`,
+          [randomUUID(), accountA, studyDeckB.id],
+        ),
+        (error) => error?.code === "23503",
       );
     } finally {
       await client.query("ROLLBACK");
@@ -826,7 +941,16 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       [[accountA, accountB]],
     );
     assert.equal(researchLimitCascadeCheck.rows[0].count, 0);
+    const studyCascadeCheck = await databasePool.query(
+      `SELECT
+         (SELECT count(*) FROM study_decks WHERE user_id = ANY($1::text[]))::integer AS decks,
+         (SELECT count(*) FROM study_cards WHERE user_id = ANY($1::text[]))::integer AS cards,
+         (SELECT count(*) FROM study_card_reviews WHERE user_id = ANY($1::text[]))::integer AS reviews`,
+      [[accountA, accountB]],
+    );
+    assert.deepEqual(studyCascadeCheck.rows[0], { decks: 0, cards: 0, reviews: 0 });
   } finally {
+    await studyPool?.end();
     await applicationPool?.end();
     await databasePool?.end();
     if (databaseCreated) await adminPool.query(`DROP DATABASE ${databaseIdentifier}`);

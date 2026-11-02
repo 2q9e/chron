@@ -65,6 +65,9 @@ jobs:
       - name: Test calendar API contracts
         run: npm run test:calendar-api --workspace @chron/web
 
+      - name: Test study scheduling and data contracts
+        run: npm run test:study --workspace @chron/web
+
       - name: Test PostgreSQL tenant isolation and account cleanup
         run: npm run test:calendar-postgres --workspace @chron/web
         env:
