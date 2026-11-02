@@ -57,6 +57,9 @@ instant. Browser and database verification remain open; external calendar sync
 also remains open. See
 `docs/architecture/calendar-reminders.md` for the reminder dependency graph
 and acceptance criteria.
+The internal reminder endpoint now creates its authentication/database runtime
+only after the bearer check, so the production build no longer requires
+runtime credentials.
 
 ## Skill library category allocation
 

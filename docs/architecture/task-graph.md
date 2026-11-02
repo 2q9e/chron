@@ -1093,3 +1093,38 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   reviewed commits on the existing `main` branch.
 - **Status:** Source is pushed as `590331f update` and `c1d7647 improve`.
   Rendered interaction and persisted resize remain unverified.
+
+### C1-build0 — keep runtime credentials out of build-time route loading
+
+- **Task ID:** C1-build0
+- **Objective:** Allow Next.js to inspect the protected reminder route during a
+  production build without loading authentication/database configuration or
+  requiring runtime secrets at build time.
+- **Assigned agent:** Main integration owner.
+- **Required model:** Runtime model identity was not attested; no model claim.
+- **Required reasoning level:** Runtime reasoning configuration was not
+  attested; no level claim.
+- **Dependencies:** Existing bearer-protected reminder route and lazy calendar
+  authentication service loader.
+- **Owned files:** `apps/web/app/api/internal/calendar-reminders/route.ts` and
+  `apps/web/features/calendar/server/calendar-reminder-route.test.mjs`.
+- **Read-only files:** Authentication environment validation, database pool,
+  reminder worker, email sender, and deployment configuration.
+- **Required skills:** S068 (runtime configuration validation) and S159
+  (secret scanning); installed TypeScript, API integration, and security review
+  guidance. These relevant entries were reviewed and applied.
+- **Security permissions:** No credentials or live database access. Import the
+  auth/database runtime only after validating the internal bearer request;
+  preserve the existing fail-closed 404 and sanitized 503 behavior.
+- **Acceptance criteria:** Importing the route and building the app require no
+  auth secret, auth origin, or database URL. Unauthorized requests return 404
+  without initializing the database. Authorized delivery continues through
+  the existing bounded worker and repository.
+- **Tests:** Calendar API/server suite (91), auth configuration suite (14),
+  typecheck, lint, and production build pass. The build ran without
+  `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, or `DATABASE_URL`; no synthetic
+  database configuration or production secret was used.
+- **Expected deliverables:** Lazy, authorization-gated runtime import, route
+  regression tests, and updated audit/handoff evidence.
+- **Status:** Source is pushed as `d122d05 update`. Live SMTP, database, and
+  staging delivery remain unverified.

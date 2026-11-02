@@ -350,5 +350,30 @@ these scores do not establish rendered quality or persistence.
   database assertions; use HTTPS for staging and inspect only the Chron
   staging route.
 - **Status:** Open. No PostgreSQL service/account is configured and
-  `https://testing.uwu.markets` does not resolve. The build was skipped with
-  56 MB free. No HTTP staging fallback or unrelated VPS change was made.
+  `https://testing.uwu.markets` does not resolve. The production build now
+  passes with runtime credentials unset, as recorded in C-21; an authenticated
+  browser walkthrough is still unavailable. No HTTP staging fallback or
+  unrelated VPS change was made.
+
+### C-21 — Avoid loading runtime authentication secrets during route discovery
+
+- **Issue:** The internal reminder route imported the authentication/database
+  singleton at module load, so Next.js production-build route discovery failed
+  when runtime credentials were absent.
+- **Severity:** P2, build and secret-management risk
+- **Affected files:** `apps/web/app/api/internal/calendar-reminders/route.ts`
+  and `apps/web/features/calendar/server/calendar-reminder-route.test.mjs`.
+- **Why it is a problem:** Build systems should not need production auth or
+  database secrets merely to compile a protected endpoint. Requiring those
+  values at build time also broadens access to sensitive credentials.
+- **Recommended correction:** Load the authentication/database singleton only
+  after the route has accepted its bearer authorization, and preserve the
+  generic failure response for runtime configuration errors.
+- **Assigned agent:** Main integration owner.
+- **Verification method:** Import the route with auth/database settings unset,
+  verify an unauthorized request returns 404 before database initialization,
+  then run the production build without runtime credentials.
+- **Status:** Fixed and pushed as `d122d05 update`. The new route tests pass;
+  the production build, 91-test calendar API suite, 14-test auth suite,
+  typecheck, and lint pass without auth/database settings. Staging and real
+  authenticated database behavior remain unverified.
