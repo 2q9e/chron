@@ -12,21 +12,20 @@ The public tree contains no AGENTS.md; local operating instructions remain
 untracked. No old calendar reference folder was inspected or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41415622291 passed on commit
-`1752ddb`, including PostgreSQL 16 migration and tenant-isolation checks, lint,
-typecheck, calendar policy/auth/time/API/layout/recovery checks, HTTPS reminder
-checks, dependency audit, and production build. Local calendar API (111),
-layout/API client (61), and time/domain (48) suites pass; typecheck and lint
-pass. PostgreSQL integration skips locally because `CHRON_TEST_DATABASE_URL`
-is unset.
+https://github.com/2q9e/chron/actions/runs/41417404297 passed on commit
+`e6f43d4`. Local calendar time/domain (53) and auth-configuration (15) suites,
+typecheck, lint, and production build pass. Earlier calendar API (111) and
+layout/API client (61) suites pass. PostgreSQL integration skips locally
+because `CHRON_TEST_DATABASE_URL` is unset.
 
-The testing site at https://testing.uwu.markets/sign-in was checked over HTTPS;
-it returned 200 with valid TLS and HSTS in the earlier check. On 2026-11-02,
-the HTTPS `/calendar` route redirected to `/sign-in`, and the sign-in interface
-rendered in a real browser. The accent and reduced-motion preference flows
-could not be tested without an authenticated account. The `1752ddb` change is
-not deployed because the private key path in the local login notes is
-unavailable in this environment. No VPS or Cloudflare resources were changed.
+Commit `e6f43d4` is active at `/opt/chron/releases/e6f43d4`. The deployment
+changed only the Chron release symlink and `chron-web.service`; it used a
+release-local npm cache after the shared cache proved root-owned. The install
+reported zero vulnerabilities. HTTPS `/sign-in` returns 200 with verified TLS
+and HSTS (`max-age=31536000`). HTTPS `/calendar` redirects to `/sign-in`, and
+the sign-in interface rendered in a real browser. No test account is available
+for authenticated calendar or export verification. No other VPS service,
+environment file, or Cloudflare resource was changed.
 
 ## Current milestone
 
@@ -40,6 +39,11 @@ interactions. Single-occurrence cancellation, reviewed restoration, and
 reviewed per-occurrence movement are pushed on main. Migration 0012 gives
 recurring segments a stable lineage root. This-and-following edits are pushed
 and passed PostgreSQL CI validation for migration 0013.
+
+The calendar now offers a real iCalendar download for the displayed date range.
+It fetches fresh owner-scoped entries without caching and emits RFC 5545
+content; recurring entries are exported as visible occurrences. Serializer
+tests pass, but authenticated browser download verification remains open.
 
 The reminder schema, migrations, repositories, and route contracts were
 executed by CI; live mail delivery, scheduler deployment, and inbox receipt
@@ -82,10 +86,8 @@ not implemented.
 - PostgreSQL migrations and RLS behavior passed on an ephemeral CI database.
   Migration 0009 was also applied and catalog-verified on the Chron staging
   database. Do not simulate a session or claim authenticated persistence.
-- The b01cbfe release is the version recorded as built and staged; activation
-  of the current split change remains pending because the referenced SSH key
-  is unavailable. HTTPS `/sign-in` returned 200 with HSTS in an earlier check;
-  no other VPS service was changed.
+- The `e6f43d4` release is active. HTTPS sign-in, calendar redirect, valid TLS,
+  and HSTS were verified after restarting only `chron-web.service`.
 - Occurrence movement and following-series splitting are pushed on `main`;
   calendar source at `23606fc` passed run 41412546906, including PostgreSQL
   16 integration and the production build.
@@ -195,23 +197,16 @@ awaits narrow and zoom browser checks.
   layout (53) tests, typecheck, lint, `git diff --check`, and the production
   build passed. The build used Webpack and a temporary `/tmp` output directory
   because the workspace volume was low on space. PostgreSQL CI run
-  41396381582 passed; migration 0009 was applied to the Chron database. The
-  staged release has not been switched active because SSH authentication is
-  unavailable. HTTPS endpoints, TLS, and HSTS were verified publicly.
+  41396381582 passed; migration 0009 was applied to the Chron database. At
+  that historical checkpoint, the staged release had not been switched active.
+  HTTPS endpoints, TLS, and HSTS were verified publicly.
 
 ## Next actions
 
-1. Make the SSH key referenced by the local deployment notes available to the
-   local SSH agent. Then activate only the Chron release and restart only
-   `chron-web.service`; do not alter unrelated VPS services.
-2. Verify the active release and test
-   https://testing.uwu.markets/sign-in and `/calendar` over HTTPS with valid
-   TLS and HSTS. Keep authenticated browser verification open until a test
-   account is available.
-3. Keep AGENTS.md excluded and preserve the one-branch public history on `main`.
-4. Keep the authenticated browser walkthrough open until a disposable account
-   can be configured without exposing private credentials.
-5. Continue email delivery and scheduler work only when the authorized
+1. Keep AGENTS.md excluded and preserve the one-branch public history on `main`.
+2. Complete authenticated calendar and iCalendar download browser verification
+   when a test account is available; do not simulate an account.
+3. Continue email delivery and scheduler work only when the authorized
    SMTP/Cloudflare configuration can be tested safely.
-6. Before every push, inspect staged paths, scan the outgoing changes, and
+4. Before every push, inspect staged paths, scan the outgoing changes, and
    preserve the one-branch public history. Keep AGENTS.md out of Git.

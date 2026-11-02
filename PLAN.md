@@ -37,17 +37,17 @@ resize interactions open the existing explicit-review flow.
 GitHub Actions run 41392185432 passed after applying all migrations to an
 ephemeral PostgreSQL 16 database and checking tenant isolation, RLS, transaction
 context reset, cross-owner access rejection, and account-deletion cascades.
-This verifies PostgreSQL behavior in CI, not a staging user session. The
-current release at https://testing.uwu.markets was checked using HTTPS only;
-sign-in returned 200 and /calendar redirected to sign-in. No test account is
-available, so authenticated UI actions remain unverified. Do not change other
-VPS services.
+This verifies PostgreSQL behavior in CI, not a staging user session. Commit
+`e6f43d4` is deployed at https://testing.uwu.markets. HTTPS sign-in returns 200
+with valid TLS and HSTS; `/calendar` redirects to sign-in. No test account is
+available, so authenticated calendar actions and the new iCalendar download
+remain unverified in-browser. Only the Chron service was restarted.
 
 Recurrence exceptions and split-series edits are implemented and pushed;
 migration 0013 and the split behavior passed PostgreSQL CI. Next calendar work
-is authenticated browser verification when a test account and deployment
-access are available. SMTP delivery, scheduler deployment, and external
-calendar synchronization remain open. Public signup and Meta BYOK remain
+is authenticated browser verification when a test account is available. SMTP
+delivery, scheduler deployment, and external calendar synchronization remain
+open. Public signup and Meta BYOK remain
 gated by the legal/operator requirements in the security reports.
 
 ## Skill library category allocation

@@ -15,23 +15,20 @@ a saved per-account reduced-motion preference; the calendar applies it
 immediately and always honors the operating-system preference.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41415622291 passed on commit
-`1752ddb`, including PostgreSQL 16 migration and tenant-isolation checks, lint,
-typecheck, calendar policy/auth/time/API/layout/recovery checks, HTTPS reminder
-checks, dependency audit, and production build. Local calendar API (111),
-layout/API client (61), and time/domain (48) suites pass; typecheck and lint
-pass. PostgreSQL integration skips locally because `CHRON_TEST_DATABASE_URL`
-is unset.
+https://github.com/2q9e/chron/actions/runs/41417404297 passed on commit
+`e6f43d4`. Local calendar time/domain (53) and auth-configuration (15) suites,
+typecheck, lint, and production build pass. Earlier calendar API (111) and
+layout/API client (61) suites pass; PostgreSQL integration skips locally because
+`CHRON_TEST_DATABASE_URL` is unset.
 
-https://testing.uwu.markets/sign-in was checked over HTTPS and returned 200
-with HSTS in the earlier check. On 2026-11-02, the HTTPS `/calendar` route
-redirected to `/sign-in`, where the sign-in interface rendered in a real
-browser. TLS and HSTS were present. No authenticated calendar session is
-available, so accent and motion preference behavior have not been verified in
-an authenticated browser. The `1752ddb` change is not deployed: the private
-key path in the local login notes is unavailable in this environment. No VPS
-or Cloudflare resources were changed. Authenticated calendar actions remain
-unverified.
+Commit `e6f43d4` is deployed in `/opt/chron/releases/e6f43d4`; only the
+`chron-web.service` symlink and process were changed. The application was built
+from the public commit with a release-local npm cache; `npm ci` reported zero
+vulnerabilities. HTTPS `/sign-in` returns 200 with verified TLS and HSTS
+(`max-age=31536000`). HTTPS `/calendar` redirects to `/sign-in`; the sign-in
+page rendered in a real browser. No authenticated calendar account is
+available, so event export and saved preferences remain unverified end to end.
+No unrelated VPS service, environment file, or Cloudflare resource was changed.
 
 External services, Git remotes, and staging or production hosts use HTTPS.
 HTTP references are limited to loopback test configuration and negative
@@ -41,9 +38,13 @@ No reference folder was inspected or used. Commits continue on `main` only,
 with author 2q9e.
 
 Occurrence movement and split-series behavior are implemented, pushed, and
-verified by CI.
+verified by CI. Visible-range iCalendar export now includes RFC 5545 UTC timed
+events, date-only all-day bounds, distinct occurrence UIDs, escaped text, and
+UTF-8 line folding. Recurring instances export as the currently returned
+occurrences; authenticated browser download testing remains open.
 SMTP delivery, scheduler deployment, external calendar synchronization,
-staging activation, and authenticated browser verification remain open.
+authenticated calendar browser verification, and end-to-end export verification
+remain open.
 
 The previously pushed cancellation slice binds the occurrence's original key
 and series revision; approval persists an owner-scoped exception, cancels
@@ -52,8 +53,8 @@ from listing and conflict checks. The current restore slice keeps exact-key
 review and approval, compares only the selected occurrence against active
 events and siblings, and refuses to queue a reminder if any revision already
 attempted it. Migration 0010 and its PostgreSQL integration coverage passed in
-CI. The staged release remains the previous b01cbfe build; activation remains
-open.
+CI. The current release is `e6f43d4`; the previous `b01cbfe` deployment history
+is retained in later checkpoints.
 
 ## Prior implementation checkpoints
 

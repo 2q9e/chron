@@ -55,9 +55,9 @@ the PostgreSQL tenant-isolation checks on an ephemeral PostgreSQL 16 service.
 Run 41400318323 passed migration 0010 and the occurrence-restoration
 integration tests, along with the full CI build, lint, and typecheck.
 Migration 0009 was also applied and catalog-verified on the Chron database.
-The b01cbfe app release is built and staged but not confirmed active because
-SSH authentication is currently unavailable. Authenticated browser
-verification remains gated on a test account.
+The current `e6f43d4` app release is active on the HTTPS test host; only the
+Chron release symlink and `chron-web.service` were changed. Authenticated
+browser verification remains gated on a test account.
 
 ### C1-rec0 — freeze recurrence semantics and build the domain engine
 
@@ -252,8 +252,9 @@ verification remains gated on a test account.
   calendar tests, lint, and typecheck pass. GitHub quality run 41404738609
   passed, including PostgreSQL 16 integration and the production build.
   PostgreSQL integration is skipped locally because
-  `CHRON_TEST_DATABASE_URL` is unset. Staging remains on the previous release;
-  its HTTPS endpoint returns 200 with HSTS, but this change is not deployed.
+  `CHRON_TEST_DATABASE_URL` is unset. At this task's implementation checkpoint
+  staging was on the previous release; the current `e6f43d4` release is now
+  active and HTTPS-verified.
 - **Objective:** Let a user drag one timed or all-day recurrence occurrence to
   a new time while preserving the original occurrence key and neighboring
   instances. Persist the move as an exact reviewed proposal.

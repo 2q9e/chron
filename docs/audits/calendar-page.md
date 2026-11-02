@@ -390,7 +390,7 @@ smooth scrolling. The existing operating-system preference remains honored
 when the saved choice is off.
 
 The API, persistence, contrast, and client response checks pass in source and
-CI. Scores above are unchanged because the authenticated controls were not
-rendered in this session: HTTPS `/calendar` redirects to sign-in, and no test
-account or deployment key is available. Desktop/mobile visual parity and the
-saved-preference reload path remain open browser checks.
+CI. On 2026-11-02, release `e6f43d4` was deployed and `/sign-in` rendered over
+HTTPS in a real browser; `/calendar` redirects to sign-in. The authenticated
+controls, export download, desktop/mobile visual parity, and saved-preference
+reload path remain open because no test account is available.
