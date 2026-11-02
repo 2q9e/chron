@@ -30,6 +30,16 @@ function quoteLiteral(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
+async function assertQueryRejectedInTransaction(client, query, validate) {
+  await client.query("SAVEPOINT chron_expected_rejection");
+  try {
+    await assert.rejects(query(), validate);
+  } finally {
+    await client.query("ROLLBACK TO SAVEPOINT chron_expected_rejection");
+    await client.query("RELEASE SAVEPOINT chron_expected_rejection");
+  }
+}
+
 async function applyMigrations(client) {
   const names = (await readdir(migrationDirectory))
     .filter((name) => /^\d{4}_[a-z0-9_]+\.sql$/u.test(name))
@@ -236,16 +246,18 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
         [accountB],
       );
       assert.deepEqual(crossOwnerRows.rows, []);
-      await assert.rejects(
-        client.query(
+      await assertQueryRejectedInTransaction(
+        client,
+        () => client.query(
           `INSERT INTO calendar_events (id, user_id, kind, title, start_date, end_date)
            VALUES ($1::uuid, $2, 'all-day', 'Cross-owner write', DATE '2026-11-02', DATE '2026-11-03')`,
           [randomUUID(), accountB],
         ),
         (error) => error?.code === "42501",
       );
-      await assert.rejects(
-        client.query(
+      await assertQueryRejectedInTransaction(
+        client,
+        () => client.query(
           `INSERT INTO calendar_event_occurrence_exceptions (user_id, event_id, occurrence_key)
            VALUES ($1, $2::uuid, $3)`,
           [accountB, eventA, `${eventA}:2026-11-16`],
