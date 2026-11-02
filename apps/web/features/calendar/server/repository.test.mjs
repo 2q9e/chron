@@ -647,6 +647,7 @@ test("destroys a connection after rollback failure and preserves the operation e
 
   await assert.rejects(repository.setPreferences(ownerId, {
     theme: "premium-dark",
+    accentColor: null,
     density: "compact",
     weekStartsOn: 1,
     timeZone: "UTC",
@@ -733,12 +734,13 @@ test("checks timed conflicts through the final occupied calendar date", async ()
 test("upserts preferences on the actual user key", async () => {
   const { pool, calls } = createPool((sql) => ({
     rows: sql.startsWith("INSERT INTO calendar_preferences")
-      ? [{ theme: "premium-dark", density: "compact", week_starts_on: 1, time_zone: "UTC" }]
+      ? [{ theme: "premium-dark", accent_color: "#c36b8e", density: "compact", week_starts_on: 1, time_zone: "UTC" }]
       : [],
   }));
   const repository = new CalendarRepository(pool);
   const preferences = await repository.setPreferences(ownerId, {
     theme: "premium-dark",
+    accentColor: "#c36b8e",
     density: "compact",
     weekStartsOn: 1,
     timeZone: "UTC",
@@ -749,11 +751,13 @@ test("upserts preferences on the actual user key", async () => {
   assert.match(query.sql, /ON CONFLICT \(user_id\)/);
   assert.deepEqual(preferences, {
     theme: "premium-dark",
+    accentColor: "#c36b8e",
     density: "compact",
     weekStartsOn: 1,
     timeZone: "UTC",
   });
   assert.equal(query.values[0], ownerId);
+  assert.deepEqual(query.values.slice(1), ["premium-dark", "#c36b8e", "compact", 1, "UTC"]);
 });
 
 test("expires a bounded owner-scoped proposal batch and clears retained payload references", async () => {

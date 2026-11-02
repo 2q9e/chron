@@ -1,5 +1,6 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { calendarThemes } from "../domain/types.ts";
+import { isCalendarAccentColor } from "../domain/calendar-accent.ts";
 import {
   allDayCalendarReminderChoices,
   timedCalendarReminderChoices,
@@ -524,6 +525,7 @@ function isCalendarOccurrenceEntry(value: unknown): value is CalendarEventOccurr
 function isCalendarPreferences(value: unknown): value is CalendarPreferences {
   if (!isRecord(value)) return false;
   if (!calendarThemes.includes(value.theme as (typeof calendarThemes)[number])) return false;
+  if (value.accentColor !== null && !isCalendarAccentColor(value.accentColor)) return false;
   if (value.density !== "comfortable" && value.density !== "compact") return false;
   if (!Number.isInteger(value.weekStartsOn) || typeof value.weekStartsOn !== "number") return false;
   if (value.weekStartsOn < 0 || value.weekStartsOn > 6 || !isNonEmptyString(value.timeZone)) return false;

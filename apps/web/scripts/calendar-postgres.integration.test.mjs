@@ -157,6 +157,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     assert.deepEqual(await repository.getPreferences(accountB), null);
     const preferences = {
       theme: "minimal-light",
+      accentColor: "#b44772",
       density: "comfortable",
       weekStartsOn: 1,
       timeZone: "UTC",

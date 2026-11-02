@@ -12,6 +12,7 @@ import {
   type CalendarPreferences,
   type CalendarTheme,
 } from "../domain/types.ts";
+import { isCalendarAccentColor } from "../domain/calendar-accent.ts";
 import {
   allDayCalendarReminderChoices,
   timedCalendarReminderChoices,
@@ -512,11 +513,16 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
 
 export function parseCalendarPreferences(input: unknown): CalendarPreferences {
   const value = objectRecord(input);
-  assertAllowedFields(value, ["theme", "density", "weekStartsOn", "timeZone"]);
+  assertAllowedFields(value, ["theme", "accentColor", "density", "weekStartsOn", "timeZone"]);
 
   const theme = value.theme;
   if (typeof theme !== "string" || !calendarThemes.includes(theme as CalendarTheme)) {
     return invalidPayload("Choose a supported calendar theme.");
+  }
+
+  const accentColor = value.accentColor;
+  if (accentColor !== null && !isCalendarAccentColor(accentColor)) {
+    return invalidPayload("Choose a supported six-digit calendar accent color.");
   }
 
   const density = value.density;
@@ -532,6 +538,7 @@ export function parseCalendarPreferences(input: unknown): CalendarPreferences {
   const timeZone = validateTimeZone(value.timeZone);
   return {
     theme: theme as CalendarTheme,
+    accentColor: accentColor === null ? null : accentColor.toLowerCase(),
     density: density as CalendarDensity,
     weekStartsOn,
     timeZone,

@@ -153,6 +153,7 @@ export type CalendarSeriesApproval = Readonly<{
 
 export type CalendarPreferences = Readonly<{
   theme: CalendarTheme;
+  accentColor: string | null;
   density: CalendarDensity;
   weekStartsOn: number;
   timeZone: string;

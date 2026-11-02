@@ -121,6 +121,7 @@ export function defaultPreferences(
 ): CalendarPreferences {
   return {
     theme: "pink-liquid-glass",
+    accentColor: null,
     density: "comfortable",
     weekStartsOn,
     timeZone,

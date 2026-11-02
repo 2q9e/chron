@@ -141,6 +141,7 @@ export type CalendarReminderOutcome =
 
 type PreferencesRow = QueryResultRow & {
   theme: CalendarPreferences["theme"];
+  accent_color: CalendarPreferences["accentColor"];
   density: CalendarPreferences["density"];
   week_starts_on: number;
   time_zone: string;
@@ -799,6 +800,7 @@ async function moveCalendarOccurrenceReminder(
 function preferencesFromRow(row: PreferencesRow): CalendarPreferences {
   return {
     theme: row.theme,
+    accentColor: row.accent_color,
     density: row.density,
     weekStartsOn: row.week_starts_on,
     timeZone: row.time_zone,
@@ -4186,7 +4188,7 @@ export class CalendarRepository {
   async getPreferences(ownerId: string): Promise<CalendarPreferences | null> {
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
       const result = await client.query<PreferencesRow>(
-        `SELECT theme, density, week_starts_on, time_zone
+        `SELECT theme, accent_color, density, week_starts_on, time_zone
          FROM calendar_preferences
          WHERE user_id = $1`,
         [ownerId],
@@ -4203,16 +4205,17 @@ export class CalendarRepository {
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
       const result = await client.query<PreferencesRow>(
         `INSERT INTO calendar_preferences (
-           user_id, theme, density, week_starts_on, time_zone
-         ) VALUES ($1, $2, $3, $4, $5)
+         user_id, theme, accent_color, density, week_starts_on, time_zone
+       ) VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (user_id) DO UPDATE SET
            theme = EXCLUDED.theme,
+           accent_color = EXCLUDED.accent_color,
            density = EXCLUDED.density,
            week_starts_on = EXCLUDED.week_starts_on,
            time_zone = EXCLUDED.time_zone,
            updated_at = CURRENT_TIMESTAMP
-         RETURNING theme, density, week_starts_on, time_zone`,
-        [ownerId, preferences.theme, preferences.density, preferences.weekStartsOn, preferences.timeZone],
+         RETURNING theme, accent_color, density, week_starts_on, time_zone`,
+        [ownerId, preferences.theme, preferences.accentColor, preferences.density, preferences.weekStartsOn, preferences.timeZone],
       );
       const row = result.rows[0];
       if (!row) throw new Error("Calendar preferences update returned no row.");

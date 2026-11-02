@@ -407,11 +407,13 @@ test("requires a saved calendar zone only for selected all-day reminders", () =>
 test("validates the complete persisted preference contract", () => {
   assert.deepEqual(parseCalendarPreferences({
     theme: "high-contrast",
+    accentColor: "#78002E",
     density: "compact",
     weekStartsOn: 1,
     timeZone: "America/Montreal",
   }), {
     theme: "high-contrast",
+    accentColor: "#78002e",
     density: "compact",
     weekStartsOn: 1,
     timeZone: "America/Montreal",
@@ -421,6 +423,16 @@ test("validates the complete persisted preference contract", () => {
       theme: "high-contrast",
       density: "compact",
       weekStartsOn: 8,
+      timeZone: "America/Montreal",
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarPreferences({
+      theme: "high-contrast",
+      accentColor: "#ffffff; background: url(https://invalid.example)",
+      density: "compact",
+      weekStartsOn: 1,
       timeZone: "America/Montreal",
     }),
     (error) => error instanceof CalendarRouteError && error.status === 400,
