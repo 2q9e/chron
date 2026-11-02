@@ -94,14 +94,23 @@ function showTargetHighlight(target: DropTarget): void {
   }
 }
 
-function announceTarget(target: DropTarget, locale: string, mode: PointerInteraction["mode"]): string {
+function announceTarget(
+  target: DropTarget,
+  locale: string,
+  mode: PointerInteraction["mode"],
+  movesWholeSeries: boolean,
+): string {
   const targetDate = Temporal.PlainDate.from(target.date);
   const day = targetDate.toLocaleString(locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
-  if (target.minute === null) return `Move to ${day} to keep the displayed time in ${target.timeZone}.`;
+  if (target.minute === null) {
+    if (mode === "resize") return `Resize the event end on the time grid for ${day}.`;
+    const subject = movesWholeSeries ? "the entire repeating series" : "the event";
+    return `Move ${subject} to ${day} while keeping its displayed time in ${target.timeZone}.`;
+  }
   const dayStart = targetDate.toZonedDateTime(target.timeZone).toInstant();
   const targetInstant = dayStart.add({ minutes: target.minute });
   const time = new Intl.DateTimeFormat(locale, {
@@ -112,7 +121,7 @@ function announceTarget(target: DropTarget, locale: string, mode: PointerInterac
   }).format(new Date(Number(targetInstant.epochMilliseconds)));
   return mode === "resize"
     ? `Resize the end to ${day} at ${time} in ${target.timeZone}.`
-    : `Move to ${day} at ${time} in ${target.timeZone}.`;
+    : `Move ${movesWholeSeries ? "the entire repeating series" : "the event"} to ${day} at ${time} in ${target.timeZone}.`;
 }
 
 export function CalendarEventControl({
@@ -129,12 +138,12 @@ export function CalendarEventControl({
   style,
 }: Props) {
   const calendarEvent = event;
+  const movesWholeSeries = "series" in event
+    || ("recurrenceRule" in event && !!event.recurrenceRule);
   const interaction = useRef<PointerInteraction | null>(null);
   const suppressNextClick = useRef(false);
   const [dragAnnouncement, setDragAnnouncement] = useState("");
-  const canMove = !!onMove
-    && !("series" in event)
-    && !("recurrenceRule" in event && event.recurrenceRule);
+  const canMove = !!onMove;
   const canResize = !!onResize
     && event.kind === "timed"
     && !("series" in event)
@@ -147,11 +156,13 @@ export function CalendarEventControl({
     current.target = next;
     if (next) {
       showTargetHighlight(next);
-      setDragAnnouncement(announceTarget(next, locale, current.mode));
+      setDragAnnouncement(announceTarget(next, locale, current.mode, movesWholeSeries));
     } else {
       setDragAnnouncement(current.mode === "resize"
         ? "Resize the end on a day or week time grid."
-        : "Move over a calendar day or time to choose a destination.");
+        : movesWholeSeries
+          ? "Move the repeating series over a calendar day or time to choose its new start."
+          : "Move over a calendar day or time to choose a destination.");
     }
   }
 
@@ -181,7 +192,9 @@ export function CalendarEventControl({
       current.dragging = true;
       setDragAnnouncement(current.mode === "resize"
         ? "Resizing event. Release to choose its new end time."
-        : "Moving event. Release to choose a destination.");
+        : movesWholeSeries
+          ? "Moving the entire repeating series. Release to choose its new start."
+          : "Moving event. Release to choose a destination.");
     }
     event.preventDefault();
     updateDropTarget(current, event.clientX, event.clientY);
@@ -201,11 +214,15 @@ export function CalendarEventControl({
         action(calendarEvent, current.target.date, current.target.minute, calendarTimeZone);
         setDragAnnouncement(current.mode === "resize"
           ? "Resize proposed. Review its end time and conflicts before saving."
-          : "Move proposed. Review its date, time, and conflicts before saving.");
+          : movesWholeSeries
+            ? "Series move proposed. Review all occurrences and conflicts, then approve the series."
+            : "Move proposed. Review its date, time, and conflicts before saving.");
       } else {
         setDragAnnouncement(current.mode === "resize"
           ? "No time-grid end was selected. The event was not changed."
-          : "No calendar destination was selected. The event was not changed.");
+          : movesWholeSeries
+            ? "No calendar destination was selected. The repeating series was not changed."
+            : "No calendar destination was selected. The event was not changed.");
       }
     } else {
       removeTargetHighlight(current.target);
@@ -222,7 +239,9 @@ export function CalendarEventControl({
     setDragAnnouncement(current.dragging
       ? current.mode === "resize"
         ? "Resize cancelled. The event was not changed."
-        : "Move cancelled. The event was not changed."
+        : movesWholeSeries
+          ? "Series move cancelled. The repeating series was not changed."
+          : "Move cancelled. The event was not changed."
       : "");
   }
 
@@ -245,8 +264,12 @@ export function CalendarEventControl({
         <button
           className={styles.moveHandle}
           type="button"
-          aria-label={`Open ${event.title} in the editor. Drag this handle to move it.`}
-          title="Drag to move. Activate to edit."
+          aria-label={movesWholeSeries
+            ? `Open the repeating series ${event.title} in the editor. Drag to propose moving the entire series.`
+            : `Open ${event.title} in the editor. Drag this handle to move it.`}
+          title={movesWholeSeries
+            ? "Drag to propose moving the entire series. Activate to edit."
+            : "Drag to move. Activate to edit."}
           onClick={(clickEvent) => {
             if (suppressNextClick.current) {
               clickEvent.preventDefault();

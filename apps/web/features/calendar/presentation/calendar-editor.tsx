@@ -67,6 +67,15 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
   const reminderNote = editor.draft.reminderChoice === "none"
     ? "No email reminder is scheduled."
     : `Reminders go to your verified Chron email address. ${editor.draft.kind === "all-day" ? `All-day reminder time zone: ${editor.zone}.` : `Timed reminders use ${editor.zone}.`}`;
+  const heading = editor.purpose === "move"
+    ? editor.event?.recurrenceRule ? "Review series move" : "Review event move"
+    : editor.purpose === "resize"
+      ? "Review event duration change"
+      : editor.event?.recurrenceRule
+        ? "Edit recurring series"
+        : editor.event
+          ? "Edit event"
+          : "New event";
 
   useEffect(() => {
     if (error && !busy) errorPanel.current?.focus();
@@ -80,13 +89,15 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
   return (
     <section id="calendar-event-editor" className={styles.panel} aria-labelledby="editor-heading">
       <div className={styles.panelHeading}>
-        <h2 id="editor-heading">{editor.purpose === "move" ? "Review event move" : editor.purpose === "resize" ? "Review event duration change" : editor.event?.recurrenceRule ? "Edit recurring series" : editor.event ? "Edit event" : "New event"}</h2>
+        <h2 id="editor-heading">{heading}</h2>
         <button type="button" onClick={onClose} disabled={busy || retryOnly}>Close</button>
       </div>
       {(editor.purpose === "move" || editor.purpose === "resize") && (
         <p className={styles.moveReviewNote}>
           {editor.purpose === "move"
-            ? "This proposed move is not saved yet. Review its dates, reminder, and conflicts before approving it."
+            ? editor.event?.recurrenceRule
+              ? "This proposes moving the entire repeating series, not only the occurrence you dragged. Nothing is saved until you review the affected occurrences and approve the proposal."
+              : "This proposed move is not saved yet. Review its dates, reminder, and conflicts before approving it."
             : "This proposed duration change is not saved yet. Review its end time, reminder, and conflicts before approving it."}
           {editor.draft.kind === "timed" && (
             <> The drop used {editor.reviewCalendarTimeZone ?? editor.zone}; this event remains in {editor.zone}.</>

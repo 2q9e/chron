@@ -297,8 +297,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditor({
       generation: editorGeneration.current,
       event,
-      operationKey: null,
-      operationAction: null,
+      operationKey: event.recurrenceRule ? crypto.randomUUID() : null,
+      operationAction: event.recurrenceRule ? "update" : null,
       draft: moved.draft,
       zone: moved.timeZone,
       errors: {},
