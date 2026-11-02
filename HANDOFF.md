@@ -7,17 +7,17 @@ Chron is a standalone public repository on GitHub. The only remote branch is
 contains occurrence cancellation, restoration, and reviewed movement of one
 timed or all-day recurrence instance. Migration 0012 persists a stable series
 root and backfills existing recurring events. Following-series splitting is
-implemented locally with migration 0013 and awaits CI.
+implemented and pushed with migration 0013.
 The public tree contains no AGENTS.md; local operating instructions remain
 untracked. No old calendar reference folder was inspected or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41406406586 passed with PostgreSQL
-16 migration and tenant-isolation integration, lint, typecheck, dependency
-audit, and production build. The previous increment's local calendar API tests
-(109), lint, and typecheck passed. The current increment's calendar API (111),
-layout/API client (58), and time/domain (43) tests pass; typecheck and lint
-pass, and GitHub CI is pending. PostgreSQL integration skips locally because
+https://github.com/2q9e/chron/actions/runs/41412546906 passed on commit
+`23606fc`, including PostgreSQL 16 migration, tenant-isolation, and split
+integration, lint, typecheck, calendar policy/auth/time/API/layout/recovery
+checks, HTTPS reminder checks, dependency audit, and production build. Local
+calendar API (111), layout/API client (58), and time/domain (43) tests pass;
+typecheck and lint pass. PostgreSQL integration skips locally because
 `CHRON_TEST_DATABASE_URL` is unset.
 
 The testing site at https://testing.uwu.markets/sign-in was checked over HTTPS;
@@ -25,9 +25,10 @@ it returned 200 with valid TLS and HSTS in the earlier check. On 2026-11-02,
 HTTPS requests to the root and `/calendar` returned redirects to `/calendar`
 and `/sign-in`, with valid TLS and HSTS. No redirect was followed; this does
 not establish the running app version or authenticated behavior. The split
-change is not deployed. Deployment access is unavailable in this session. No
-VPS or Cloudflare resources were changed. Authenticated calendar interactions
-remain unverified because no test account is available.
+change is not deployed. The deployment key referenced by the local login notes
+is unavailable in this session. No VPS or Cloudflare resources were changed.
+Authenticated calendar interactions remain unverified because no test account
+is available.
 
 ## Current milestone
 
@@ -37,8 +38,8 @@ search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
 interactions. Single-occurrence cancellation, reviewed restoration, and
 reviewed per-occurrence movement are pushed on main. Migration 0012 gives
-recurring segments a stable lineage root. This-and-following edits are
-implemented locally and await PostgreSQL CI validation for migration 0013.
+recurring segments a stable lineage root. This-and-following edits are pushed
+and passed PostgreSQL CI validation for migration 0013.
 
 The reminder schema, migrations, repositories, and route contracts were
 executed by CI; live mail delivery, scheduler deployment, and inbox receipt
@@ -81,15 +82,15 @@ not implemented.
 - PostgreSQL migrations and RLS behavior passed on an ephemeral CI database.
   Migration 0009 was also applied and catalog-verified on the Chron staging
   database. Do not simulate a session or claim authenticated persistence.
-- The b01cbfe release is built and staged; activation remains pending because
-  deployment access is unavailable. HTTPS `/sign-in` returns 200 with HSTS;
-  the occurrence-movement change is not active there. No other VPS service
-  was changed.
-- Occurrence movement is pushed on main and verified by run 41404738609,
-  including PostgreSQL 16 integration. The latest main head passed run
-  41404967855.
-- Split edits, authenticated browser walkthrough, SMTP delivery, scheduler
-  deployment, and Google calendar sync remain open.
+- The b01cbfe release is the version recorded as built and staged; activation
+  of the current split change remains pending because the referenced SSH key
+  is unavailable. HTTPS `/sign-in` returned 200 with HSTS in an earlier check;
+  no other VPS service was changed.
+- Occurrence movement and following-series splitting are pushed on `main`;
+  calendar source at `23606fc` passed run 41412546906, including PostgreSQL
+  16 integration and the production build.
+- Authenticated browser walkthrough, SMTP delivery, scheduler deployment, and
+  Google calendar sync remain open.
 
 ## Prior landing checkpoint
 
@@ -200,18 +201,17 @@ awaits narrow and zoom browser checks.
 
 ## Next actions
 
-1. Use authorized SSH access to activate only the Chron release by changing
-   its release pointer and restarting only `chron-web.service`.
+1. Make the SSH key referenced by the local deployment notes available to the
+   local SSH agent. Then activate only the Chron release and restart only
+   `chron-web.service`; do not alter unrelated VPS services.
 2. Verify the active release and test
    https://testing.uwu.markets/sign-in and `/calendar` over HTTPS with valid
    TLS and HSTS. Keep authenticated browser verification open until a test
    account is available.
 3. Keep AGENTS.md excluded and preserve the one-branch public history on `main`.
-4. Continue with split-series edits through the existing owner-scoped proposal
-   and approval pipeline.
-5. Keep the authenticated browser walkthrough open until a disposable account
+4. Keep the authenticated browser walkthrough open until a disposable account
    can be configured without exposing private credentials.
-6. Continue email delivery and scheduler work only when the authorized
+5. Continue email delivery and scheduler work only when the authorized
    SMTP/Cloudflare configuration can be tested safely.
-7. Before every push, inspect staged paths, scan the outgoing changes, and
+6. Before every push, inspect staged paths, scan the outgoing changes, and
    preserve the one-branch public history. Keep AGENTS.md out of Git.

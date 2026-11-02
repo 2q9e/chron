@@ -3,30 +3,31 @@
 ## Current verified state — 2026-11-02
 
 C1 — calendar — remains the active milestone; landing-page work is paused.
-The public repository has one branch, `main`, with 664 commits, pushed as
-2q9e over HTTPS. Occurrence cancellation, restoration, reviewed movement, and
-this-and-following split behavior for timed and all-day recurring events are
-implemented. Migration 0012 adds a stable series root and backfills existing
-recurring events; migration 0013 permits a one-occurrence segment and exact
-split proposal outcomes. The split changes are local and await GitHub CI.
+The public repository has one branch, `main`, with more than 500 commits,
+pushed as 2q9e over HTTPS. Occurrence cancellation, restoration, reviewed
+movement, and this-and-following split behavior for timed and all-day
+recurring events are implemented and pushed. Migration 0012 adds a stable
+series root and backfills existing recurring events; migration 0013 permits a
+one-occurrence segment and exact split proposal outcomes.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41406406586 passed, including
-PostgreSQL 16 migration and tenant-isolation integration, lint, typecheck,
-dependency audit, and production build. Before this split increment, local
-calendar API tests (109), lint, and typecheck passed. The split increment's
+https://github.com/2q9e/chron/actions/runs/41412546906 passed on commit
+`23606fc`, including PostgreSQL 16 migration, tenant-isolation, and split
+integration, lint, typecheck, calendar policy/auth/time/API/layout/recovery
+checks, HTTPS reminder checks, dependency audit, and production build. Local
 calendar API (111), layout/API client (58), and time/domain (43) suites pass;
-typecheck and lint pass. GitHub CI is pending. PostgreSQL integration skips
-locally because `CHRON_TEST_DATABASE_URL` is unset.
+typecheck and lint pass. PostgreSQL integration skips locally because
+`CHRON_TEST_DATABASE_URL` is unset.
 
 https://testing.uwu.markets/sign-in was checked over HTTPS and returned 200
 with HSTS in the earlier check. On 2026-11-02, HTTPS requests to the root and
 `/calendar` returned redirects to `/calendar` and `/sign-in` respectively,
 with valid TLS and HSTS. No redirect was followed; this confirms the HTTPS
 edge only, not the running app version or authenticated behavior. This change
-is not deployed. The session's deployment path is unavailable, so no VPS or
-Cloudflare resources were changed. Authenticated calendar actions remain
-unverified because no test account is configured.
+is not deployed. The deployment key referenced by the local login notes is
+unavailable in this session, so no VPS or Cloudflare resources were changed.
+Authenticated calendar actions remain unverified because no test account is
+configured.
 
 External services, Git remotes, and staging or production hosts use HTTPS.
 HTTP references are limited to loopback test configuration and negative
@@ -35,8 +36,8 @@ remain untracked.
 No reference folder was inspected or used. Commits continue on `main` only,
 with author 2q9e.
 
-Occurrence movement is implemented, pushed, and verified by CI. Split-series
-behavior is implemented locally; its PostgreSQL CI validation is pending.
+Occurrence movement and split-series behavior are implemented, pushed, and
+verified by CI.
 SMTP delivery, scheduler deployment, external calendar synchronization,
 staging activation, and authenticated browser verification remain open.
 
@@ -216,9 +217,10 @@ database, browser, SMTP, and staging checks remain open.
 
 - Continue making small reviewed commits on the single public main branch;
   inspect staged paths and scan outgoing history before each push.
-- Add recurrence exceptions and split-series edits, building on the persisted
-  proposal and approval path. Preserve exact owner scope, target revision,
-  conflict recheck, time-zone behavior, and explicit approval.
+- Verify recurrence exception and split-series interactions in an authenticated
+  browser when a test account and authorized deployment access are available.
+  PostgreSQL CI confirms migration 0013 and split behavior; preserve exact owner
+  scope, target revision, conflict recheck, time-zone behavior, and approval.
 - Verify authenticated calendar interactions in a real browser when a
   disposable account is available. Signup remains intentionally closed.
 - Complete the separately gated delivery work: live SMTP acceptance,

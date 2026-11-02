@@ -43,10 +43,12 @@ sign-in returned 200 and /calendar redirected to sign-in. No test account is
 available, so authenticated UI actions remain unverified. Do not change other
 VPS services.
 
-Next calendar work is recurrence exceptions and split-series edits.
-Authenticated browser verification, SMTP delivery, scheduler deployment, and
-external calendar synchronization remain open. Public signup and Meta BYOK
-remain gated by the legal/operator requirements in the security reports.
+Recurrence exceptions and split-series edits are implemented and pushed;
+migration 0013 and the split behavior passed PostgreSQL CI. Next calendar work
+is authenticated browser verification when a test account and deployment
+access are available. SMTP delivery, scheduler deployment, and external
+calendar synchronization remain open. Public signup and Meta BYOK remain
+gated by the legal/operator requirements in the security reports.
 
 ## Skill library category allocation
 
