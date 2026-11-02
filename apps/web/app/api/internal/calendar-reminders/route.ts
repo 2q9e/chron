@@ -1,4 +1,3 @@
-import { database } from "../../../../features/auth/server/auth-instance.ts";
 import { sendCalendarReminderEmail } from "../../../../features/auth/server/email.ts";
 import { CalendarRepository } from "../../../../features/calendar/server/repository.ts";
 import { runCalendarReminderDeliveryWorker } from "../../../../features/calendar/server/reminder-delivery-worker.ts";
@@ -18,6 +17,7 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   try {
+    const { database } = await import("../../../../features/auth/server/auth-instance.ts");
     const summary = await runCalendarReminderDeliveryWorker(
       database,
       new CalendarRepository(database),
