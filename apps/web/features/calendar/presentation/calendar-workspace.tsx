@@ -3,10 +3,11 @@
 import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
-import { calendarEventSeries, type CalendarEventEntry, type CalendarPreferences } from "../domain/types";
-import { CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
+import { calendarEventSeries, type CalendarEventEntry, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
+import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
-import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, navigateDate, newEventDraft, validateEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
+import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
+import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, navigateDate, newEventDraft, validateCalendarEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
 import { CalendarEditor, type Editor } from "./calendar-editor";
 import { CalendarSearch } from "./calendar-search";
 import { CalendarPreferencesForm } from "./calendar-preferences";
@@ -69,13 +70,14 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     let active = true;
     void Promise.resolve().then(async () => {
       const operationKeys = pendingCalendarCreates(userId);
+      const seriesApprovals = pendingCalendarSeriesApprovals(userId);
       if (!active) return;
-      if (operationKeys === null) {
+      if (operationKeys === null || seriesApprovals === null) {
         setRecoveryError("Chron could not read browser recovery storage. Enable site storage and try verifying again.");
         setRecoveryState("error");
         return;
       }
-      if (operationKeys.length === 0) {
+      if (operationKeys.length === 0 && seriesApprovals.length === 0) {
         setRecoveryError("");
         setRecoveryState("idle");
         return;
@@ -98,9 +100,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         }
       });
       if (!active) return;
-      const counts = countCalendarCreateRecoveryOutcomes(batch.outcomes);
-      const summary = summarizeCalendarCreateRecovery(counts);
       if (batch.error !== null) {
+        const summary = summarizeCalendarCreateRecovery(countCalendarCreateRecoveryOutcomes(batch.outcomes));
         if (summary.message) setNotice(summary.message);
         if (summary.reloadCalendar) setReload((value) => value + 1);
         setRecoveryError(batch.error instanceof CalendarRequestError && batch.error.status === 401
@@ -111,9 +112,47 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         setRecoveryState(batch.error instanceof CalendarRequestError && batch.error.status === 401 ? "reauth" : "error");
         return;
       }
-      if (summary.message) setNotice(summary.message);
-      if (summary.reloadCalendar) setReload((value) => value + 1);
+
+      const seriesBatch = await reconcileCalendarSeriesApprovalBatch(seriesApprovals, async ({ draftId, action }) => {
+        try {
+          return (await approveCalendarSeriesDraft(draftId, action)).outcome;
+        } catch (reason) {
+          if (reason instanceof CalendarRequestError
+            && reason.status === 404
+            && reason.code === "SERIES_DRAFT_NOT_FOUND") return "missing";
+          throw reason;
+        }
+      });
+      if (!active) return;
+
+      const createSummary = summarizeCalendarCreateRecovery(countCalendarCreateRecoveryOutcomes(batch.outcomes));
+      const approvedSeriesCount = seriesBatch.outcomes.filter((outcome) => outcome === "approved").length;
+      const deletedSeriesCount = seriesBatch.outcomes.filter((outcome) => outcome === "deleted").length;
+      const missingSeriesCount = seriesBatch.outcomes.filter((outcome) => outcome === "missing").length;
+      const staleSeriesCount = seriesBatch.outcomes.filter((outcome) => outcome === "stale").length;
+      const expiredSeriesCount = seriesBatch.outcomes.filter((outcome) => outcome === "expired").length;
+      const messages = [createSummary.message];
+      if (approvedSeriesCount > 0) messages.push(`${approvedSeriesCount} previously approved recurring change${approvedSeriesCount === 1 ? " was" : "s were"} completed.`);
+      if (deletedSeriesCount > 0) messages.push(`${deletedSeriesCount} previously approved recurring series ${deletedSeriesCount === 1 ? "is" : "are"} no longer present.`);
+      if (staleSeriesCount > 0) messages.push(`${staleSeriesCount} recurring proposal${staleSeriesCount === 1 ? " became" : "s became"} stale before approval; no changes were made for those proposals.`);
+      if (expiredSeriesCount > 0) messages.push(`${expiredSeriesCount} recurring proposal${expiredSeriesCount === 1 ? " expired" : "s expired"} before approval; no changes were made for those proposals.`);
+      if (missingSeriesCount > 0) messages.push(`${missingSeriesCount} recurring proposal${missingSeriesCount === 1 ? " could not be found and was not applied" : "s could not be found and were not applied"}.`);
+      const message = messages.filter(Boolean).join(" ");
+      if (message) setNotice(message);
+      if (createSummary.reloadCalendar || approvedSeriesCount > 0 || deletedSeriesCount > 0) setReload((value) => value + 1);
+
+      if (seriesBatch.error !== null) {
+        setRecoveryError(seriesBatch.error instanceof CalendarRequestError && seriesBatch.error.status === 401
+          ? "Your sign-in expired. Sign in again to verify previously approved calendar changes."
+          : seriesBatch.error instanceof Error
+            ? seriesBatch.error.message
+            : "Chron could not verify a previously approved calendar change. Try again.");
+        setRecoveryState(seriesBatch.error instanceof CalendarRequestError && seriesBatch.error.status === 401 ? "reauth" : "error");
+        return;
+      }
+
       for (const operationKey of operationKeys) forgetPendingCalendarCreate(userId, operationKey);
+      for (const { draftId } of seriesApprovals) forgetPendingCalendarSeriesApproval(userId, draftId);
       setRecoveryState("idle");
     });
 
@@ -187,7 +226,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     rememberEditorOpener();
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
-    setEditor({ generation: editorGeneration.current, event: null, operationKey: crypto.randomUUID(), draft: newEventDraft(day), zone: preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
+    setEditor({ generation: editorGeneration.current, event: null, operationKey: crypto.randomUUID(), operationAction: "create", draft: newEventDraft(day), zone: preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false, seriesDraft: null }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
   const openEvent = useCallback((selected: CalendarEventEntry, returnFocusTarget?: HTMLElement | null) => {
     if (!preferences || calendarLocked) return;
@@ -196,37 +235,176 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     else rememberEditorOpener();
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
-    setEditor({ generation: editorGeneration.current, event, operationKey: null, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
+    setEditor({ generation: editorGeneration.current, event, operationKey: event.recurrenceRule ? crypto.randomUUID() : null, operationAction: event.recurrenceRule ? "update" : null, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false, seriesDraft: null }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
   function changeDraft(field: keyof EventDraft, value: string) {
     if (editorStale || calendarLocked) return;
-    const nextOperationKey = editor?.event ? editor.operationKey : crypto.randomUUID();
-    setEditor((current) => current ? { ...current, operationKey: current.event ? current.operationKey : nextOperationKey, draft: { ...current.draft, [field]: value }, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false } : current);
+    const nextOperationKey = crypto.randomUUID();
+    setEditor((current) => current ? {
+      ...current,
+      operationKey: !current.event || current.event.recurrenceRule ? nextOperationKey : current.operationKey,
+      operationAction: !current.event ? "create" : current.event.recurrenceRule ? "update" : null,
+      draft: { ...current.draft, [field]: value },
+      errors: {},
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+    } : current);
     setEditorError("");
   }
   async function reviewEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!editor || backgroundLocked || editorRetryOnly) return;
+    setEditorError("");
     const generation = editor.generation;
-    const result = validateEventDraft(editor.draft, editor.zone);
+    const result = validateCalendarEventDraft(editor.draft, editor.zone);
     if (!result.ok) { setEditor({ ...editor, errors: result.errors }); return; }
+    if (editor.event?.recurrenceRule && !result.recurrenceRule) {
+      setEditorError("A repeating series must keep a finite recurrence rule.");
+      return;
+    }
+    const proposalAction: "update" | "create" = editor.event ? "update" : "create";
+    const operationKey = editor.operationAction === proposalAction
+      ? editor.operationKey
+      : crypto.randomUUID();
+    if (!operationKey) {
+      setEditorError("The series proposal key is missing. Reload the calendar before continuing.");
+      return;
+    }
+    const reviewedEditor: Editor = {
+      ...editor,
+      operationAction: proposalAction,
+      operationKey,
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+    };
+    setEditor(reviewedEditor);
     setBusy(true); setEditorError("");
     try {
+      if (result.recurrenceRule) {
+        const request: CalendarSeriesDraftRequest = reviewedEditor.event
+          ? {
+              action: "update",
+              scope: "series",
+              targetEventId: reviewedEditor.event.id,
+              targetRevision: reviewedEditor.event.revision,
+              event: result.mutation,
+              recurrenceRule: result.recurrenceRule,
+              calendarTimeZone: preferences?.timeZone ?? reviewedEditor.zone,
+            }
+          : {
+              action: "create",
+              scope: "series",
+              event: result.mutation,
+              recurrenceRule: result.recurrenceRule,
+              calendarTimeZone: preferences?.timeZone ?? reviewedEditor.zone,
+            };
+        const draft = await createCalendarSeriesDraft(request, operationKey);
+        if (editorGeneration.current !== generation) return;
+        if (draft.outcome !== "pending") {
+          setEditor({ ...reviewedEditor, operationKey: crypto.randomUUID(), seriesDraft: null });
+          setEditorError("That recurring proposal is no longer pending. Review the series again.");
+          return;
+        }
+        setEditor({
+          ...reviewedEditor,
+          errors: {},
+          review: null,
+          conflicts: [],
+          reviewTimeZone: preferences?.timeZone ?? editor.zone,
+          deleting: false,
+          seriesDraft: draft,
+        });
+        return;
+      }
       const conflicts = await checkCalendarEventConflicts(
         result.mutation,
-        preferences?.timeZone ?? editor.zone,
-        editor.event?.id,
+        preferences?.timeZone ?? reviewedEditor.zone,
+        reviewedEditor.event?.id,
       );
       if (editorGeneration.current !== generation) return;
-      setEditor({ ...editor, errors: {}, review: result.mutation, conflicts, reviewTimeZone: preferences?.timeZone ?? editor.zone, deleting: false });
+      setEditor({ ...reviewedEditor, errors: {}, review: result.mutation, conflicts, reviewTimeZone: preferences?.timeZone ?? reviewedEditor.zone, deleting: false, seriesDraft: null });
     } catch (reason) {
       if (editorGeneration.current === generation) {
         setEditorError(reason instanceof Error ? reason.message : "Could not check for overlapping events. Try reviewing this event again.");
+        if (reason instanceof CalendarRequestError
+          && (reason.status === 412 || reason.code === "SERIES_TARGET_STALE" || reason.code === "EVENT_NOT_FOUND")) {
+          setEditorStale(true);
+        }
       }
     } finally {
       setBusy(false);
     }
   }
   async function confirmEvent() {
+    if (editor?.seriesDraft) {
+      if (!preferences || backgroundLocked) return;
+      const current = editor;
+      const proposal = current.seriesDraft;
+      if (!proposal) return;
+      const generation = current.generation;
+      if (proposal.action !== "delete"
+        && proposal.calendarTimeZone !== preferences.timeZone) {
+        setEditor({ ...current, operationKey: crypto.randomUUID(), operationAction: proposal.action, seriesDraft: null });
+        setEditorError("The calendar time zone changed. Review the recurring proposal again.");
+        return;
+      }
+      if (!storePendingCalendarSeriesApproval(userId, proposal.id, proposal.action)) {
+        setEditorError("Chron could not prepare safe approval recovery because browser storage is unavailable. No series change was sent. Enable site storage and try again.");
+        return;
+      }
+      setEditorRetryOnly(true);
+      setBusy(true); setEditorError("");
+      try {
+        const approval = await approveCalendarSeriesDraft(proposal.id, proposal.action, proposal);
+        if (editorGeneration.current !== generation) return;
+        if (approval.outcome === "approved") {
+          forgetPendingCalendarSeriesApproval(userId, proposal.id);
+          closeEditor(true);
+          setNotice(approval.action === "create"
+            ? "Repeating series created."
+            : approval.action === "update"
+              ? "Repeating series updated."
+              : "Repeating series deleted.");
+          setReload((value) => value + 1);
+        } else if (approval.outcome === "expired") {
+          forgetPendingCalendarSeriesApproval(userId, proposal.id);
+          setEditor({ ...current, operationKey: crypto.randomUUID(), operationAction: proposal.action, seriesDraft: null });
+          setEditorRetryOnly(false);
+          setEditorError("This proposal expired without changing the calendar. Review the series again to create a new proposal.");
+        } else {
+          forgetPendingCalendarSeriesApproval(userId, proposal.id);
+          setEditorError(approval.outcome === "stale"
+            ? "The calendar changed after this proposal was prepared. Reload it and review the series again."
+            : "This series is no longer available. Reload the calendar to see its current state.");
+          setEditorRetryOnly(false);
+          setEditorStale(true);
+          setReload((value) => value + 1);
+        }
+      } catch (reason) {
+        if (editorGeneration.current !== generation) return;
+        if (reason instanceof CalendarRequestError && reason.status === 401) {
+          setEditorReauthRequired(true);
+          setEditorRetryOnly(true);
+          setEditorError("Your sign-in expired. Sign in again, then retry this same series approval.");
+        } else if (reason instanceof CalendarRequestError && reason.status === 404) {
+          forgetPendingCalendarSeriesApproval(userId, proposal.id);
+          setEditorRetryOnly(false);
+          setEditorError("This proposal could not be found. Reload the calendar and review the series again.");
+          setEditorStale(true);
+        } else {
+          setEditorRetryOnly(true);
+          setEditorError("Chron could not confirm this series approval. Retry the same approval to check its result.");
+        }
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
     if (!editor?.review || !preferences || backgroundLocked) return;
     const generation = editor.generation;
     setBusy(true); setEditorError("");
@@ -343,8 +521,68 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     }
     finally { setBusy(false); }
   }
+  async function reviewDelete() {
+    if (!editor?.event || backgroundLocked || editorRetryOnly) return;
+    if (!editor.event.recurrenceRule) {
+      setEditor({ ...editor, deleting: true, review: null, seriesDraft: null });
+      return;
+    }
+
+    if (!editor.operationKey) {
+      setEditorError("The series proposal key is missing. Reload the calendar before continuing.");
+      return;
+    }
+    const generation = editor.generation;
+    const operationKey = editor.operationAction === "delete"
+      ? editor.operationKey
+      : crypto.randomUUID();
+    if (!operationKey) {
+      setEditorError("The series proposal key is missing. Reload the calendar before continuing.");
+      return;
+    }
+    setEditor({
+      ...editor,
+      operationKey,
+      operationAction: "delete",
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+    });
+    setBusy(true); setEditorError("");
+    try {
+      const draft = await createCalendarSeriesDraft({
+        action: "delete",
+        scope: "series",
+        targetEventId: editor.event.id,
+        targetRevision: editor.event.revision,
+      }, operationKey);
+      if (editorGeneration.current !== generation) return;
+      if (draft.outcome !== "pending") {
+        setEditor({ ...editor, operationKey: crypto.randomUUID(), operationAction: "delete", seriesDraft: null });
+        setEditorError("That deletion proposal is no longer pending. Review the series again.");
+        return;
+      }
+      setEditor({ ...editor, operationKey, operationAction: "delete", review: null, conflicts: [], deleting: false, seriesDraft: draft });
+    } catch (reason) {
+      if (editorGeneration.current !== generation) return;
+      setEditorError(reason instanceof Error ? reason.message : "Could not prepare the series deletion. Try again.");
+      if (reason instanceof CalendarRequestError
+        && (reason.status === 412 || reason.code === "SERIES_TARGET_STALE" || reason.code === "EVENT_NOT_FOUND")) {
+        setEditorStale(true);
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function confirmDelete() {
     if (!editor?.event || backgroundLocked || editorRetryOnly) return;
+    if (editor.event.recurrenceRule) {
+      setEditorError("Review and approve the entire series before deleting it.");
+      return;
+    }
     const generation = editor.generation;
     setBusy(true); setEditorError("");
     try {
@@ -437,8 +675,14 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         onReview={reviewEvent}
         onClose={() => closeEditor()}
         onReloadLatest={discardAndReload}
-        onDeleteReview={() => setEditor({ ...editor, deleting: true, review: null })}
-        onDeleteCancel={() => setEditor({ ...editor, deleting: false })}
+        onDeleteReview={reviewDelete}
+        onDeleteCancel={() => setEditor({
+          ...editor,
+          operationKey: editor.event?.recurrenceRule ? crypto.randomUUID() : editor.operationKey,
+          operationAction: editor.event?.recurrenceRule ? "update" : editor.operationAction,
+          deleting: false,
+          seriesDraft: null,
+        })}
         onDeleteConfirm={confirmDelete}
         onSave={confirmEvent}
       />
