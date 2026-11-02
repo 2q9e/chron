@@ -3,8 +3,9 @@
 ## Current state
 
 Chron is a standalone public repository on GitHub. The only remote branch is
-main, and changes are pushed by 2q9e with short commit titles. The latest
-source change is 1785c06, adding a real PostgreSQL tenant-isolation workflow.
+main, and changes are pushed by 2q9e with short commit titles. The current
+main baseline is c62404c; occurrence cancellation is committed locally as
+d717a12 and is waiting for its HTTPS push and CI run.
 The current public tree contains no AGENTS.md; local operating instructions
 remain ignored. No old calendar reference folder was inspected or used.
 
@@ -28,8 +29,8 @@ C1 — calendar — is active. Landing-page work remains paused. The calendar ha
 owner-scoped persisted events and preferences, four views, create/edit/delete,
 search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
-interactions. The next calendar increment is recurrence exceptions and
-split-series edits.
+interactions. The current local increment adds reviewed single-occurrence
+cancellation. Moving/restoring occurrences and split-series edits remain open.
 
 The reminder schema, migrations, repositories, and route contracts were
 executed by CI; live mail delivery, scheduler deployment, and inbox receipt
@@ -74,7 +75,7 @@ not implemented.
 - The current staging release is 52d8efd. HTTPS sign-in and the protected
   route redirect were checked with certificate validation; no VPS resource was
   changed during the latest CI-only iteration.
-- Recurrence exceptions/split edits, authenticated browser walkthrough,
+- Recurrence move/restore and split edits, authenticated browser walkthrough,
   SMTP delivery, scheduler deployment, and Google calendar sync remain open.
 
 ## Prior landing checkpoint
@@ -176,19 +177,26 @@ awaits narrow and zoom browser checks.
   `DATABASE_URL`. Build output was placed temporarily in `/tmp`, then the
   previous `.next` directory was restored and the temporary artifacts removed.
 - At the 2026-11-01 checkpoint, the HTTPS staging DNS lookup failed. The current 2026-11-02 HTTPS route and TLS verification passed as recorded in Current state. Keep using HTTPS and do not edit unrelated VPS configuration.
+- For the local occurrence-cancellation increment, calendar API (97) and
+  layout (53) tests, typecheck, lint, `git diff --check`, and the production
+  build passed. The build used Webpack and a temporary `/tmp` output directory
+  because the workspace volume was low on space. Migration 0009 has not yet run
+  in PostgreSQL CI; the staging URL still serves 52d8efd.
 
 ## Next actions
 
-1. Implement recurrence exception and split-series operations through the
-   existing owner-scoped proposal, conflict-review, and explicit approval
-   pipeline. Add deterministic domain, API, and PostgreSQL coverage.
-2. Run CI on the single main branch and review the real migration behavior.
-   Keep the authenticated browser walkthrough open until a disposable account
+1. Push the verified occurrence-cancellation source and handoff/docs on `main`
+   through the HTTPS Git remote. Keep AGENTS.md excluded.
+2. Wait for GitHub Actions to apply migration 0009 and run the PostgreSQL
+   integration checks. Fix and repush if they fail.
+3. After CI passes, deploy the verified app increment to
+   https://testing.uwu.markets over HTTPS, touching only Chron-specific VPS
+   resources, then check TLS, sign-in, and the protected calendar redirect.
+4. Continue with recurrence move/restore exceptions and split-series edits
+   through the existing owner-scoped proposal and approval pipeline.
+5. Keep the authenticated browser walkthrough open until a disposable account
    can be configured without exposing private credentials.
-3. Continue email delivery and scheduler work only when the authorized
+6. Continue email delivery and scheduler work only when the authorized
    SMTP/Cloudflare configuration can be tested safely.
-4. Deploy each verified app-source increment to
-   https://testing.uwu.markets over HTTPS, using only Chron-specific VPS
-   resources. Do not alter unrelated services.
-5. Before every push, inspect staged paths, scan the outgoing changes, and
+7. Before every push, inspect staged paths, scan the outgoing changes, and
    preserve the one-branch public history. Keep AGENTS.md out of Git.

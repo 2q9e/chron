@@ -187,8 +187,10 @@ provide a staging account; authenticated browser verification remains gated.
 ### C1-rec6 — recurrence exceptions and split-series edits
 
 - **Task ID:** C1-rec6
-- **Objective:** Add explicit single-occurrence exception and this-and-following
-  series split operations without changing unrelated occurrences.
+- **Objective:** Incrementally add explicit single-occurrence exceptions and
+  this-and-following series split operations without changing unrelated
+  occurrences. The first slice adds cancellation only; movement, restore, and
+  split remain open.
 - **Assigned agent:** main integration owner; runtime model identity is fixed
   and not independently attested
 - **Dependencies:** C1-rec0 through C1-rec4; use the passing PostgreSQL CI
@@ -205,18 +207,23 @@ provide a staging account; authenticated browser verification remains gated.
   use transaction-local RLS; bind proposal action, occurrence key, target
   revision, exact scope, payload, and conflict snapshot; require explicit
   approval; no production secrets, user data, old references, or VPS access
-- **Acceptance criteria:** preserve the original scheduled occurrence key
-  when an exception moves; add a stable series lineage across split segments;
-  enforce finite bounds; recalculate conflicts and reminder rows atomically;
-  reject stale, expired, replayed, or cross-owner proposals; keep one-off and
-  full-series behavior unchanged
+- **Acceptance criteria:** for cancellation, bind the original scheduled key,
+  finite-series membership, owner, and target revision; cancel reminders and
+  stale competing proposals atomically; reject stale, expired, replayed, or
+  cross-owner proposals; keep one-off and full-series behavior unchanged.
+  Remaining movement must preserve the original scheduled key. Remaining split
+  work must establish stable series lineage and finite bounds across segments.
 - **Tests:** pure rule/identity and DST cases; API shape, scope and replay
   checks; two-owner PostgreSQL RLS checks; deletion cascade and reminder
   reconciliation; browser keyboard and responsive review when an account is
   available
-- **Expected deliverables:** migration, owner-scoped proposal and approval
-  behavior, exception/split editor controls, deterministic tests, and updated
-  handoff evidence
+- **Current slice:** migration, owner-scoped cancellation proposal/approval,
+  calendar filtering, conflict exclusion, reminder cancellation, UI review,
+  deterministic tests, and PostgreSQL integration coverage are implemented in
+  the current working tree. The production build passed locally; PostgreSQL CI
+  for migration 0009 remains pending.
+- **Remaining deliverables:** move/restore exceptions, split-series behavior,
+  authenticated browser review, and final handoff evidence
 
 ## Task contracts
 

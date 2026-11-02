@@ -14,9 +14,9 @@ recurrence-aware conflict checking, and exact approval drafts are connected.
 - The first through last occurrence must fit within 366 calendar dates,
   including skipped generated gap times.
 - A recurring instance may last no longer than seven days.
-- A whole-series update or deletion is explicit. An individual exception or
-  “this and following” split is not offered until it has its own persisted,
-  versioned proposal behavior.
+- A whole-series update or deletion is explicit. Cancelling one occurrence is
+  available through its own persisted, versioned proposal and approval. Moving
+  one occurrence and splitting “this and following” are not implemented.
 
 ## Date and time behavior
 
@@ -35,9 +35,11 @@ choice for user intent; RFC 5545's default for ambiguous local date-times is
 the first occurrence.
 
 The initial DTSTART and each emitted occurrence have stable keys derived from
-the original scheduled local date-time or date. A moved exception must retain
-its original key; exception storage is a later task. Expanding a date window
-includes any event instance whose half-open interval overlaps that window.
+the original scheduled local date-time or date. A cancellation exception is
+stored against that original key, so it cannot cancel a different generated
+date after a series edit. A moved exception must retain its original key;
+moving occurrences is not implemented. Expanding a date window includes any
+event instance whose half-open interval overlaps that window.
 
 ## Expansion and write bounds
 
@@ -53,6 +55,13 @@ includes any event instance whose half-open interval overlaps that window.
 - Create/edit review reports the occurrence count and full-series scope.
   Approval rechecks the exact normalized payload, target revision, and
   recurrence-aware conflict snapshot inside the owner-serialized transaction.
+- Cancelling one occurrence requires a separate exact-key review and explicit
+  approval. The exception is owner-scoped under forced RLS; its insertion,
+  reminder cancellation, and staling of competing pending proposals happen in
+  the approval transaction. Pending or leased reminders are cancelled; a
+  delivery already in progress may still complete. Series edits that would
+  move or remove a cancelled occurrence are rejected so the date cannot
+  silently reappear.
 - Pending series proposals are cleared by the recurring expiry worker in
   bounded owner transactions. It takes one PostgreSQL advisory lock to prevent
   overlapping runs, scans only account IDs from the auth table, then calls the
@@ -79,6 +88,8 @@ is a product decision documented above. Sources:
 - [RFC 5545, Section 3.3.10: Recurrence Rule](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10)
 - [RFC 5545, Section 3.8.5.3: Recurrence Rule](https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.5.3)
 
-At this stage, no recurrence UI or endpoint advertises unfinished behavior.
-Occurrence exceptions, split edits, reminders, and Google sync remain separate
-work.
+The recurring calendar currently supports create, whole-series update/delete,
+and single-occurrence cancellation. It does not support moving an occurrence,
+restoring a cancelled occurrence, this-and-following splits, or Google sync.
+Reminder delivery remains a separate worker and a delivery cannot be retracted
+once it has started.

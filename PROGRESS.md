@@ -24,9 +24,19 @@ The latest remote tree has no AGENTS.md; the local root instructions remain
 ignored. No reference folder was inspected or used. Commits continue on main
 only, with author 2q9e.
 
-Next calendar work is recurrence exception and split-series behavior. SMTP
-delivery, scheduler deployment, external calendar synchronization, and
-authenticated browser verification remain open.
+Next calendar work is occurrence movement/restoration and split-series
+behavior. SMTP delivery, scheduler deployment, external calendar
+synchronization, and authenticated browser verification remain open.
+
+The current local calendar increment adds reviewed single-occurrence
+cancellation for finite recurring events. The proposal binds the occurrence's
+original key and series revision; approval persists an owner-scoped exception,
+cancels pending or leased reminders, stales competing proposals, and hides the
+date from listing and conflict checks. Moving/restoring occurrences and
+this-and-following splits remain unfinished. Local typecheck, lint, calendar
+API tests (97), calendar layout tests (53), and the production build pass.
+PostgreSQL CI for migration 0009 and HTTPS staging deployment for this
+increment are pending; do not describe it as released yet.
 
 ## Prior implementation checkpoints
 
