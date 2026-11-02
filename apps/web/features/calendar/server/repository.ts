@@ -18,6 +18,8 @@ import type {
   CalendarEventMutation,
   CalendarEventSearchRequest,
   CalendarPreferences,
+  CalendarReminderFailureCounts,
+  CalendarReminderStatusSummary,
   CalendarRecurrenceRule,
 } from "../domain/types.ts";
 import {
@@ -85,6 +87,14 @@ type CalendarReminderClaimRow = QueryResultRow & {
   lease_token: string;
   email: string | null;
   email_verified: boolean;
+};
+
+type CalendarReminderStatusRow = QueryResultRow & {
+  status: string;
+  attempt_count: number;
+  next_attempt_at: Date | string;
+  sent_at: Date | string | null;
+  last_error_code: string | null;
 };
 
 export type CalendarReminderClaim = Readonly<{
@@ -306,6 +316,97 @@ function asIsoInstant(value: Date | string | null): string {
   const date = value instanceof Date ? value : new Date(value);
   if (!Number.isFinite(date.valueOf())) throw new Error("Calendar event instant is invalid.");
   return date.toISOString();
+}
+
+function reminderFailureCategory(code: string): keyof CalendarReminderFailureCounts {
+  switch (code) {
+    case "RECIPIENT_UNVERIFIED":
+    case "RECIPIENT_INVALID":
+      return "accountEmail";
+    case "SMTP_CONFIGURATION":
+      return "configuration";
+    case "SMTP_REJECTED":
+      return "provider";
+    case "SMTP_TRANSIENT":
+    case "ATTEMPTS_EXHAUSTED":
+      return "temporary";
+    default:
+      return "other";
+  }
+}
+
+function summarizeCalendarReminderStatuses(
+  rows: readonly CalendarReminderStatusRow[],
+): CalendarReminderStatusSummary {
+  if (rows.length > 366) {
+    throw new CalendarRouteError(
+      500,
+      "REMINDER_STATUS_LIMIT_EXCEEDED",
+      "Reminder status could not be loaded.",
+    );
+  }
+
+  const summary = {
+    total: rows.length,
+    pending: 0,
+    leased: 0,
+    sent: 0,
+    failed: 0,
+    cancelled: 0,
+    retrying: 0,
+    nextAttemptAt: null as string | null,
+    lastAcceptedAt: null as string | null,
+    failureCounts: {
+      accountEmail: 0,
+      configuration: 0,
+      provider: 0,
+      temporary: 0,
+      other: 0,
+    },
+  };
+  let nextAttemptTime = Number.POSITIVE_INFINITY;
+  let lastAcceptedTime = Number.NEGATIVE_INFINITY;
+
+  for (const row of rows) {
+    if (row.status !== "pending" && row.status !== "leased" && row.status !== "sent"
+      && row.status !== "failed" && row.status !== "cancelled") {
+      throw new Error("Calendar reminder status is invalid.");
+    }
+    if (!Number.isInteger(row.attempt_count) || row.attempt_count < 0 || row.attempt_count > 5) {
+      throw new Error("Calendar reminder attempt count is invalid.");
+    }
+    summary[row.status] += 1;
+
+    if (row.status === "pending") {
+      if (row.attempt_count > 0) summary.retrying += 1;
+      const value = new Date(row.next_attempt_at);
+      if (!Number.isFinite(value.valueOf())) throw new Error("Calendar reminder retry time is invalid.");
+      if (value.valueOf() < nextAttemptTime) {
+        nextAttemptTime = value.valueOf();
+        summary.nextAttemptAt = value.toISOString();
+      }
+    }
+
+    if (row.status === "sent") {
+      if (row.sent_at === null) throw new Error("Accepted calendar reminder is missing its timestamp.");
+      const value = new Date(row.sent_at);
+      if (!Number.isFinite(value.valueOf())) throw new Error("Calendar reminder acceptance time is invalid.");
+      if (value.valueOf() > lastAcceptedTime) {
+        lastAcceptedTime = value.valueOf();
+        summary.lastAcceptedAt = value.toISOString();
+      }
+    }
+
+    if ((row.status === "pending" || row.status === "leased" || row.status === "failed")
+      && row.last_error_code !== null) {
+      if (!/^[A-Z0-9_]{1,64}$/u.test(row.last_error_code)) {
+        throw new Error("Calendar reminder failure category is invalid.");
+      }
+      summary.failureCounts[reminderFailureCategory(row.last_error_code)] += 1;
+    }
+  }
+
+  return summary;
 }
 
 function asIsoTimestamp(value: Date | string): string {
@@ -1791,6 +1892,44 @@ export class CalendarRepository {
       );
       return result.rows.length === 1;
     }, true);
+  }
+
+  getCalendarReminderStatus(
+    ownerId: string,
+    eventId: string,
+  ): Promise<CalendarReminderStatusSummary> {
+    return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      const eventResult = await client.query<{ revision: number }>(
+        `SELECT revision
+         FROM calendar_events
+         WHERE user_id = $1 AND id = $2::uuid`,
+        [ownerId, eventId],
+      );
+      const event = eventResult.rows[0];
+      if (!event) {
+        throw new CalendarRouteError(
+          404,
+          "EVENT_NOT_FOUND",
+          "That calendar event could not be found.",
+        );
+      }
+
+      const result = await client.query<CalendarReminderStatusRow>(
+        `SELECT status,
+                attempt_count,
+                next_attempt_at,
+                sent_at,
+                last_error_code
+         FROM calendar_event_reminders
+         WHERE user_id = $1
+           AND event_id = $2::uuid
+           AND event_revision = $3
+         ORDER BY next_attempt_at, id
+         LIMIT 367`,
+        [ownerId, eventId, event.revision],
+      );
+      return summarizeCalendarReminderStatuses(result.rows);
+    });
   }
 
   listEvents(

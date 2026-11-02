@@ -5,6 +5,7 @@ import {
   CalendarRequestError,
   createCalendarSeriesDraft,
   fetchCalendarEvents,
+  fetchCalendarReminderStatus,
 } from "./calendar-api.ts";
 
 const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
@@ -96,6 +97,48 @@ test("calendar list accepts dated occurrences only when their series root matche
     globalThis.fetch = async () => response({ events: [invalid] });
     await assert.rejects(
       fetchCalendarEvents("2026-06-01", "2026-07-01", "UTC"),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("reminder status uses a same-origin no-store read and validates persisted state counts", async () => {
+  const status = {
+    total: 2,
+    pending: 1,
+    leased: 0,
+    sent: 1,
+    failed: 0,
+    cancelled: 0,
+    retrying: 1,
+    nextAttemptAt: "2026-11-10T13:45:00.000Z",
+    lastAcceptedAt: "2026-11-10T13:44:00.000Z",
+    failureCounts: {
+      accountEmail: 0,
+      configuration: 0,
+      provider: 0,
+      temporary: 1,
+      other: 0,
+    },
+  };
+  let request;
+  globalThis.fetch = async (url, init) => {
+    request = { url, init };
+    return response({ status });
+  };
+  try {
+    const loaded = await fetchCalendarReminderStatus(seriesId);
+    assert.deepEqual(loaded, status);
+    assert.equal(request.url, `/api/calendar/events/${seriesId}/reminders`);
+    assert.equal(request.init.method, "GET");
+    assert.equal(request.init.cache, "no-store");
+    assert.equal(request.init.credentials, "same-origin");
+
+    globalThis.fetch = async () => response({ status: { ...status, total: 3 } });
+    await assert.rejects(
+      fetchCalendarReminderStatus(seriesId),
       (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
     );
   } finally {

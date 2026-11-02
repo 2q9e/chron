@@ -16,6 +16,7 @@ import type {
   CalendarEventMutation,
   CalendarRecurrenceRule,
   CalendarPreferences,
+  CalendarReminderStatusSummary,
   CalendarSeriesApproval,
   CalendarSeriesDraft,
   CalendarSeriesDraftRequest,
@@ -366,6 +367,38 @@ function isCalendarPreferences(value: unknown): value is CalendarPreferences {
   }
 }
 
+function isCalendarReminderStatusSummary(
+  value: unknown,
+): value is CalendarReminderStatusSummary {
+  if (!isRecord(value) || !isRecord(value.failureCounts)) return false;
+  const record = value;
+  const failureCounts = value.failureCounts;
+  const isBoundedCount = (count: unknown): count is number =>
+    typeof count === "number" && Number.isInteger(count) && count >= 0 && count <= 366;
+  const stateKeys = ["total", "pending", "leased", "sent", "failed", "cancelled", "retrying"] as const;
+  if (!stateKeys.every((key) => isBoundedCount(record[key]))) return false;
+  const failureKeys = ["accountEmail", "configuration", "provider", "temporary", "other"] as const;
+  if (!failureKeys.every((key) => isBoundedCount(failureCounts[key]))) {
+    return false;
+  }
+  const timestampIsValid = (timestamp: unknown): timestamp is string => {
+    if (typeof timestamp !== "string") return false;
+    const parsed = new Date(timestamp);
+    return Number.isFinite(parsed.valueOf()) && parsed.toISOString() === timestamp;
+  };
+  const total = record.total as number;
+  const pending = record.pending as number;
+  const leased = record.leased as number;
+  const sent = record.sent as number;
+  const failed = record.failed as number;
+  const cancelled = record.cancelled as number;
+  const retrying = record.retrying as number;
+  return total === pending + leased + sent + failed + cancelled
+    && retrying <= pending
+    && (record.nextAttemptAt === null || timestampIsValid(record.nextAttemptAt))
+    && (record.lastAcceptedAt === null || timestampIsValid(record.lastAcceptedAt));
+}
+
 export async function readCalendarError(response: Response): Promise<CalendarRequestError> {
   let payload: unknown;
   try {
@@ -534,6 +567,32 @@ export async function fetchCalendarEvents(
     );
   }
   return payload.events;
+}
+
+export async function fetchCalendarReminderStatus(
+  eventId: string,
+  signal?: AbortSignal,
+): Promise<CalendarReminderStatusSummary> {
+  const response = await fetch(
+    `/api/calendar/events/${encodeURIComponent(eventId)}/reminders`,
+    {
+      method: "GET",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+      signal,
+    },
+  );
+  if (!response.ok) throw await readCalendarError(response);
+  const payload = await parseJson(response);
+  if (!isRecord(payload) || !isCalendarReminderStatusSummary(payload.status)) {
+    throw new CalendarRequestError(
+      "Chron returned reminder status in an unexpected format. Reload the event and try again.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  return payload.status;
 }
 
 export async function fetchCalendarPreferences(signal?: AbortSignal): Promise<CalendarPreferences | null> {

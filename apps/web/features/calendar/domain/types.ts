@@ -94,6 +94,27 @@ export type CalendarPreferences = Readonly<{
   timeZone: string;
 }>;
 
+export type CalendarReminderFailureCounts = Readonly<{
+  accountEmail: number;
+  configuration: number;
+  provider: number;
+  temporary: number;
+  other: number;
+}>;
+
+export type CalendarReminderStatusSummary = Readonly<{
+  total: number;
+  pending: number;
+  leased: number;
+  sent: number;
+  failed: number;
+  cancelled: number;
+  retrying: number;
+  nextAttemptAt: string | null;
+  lastAcceptedAt: string | null;
+  failureCounts: CalendarReminderFailureCounts;
+}>;
+
 type CalendarEventBase = Readonly<{
   id: string;
   title: string;

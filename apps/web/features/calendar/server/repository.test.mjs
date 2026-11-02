@@ -807,3 +807,68 @@ test("keeps the worker cursor across account deletion and describes its RLS guar
   assert.match(migration, /not a boundary against connections using the trusted application database role/u);
   assert.match(migration, /current_setting\('chron\.series_expiry_worker', true\) = 'enabled'/u);
 });
+
+test("reads bounded reminder status only for the signed-in event owner and hides raw errors", async () => {
+  const eventId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const { pool, calls } = createPool((sql) => {
+    if (sql.includes("FROM calendar_events")) return { rows: [{ revision: 4 }] };
+    if (sql.includes("FROM calendar_event_reminders")) {
+      return { rows: [
+        { status: "pending", attempt_count: 0, next_attempt_at: "2026-11-10T13:45:00.000Z", sent_at: null, last_error_code: null },
+        { status: "pending", attempt_count: 2, next_attempt_at: "2026-11-10T13:46:00.000Z", sent_at: null, last_error_code: "SMTP_TRANSIENT" },
+        { status: "leased", attempt_count: 1, next_attempt_at: "2026-11-10T13:45:00.000Z", sent_at: null, last_error_code: null },
+        { status: "sent", attempt_count: 1, next_attempt_at: "2026-11-10T13:45:00.000Z", sent_at: "2026-11-10T13:44:00.000Z", last_error_code: null },
+        { status: "failed", attempt_count: 1, next_attempt_at: "2026-11-10T13:45:00.000Z", sent_at: null, last_error_code: "SMTP_CONFIGURATION" },
+        { status: "cancelled", attempt_count: 1, next_attempt_at: "2026-11-10T13:45:00.000Z", sent_at: null, last_error_code: "EVENT_STALE" },
+      ] };
+    }
+    return { rows: [] };
+  });
+  const repository = new CalendarRepository(pool);
+
+  const status = await repository.getCalendarReminderStatus(ownerId, eventId);
+
+  assert.deepEqual(status, {
+    total: 6,
+    pending: 2,
+    leased: 1,
+    sent: 1,
+    failed: 1,
+    cancelled: 1,
+    retrying: 1,
+    nextAttemptAt: "2026-11-10T13:45:00.000Z",
+    lastAcceptedAt: "2026-11-10T13:44:00.000Z",
+    failureCounts: {
+      accountEmail: 0,
+      configuration: 1,
+      provider: 0,
+      temporary: 1,
+      other: 0,
+    },
+  });
+  assert.equal(calls[1].values[0], ownerId);
+  const eventLookup = calls.find(({ sql }) => sql.includes("FROM calendar_events"));
+  const reminderLookup = calls.find(({ sql }) => sql.includes("FROM calendar_event_reminders"));
+  assert.ok(eventLookup && reminderLookup);
+  assert.match(eventLookup.sql, /WHERE user_id = \$1 AND id = \$2::uuid/u);
+  assert.deepEqual(eventLookup.values, [ownerId, eventId]);
+  assert.match(reminderLookup.sql, /WHERE user_id = \$1[\s\S]*event_id = \$2::uuid[\s\S]*event_revision = \$3/u);
+  assert.match(reminderLookup.sql, /LIMIT 367/u);
+  assert.deepEqual(reminderLookup.values, [ownerId, eventId, 4]);
+  assert.equal(JSON.stringify(status).includes("SMTP_"), false);
+  assert.equal(calls.at(-1).sql, "COMMIT");
+});
+
+test("does not expose reminder status when the event is not owned by the account", async () => {
+  const { pool, calls } = createPool(() => ({ rows: [] }));
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(
+    repository.getCalendarReminderStatus(ownerId, "de305d54-75b4-431b-adb2-eb6b9e546014"),
+    (error) => error instanceof CalendarRouteError
+      && error.status === 404
+      && error.code === "EVENT_NOT_FOUND",
+  );
+  assert.equal(calls.some(({ sql }) => sql.includes("FROM calendar_event_reminders")), false);
+  assert.equal(calls.at(-1).sql, "ROLLBACK");
+});
