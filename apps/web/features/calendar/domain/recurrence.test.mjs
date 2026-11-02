@@ -76,7 +76,6 @@ test("normalizes only the finite daily/weekly recurrence shape", () => {
     { frequency: "daily", interval: 0, count: 2 },
     { frequency: "daily", interval: 5, count: 2 },
     { frequency: "daily", interval: 1.5, count: 2 },
-    { frequency: "daily", interval: 1, count: 1 },
     { frequency: "daily", interval: 1, count: 367 },
     { frequency: "daily", interval: 1, count: 2, until: "2025-01-01" },
     { frequency: "daily", interval: 1 },
@@ -95,6 +94,13 @@ test("normalizes only the finite daily/weekly recurrence shape", () => {
   });
   assertRecurrenceError(() => normalizeRecurrenceRule(accessorRule), "INVALID_RULE");
   assert.equal(getterWasRead, false);
+});
+
+test("accepts a single-occurrence segment after a recurring-series split", () => {
+  assert.deepEqual(
+    normalizeRecurrenceRule({ frequency: "weekly", interval: 1, count: 1 }),
+    { frequency: "weekly", interval: 1, count: 1 },
+  );
 });
 
 test("expands daily and weekly date-only rules on the DTSTART weekday", () => {

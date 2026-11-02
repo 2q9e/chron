@@ -18,6 +18,10 @@ const lineageMigration = readFileSync(
   new URL("../../../db/migrations/0012_calendar_series_lineage.sql", import.meta.url),
   "utf8",
 );
+const splitMigration = readFileSync(
+  new URL("../../../db/migrations/0013_calendar_series_splits.sql", import.meta.url),
+  "utf8",
+);
 
 test("occurrence cancellation is bounded, exact, owner scoped, and cascades with its series", () => {
   assert.match(migration, /action IN \('create', 'update', 'delete', 'cancel-occurrence'\)/u);
@@ -60,4 +64,12 @@ test("recurring segments retain a stable owner-scoped lineage identity", () => {
   assert.match(lineageMigration, /recurrence_frequency IS NULL OR series_root_id IS NOT NULL/u);
   assert.match(lineageMigration, /ON calendar_events \(user_id, series_root_id, id\)/u);
   assert.match(lineageMigration, /BEGIN;[\s\S]*?COMMIT;/u);
+});
+
+test("following-series splits preserve finite segment and approval shapes", () => {
+  assert.match(splitMigration, /recurrence_count BETWEEN 1 AND 366/u);
+  assert.match(splitMigration, /action = 'split-series' AND scope = 'following'/u);
+  assert.match(splitMigration, /action IN \('update', 'delete', 'cancel-occurrence', 'restore-occurrence', 'move-occurrence', 'split-series'\)[\s\S]*?target_event_id IS NOT NULL/u);
+  assert.match(splitMigration, /action = 'split-series'[\s\S]*?result_event_id IS NOT NULL AND result_event_id <> target_event_id/u);
+  assert.match(splitMigration, /BEGIN;[\s\S]*?COMMIT;/u);
 });

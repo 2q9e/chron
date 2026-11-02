@@ -81,7 +81,7 @@ type PlainRecord = Record<string, unknown>;
 function invalidRule(): never {
   throw new RecurrenceError(
     "INVALID_RULE",
-    "Use a daily or weekly rule with an interval from 1 to 4 and a count from 2 to 366.",
+    "Use a daily or weekly rule with an interval from 1 to 4 and a count from 1 to 366.",
   );
 }
 
@@ -132,7 +132,7 @@ export function normalizeRecurrenceRule(value: unknown): RecurrenceRule {
     rule.interval > 4 ||
     typeof rule.count !== "number" ||
     !Number.isInteger(rule.count) ||
-    rule.count < 2 ||
+    rule.count < 1 ||
     rule.count > maximumRecurrenceCandidates
   ) {
     return invalidRule();
