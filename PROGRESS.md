@@ -3,41 +3,59 @@
 ## Current verified state — 2026-11-02
 
 C1 — calendar — remains the active milestone; landing-page work is paused.
-The public repository uses one branch, main. The PostgreSQL verification
-fix and occurrence cancellation are pushed on main as d717a12, 9b1c85e, and
-b01cbfe by the normal 2q9e account. The Git remote uses HTTPS.
+The public repository uses one branch, main. The PostgreSQL verification fix,
+occurrence cancellation, and reviewed occurrence restoration are pushed on
+main in commits 559aed2 and 31a80b0 by the normal 2q9e account. The Git
+remote uses HTTPS.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41396381582 passed. It applied the
-ordered calendar migrations, including 0009, to PostgreSQL 16 and passed the
-tenant-isolation integration checks.
+https://github.com/2q9e/chron/actions/runs/41397817608 passed on the prior
+main head. It applied the ordered calendar migrations through 0009 to
+PostgreSQL 16 and passed the tenant-isolation integration checks. Run
+https://github.com/2q9e/chron/actions/runs/41400318323 also passed, including
+migration 0010, PostgreSQL integration, lint, typecheck, and the production
+build.
 
-https://testing.uwu.markets serves the sign-in view for both `/sign-in` and
-unauthenticated `/calendar`; both HTTPS requests returned 200 with valid TLS
-and HSTS. Release b01cbfe built successfully and was staged, and migration
-0009 was applied and catalog-verified on the Chron database with TLS
-verification. Activation is not verified because the saved SSH password was
-rejected and no authorized key is available in this environment. No other VPS
-service or Cloudflare resource was changed. No test account is configured, so
-authenticated calendar actions remain unverified.
+The pushed restoration increment adds reviewed restoration of one cancelled
+recurrence occurrence, including migration 0010, a bounded owner-scoped
+cancelled-occurrence read, exact conflict revalidation, keyboard focus
+transitions, and reminder history checks across revisions. Local calendar API
+tests pass (103), calendar layout tests pass (55),
+calendar time tests pass (39), recovery tests pass (5), and typecheck and lint
+pass. The PostgreSQL integration test skips locally because no test database is
+configured. The local production build compiled and generated the new route,
+but Turbopack reported a cache write failure from the full workspace volume
+during shutdown. GitHub Actions completed a clean production build.
+
+https://testing.uwu.markets was checked over HTTPS: `/sign-in` returned 200,
+and unauthenticated `/calendar` returned a relative redirect to `/sign-in`;
+both had valid TLS and HSTS. The root redirected to `/calendar`. Release
+b01cbfe built successfully and was staged, and migration 0009 was applied and
+catalog-verified on the Chron database with TLS verification. Activation is
+not verified because the saved SSH password was rejected and no authorized
+key is available in this environment. The pushed restoration increment is not
+active on staging. No other VPS service or Cloudflare resource was changed. No
+test account is configured, so authenticated calendar actions remain
+unverified.
 
 The latest remote tree has no AGENTS.md; the local root instructions remain
 ignored. No reference folder was inspected or used. Commits continue on main
 only, with author 2q9e.
 
-Next calendar work is occurrence movement/restoration and split-series
-behavior. SMTP delivery, scheduler deployment, external calendar
-synchronization, and authenticated browser verification remain open.
+Occurrence restoration is implemented, pushed, and verified by CI. Occurrence
+movement and split-series behavior remain open. SMTP delivery, scheduler
+deployment, external calendar synchronization, and authenticated browser verification
+remain open.
 
-The current local calendar increment adds reviewed single-occurrence
-cancellation for finite recurring events. The proposal binds the occurrence's
-original key and series revision; approval persists an owner-scoped exception,
-cancels pending or leased reminders, stales competing proposals, and hides the
-date from listing and conflict checks. Moving/restoring occurrences and
-this-and-following splits remain unfinished. Local typecheck, lint, calendar
-API tests (97), calendar layout tests (53), and the production build pass.
-PostgreSQL CI passed and migration 0009 is applied to the Chron database. The
-new release is staged but not confirmed active; SSH access needs to be restored.
+The previously pushed cancellation slice binds the occurrence's original key
+and series revision; approval persists an owner-scoped exception, cancels
+pending or leased reminders, stales competing proposals, and hides the date
+from listing and conflict checks. The current restore slice keeps exact-key
+review and approval, compares only the selected occurrence against active
+events and siblings, and refuses to queue a reminder if any revision already
+attempted it. Migration 0010 and its PostgreSQL integration coverage passed in
+CI. The staged release remains the previous b01cbfe build;
+activation requires restored authorized SSH access.
 
 ## Prior implementation checkpoints
 

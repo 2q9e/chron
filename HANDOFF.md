@@ -3,27 +3,42 @@
 ## Current state
 
 Chron is a standalone public repository on GitHub. The only remote branch is
-main, and changes are pushed by 2q9e with short commit titles. The current
-main head is b01cbfe. Occurrence cancellation and the PostgreSQL savepoint
-fix are pushed on main as d717a12, 9b1c85e, and b01cbfe. The Git remote uses
+main, and changes are pushed by 2q9e with short commit titles. Occurrence
+cancellation, its PostgreSQL savepoint fix, and restoration are pushed on
+main; restoration is split between 559aed2 and 31a80b0. The Git remote uses
 HTTPS. The current public tree contains no AGENTS.md; local operating
 instructions remain ignored. No old calendar reference folder was inspected
 or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41396381582 passed. CI applied all
-ordered migrations, including 0009, to PostgreSQL 16 and passed the calendar
-tenant-isolation integration checks.
+https://github.com/2q9e/chron/actions/runs/41397817608 passed on the prior
+main head. It applied all ordered migrations through 0009 to PostgreSQL 16 and
+passed the calendar tenant-isolation integration checks. Run
+https://github.com/2q9e/chron/actions/runs/41400318323 passed the restoration
+increment, including migration 0010, the PostgreSQL integration cases, lint,
+typecheck, and the production build.
 
-The public staging site at https://testing.uwu.markets serves the sign-in view
-for both `/sign-in` and unauthenticated `/calendar`; both HTTPS requests
-returned 200 with valid TLS and HSTS. The b01cbfe release built successfully
-and was staged, and migration 0009 was applied and catalog-verified on the
-Chron database using TLS verification. Activating the staged release is not
+The pushed restoration increment adds reviewed restoration of one cancelled
+recurrence occurrence. It includes migration 0010, bounded owner-scoped
+discovery, exact occurrence conflict revalidation, reminder attempt checks
+across all revisions, and keyboard focus recovery.
+Calendar API (103), layout (55), time (39), and recovery (5) tests pass, as do
+typecheck and lint. PostgreSQL integration skips locally because no database
+is configured. The local build compiled and listed the new route but reported
+a Turbopack cache write failure at shutdown due to the full workspace volume;
+the clean GitHub Actions build and PostgreSQL 16 verification passed.
+
+The public staging site at https://testing.uwu.markets was checked over HTTPS:
+`/sign-in` returned 200 and unauthenticated `/calendar` redirected to
+`/sign-in`, with valid TLS and HSTS. The protected `/calendar` request returned
+a relative redirect to `/sign-in` over HTTPS. The b01cbfe release built
+successfully and was staged, and migration 0009 was applied and
+catalog-verified on the Chron database using TLS verification. The pushed
+restore increment is not active on staging. Activating a new release is not
 verified: the saved SSH password was rejected and no authorized key is
-available in this environment. No other VPS service or Cloudflare resource was
-changed. Authenticated calendar interactions remain unverified because no
-test account is available.
+available in this environment.
+No other VPS service or Cloudflare resource was changed. Authenticated
+calendar interactions remain unverified because no test account is available.
 
 ## Current milestone
 
@@ -31,8 +46,8 @@ C1 — calendar — is active. Landing-page work remains paused. The calendar ha
 owner-scoped persisted events and preferences, four views, create/edit/delete,
 search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
-interactions. The current increment adds reviewed single-occurrence
-cancellation. Moving/restoring occurrences and split-series edits remain open.
+interactions. Single-occurrence cancellation and reviewed restoration are
+pushed on main. Moving occurrences and split-series edits remain open.
 
 The reminder schema, migrations, repositories, and route contracts were
 executed by CI; live mail delivery, scheduler deployment, and inbox receipt
@@ -55,7 +70,8 @@ not implemented.
   controls belong in the product.
 - The source-available license permits viewing but prohibits reuse. No
   prohibited reference folder was inspected or copied.
-- GitHub quality run 41396381582 passed, including PostgreSQL 16 integration.
+- GitHub quality run 41400318323 passed, including PostgreSQL 16 integration
+  for migration 0010 and a clean production build.
   The workflow uses pinned actions and read-only repository permissions.
 - Runtime tooling does not enforce per-agent filesystem/network isolation.
   Never provide secrets or private data to an agent; do not claim model
@@ -78,8 +94,10 @@ not implemented.
   SSH authentication to the named target is currently rejected. HTTPS
   sign-in and unauthenticated `/calendar` both render the sign-in view with
   certificate validation and HSTS. No other VPS service was changed.
-- Recurrence move/restore and split edits, authenticated browser walkthrough,
-  SMTP delivery, scheduler deployment, and Google calendar sync remain open.
+- Restore is pushed on main and verified by run 41400318323. The new release
+  cannot be activated until authorized SSH access is available.
+- Recurrence move and split edits, authenticated browser walkthrough, SMTP
+  delivery, scheduler deployment, and Google calendar sync remain open.
 
 ## Prior landing checkpoint
 
@@ -190,15 +208,14 @@ awaits narrow and zoom browser checks.
 
 ## Next actions
 
-1. Restore authorized SSH access using the saved Contabo handoff, then activate
-   the already-built b01cbfe Chron release by changing only Chron's release
-   pointer and restarting only `chron-web.service`.
+1. Use authorized SSH access to activate only the Chron release by changing
+   its release pointer and restarting only `chron-web.service`.
 2. Verify the active release and test
    https://testing.uwu.markets/sign-in and `/calendar` over HTTPS with valid
    TLS and HSTS. Keep authenticated browser verification open until a test
    account is available.
 3. Keep AGENTS.md excluded and preserve the one-branch public history on `main`.
-4. Continue with recurrence move/restore exceptions and split-series edits
+4. Continue with recurrence move exceptions and split-series edits
    through the existing owner-scoped proposal and approval pipeline.
 5. Keep the authenticated browser walkthrough open until a disposable account
    can be configured without exposing private credentials.

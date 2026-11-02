@@ -32,8 +32,9 @@ are recorded in [calendar-recurrence.md](calendar-recurrence.md).
 Reminder policy, owner-scoped outbox persistence, delivery worker, protected
 route, HTTPS scheduler source, and editor status are implemented. The contract
 and dependency record remain in [calendar-reminders.md](calendar-reminders.md).
-Live SMTP delivery and scheduler deployment are still open. The next calendar
-increment is recurrence exceptions and split-series editing.
+Live SMTP delivery and scheduler deployment are still open. The current
+calendar increment adds reviewed restoration of one cancelled occurrence;
+moving an occurrence and split-series editing remain open.
 
 ```text
 C1-rec0 recurrence contract + pure bounded expansion
@@ -45,11 +46,13 @@ C1-rec0 recurrence contract + pure bounded expansion
 ```
 
 Full-series recurring controls are connected to persisted proposals, conflict
-review, and explicit approval. The current editor does not offer individual
-occurrence or following-occurrence changes; those require the C1-rec6 work
-below.
+review, and explicit approval. Single-occurrence cancellation is pushed; the
+current follow-on implementation adds exact occurrence restoration under
+C1-rec6 below. Moving occurrences and following-occurrence edits remain open.
 GitHub Actions run 41396381582 applied migrations, including 0009, and passed
 the PostgreSQL tenant-isolation checks on an ephemeral PostgreSQL 16 service.
+Run 41400318323 passed migration 0010 and the occurrence-restoration
+integration tests, along with the full CI build, lint, and typecheck.
 Migration 0009 was also applied and catalog-verified on the Chron database.
 The b01cbfe app release is built and staged but not confirmed active because
 SSH authentication is currently unavailable. Authenticated browser
@@ -190,10 +193,10 @@ verification remains gated on a test account.
 ### C1-rec6 — recurrence exceptions and split-series edits
 
 - **Task ID:** C1-rec6
-- **Objective:** Incrementally add explicit single-occurrence exceptions and
-  this-and-following series split operations without changing unrelated
-  occurrences. The first slice adds cancellation only; movement, restore, and
-  split remain open.
+- **Objective:** Incrementally add explicit single-occurrence cancellation and
+  restoration, then this-and-following series splits without changing
+  unrelated occurrences. Cancellation and restoration are pushed; movement
+  and split remain open.
 - **Assigned agent:** main integration owner; runtime model identity is fixed
   and not independently attested
 - **Dependencies:** C1-rec0 through C1-rec4; use the passing PostgreSQL CI
@@ -210,24 +213,30 @@ verification remains gated on a test account.
   use transaction-local RLS; bind proposal action, occurrence key, target
   revision, exact scope, payload, and conflict snapshot; require explicit
   approval; no production secrets, user data, old references, or VPS access
-- **Acceptance criteria:** for cancellation, bind the original scheduled key,
-  finite-series membership, owner, and target revision; cancel reminders and
-  stale competing proposals atomically; reject stale, expired, replayed, or
+- **Acceptance criteria:** cancellation binds the original scheduled key,
+  finite-series membership, owner, and target revision; cancels reminders and
+  stales competing proposals atomically. Restoration binds the same key,
+  revision, cancellation identity, saved time zone, and exact-occurrence
+  conflict snapshot; it deletes only that exception and never requeues a
+  reminder attempted in any revision. Reject stale, expired, replayed, or
   cross-owner proposals; keep one-off and full-series behavior unchanged.
   Remaining movement must preserve the original scheduled key. Remaining split
   work must establish stable series lineage and finite bounds across segments.
 - **Tests:** pure rule/identity and DST cases; API shape, scope and replay
-  checks; two-owner PostgreSQL RLS checks; deletion cascade and reminder
-  reconciliation; browser keyboard and responsive review when an account is
-  available
-- **Current slice:** migration, owner-scoped cancellation proposal/approval,
-  calendar filtering, conflict exclusion, reminder cancellation, UI review,
+  checks; two-owner PostgreSQL RLS checks; restore overlap and prior-revision
+  reminder history; deletion cascade and reminder reconciliation; browser
+  keyboard and responsive review when an account is available
+- **Current slice:** migration, owner-scoped cancellation and restoration
+  proposals/approvals, bounded cancelled-occurrence discovery, conflict
+  exclusion/revalidation, reminder cancellation/restoration, UI review,
   deterministic tests, and PostgreSQL integration coverage are implemented
-  and pushed on main. The production build passed locally and in the staged
-  release; PostgreSQL CI and the Chron database migration passed. Release
+  and pushed on main. Run 41400318323 passed PostgreSQL 16 integration and the
+  production build. The staged b01cbfe release predates restoration; release
   activation and authenticated browser review remain open.
-- **Remaining deliverables:** move/restore exceptions, split-series behavior,
-  authenticated browser review, and final handoff evidence
+- **Remaining deliverables:** move exceptions, split-series behavior,
+  authenticated browser review, and final handoff evidence. Restore code and
+  its regression tests are pushed on main; migration 0010 and PostgreSQL
+  integration coverage passed in run 41400318323.
 
 ## Task contracts
 
