@@ -5,6 +5,7 @@ import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
 import { calendarEventSeries, type CalendarEvent, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
+import { buildCalendarIcs } from "../domain/calendar-ics";
 import { accessibleCalendarAccent } from "../domain/calendar-accent";
 import { expandCalendarRecurrenceRange } from "../domain/recurrence-range";
 import type { CalendarRecurrenceOccurrence } from "../domain/recurrence.ts";
@@ -105,6 +106,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState("");
+  const [exportError, setExportError] = useState("");
+  const [exporting, setExporting] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(null);
   const [editorError, setEditorError] = useState("");
   const [editorStale, setEditorStale] = useState(false);
@@ -1096,6 +1099,37 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     catch (reason) { setSettingsError(reason instanceof Error ? reason.message : "Could not save preferences. Try saving again."); }
     finally { setBusy(false); }
   }
+
+  async function exportVisibleEvents() {
+    if (!preferences || !date || loading || loadError || calendarLocked || editor) return;
+    const range = visibleRange(view, date, preferences.weekStartsOn);
+    const through = Temporal.PlainDate.from(range.to).subtract({ days: 1 }).toString();
+    setExporting(true);
+    setExportError("");
+    try {
+      const entries = await fetchCalendarEvents(range.from, range.to, preferences.timeZone);
+      const content = buildCalendarIcs(entries);
+      const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+      const downloadUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `chron-calendar-${range.from}-through-${through}.ics`;
+      link.rel = "noopener";
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 30_000);
+      setNotice(`Downloaded ${entries.length} event${entries.length === 1 ? "" : "s"} for ${range.from} through ${through}.`);
+    } catch (reason) {
+      setExportError(reason instanceof RangeError && reason.message.includes("unsupported control characters")
+        ? "An event title or description contains a control character that cannot be exported. Edit the event and try again."
+        : reason instanceof CalendarRequestError
+          ? reason.message
+          : "Could not prepare this calendar file. Reload the displayed dates and try again.");
+    } finally {
+      setExporting(false);
+    }
+  }
   async function signOut() {
     if (calendarLocked || editor) return;
     setSigningOut(true);
@@ -1135,10 +1169,17 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       </div>
       <div className={styles.actions}>
         <button ref={newEventButton} type="button" onClick={() => openNew(date)} disabled={!preferences || !date || calendarLocked}>New event</button>
+        <button
+          type="button"
+          aria-label="Export events in the displayed date range as an iCalendar file"
+          onClick={exportVisibleEvents}
+          disabled={!preferences || !date || loading || !!loadError || calendarLocked || !!editor || exporting}
+        >{exporting ? "Exporting…" : "Export visible dates (.ics)"}</button>
         <button type="button" onClick={signOut} disabled={calendarLocked || !!editor}>{signingOut ? "Signing out…" : "Sign out"}</button>
       </div>
     </header>
     {signOutError && <p className={styles.error} role="alert">{signOutError}</p>}
+    {exportError && <p className={styles.error} role="alert">{exportError}</p>}
     {recoveryState === "checking" || recoveryState === "verifying" ? (
       <p className={styles.status} role="status">Verifying approved event saves…</p>
     ) : recoveryState === "reauth" || recoveryState === "error" ? (
