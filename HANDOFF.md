@@ -25,9 +25,12 @@ create/edit/delete, theme and display preferences, and a server-side overlap
 check shown before manual approval. The latest increment makes create
 retries idempotent, saves only user-scoped opaque recovery keys in browser
 storage, preserves uncertain requests for reconciliation, and restores focus
-after reload. Bounded title search is implemented. Recurrence, reminders, drag
-scheduling, external sync, database-backed runtime verification, and real
-authenticated browser walkthrough remain open. C-01 through C-14 have
+after reload. Bounded title search is implemented. Finite recurring-series
+creation, review, update, delete, explicit approval, and uncertain-approval
+recovery are implemented and pushed through `f66e449` on the single public
+`main` branch. Reminders, drag scheduling, external sync, database-backed
+runtime verification, and a real authenticated browser walkthrough remain open.
+C-01 through C-14 have
 source-level fixes recorded in the audit; C-15 tracks unverified PostgreSQL
 owner isolation and C-16 records the source-fixed return-focus issue. Rendered
 and database-backed verification remains pending.
@@ -81,10 +84,14 @@ and database-backed verification remains pending.
   verified.
 - The recurrence request parser validates exact full-series create, update,
   and delete scopes, finite bounded rules, dates, durations, and revisions.
-  Event reads now round-trip validated finite recurrence rules. Normal event
-  edits and deletes fail closed for series targets. Persisted series draft
-  creation, recurrence-aware conflict review, and atomic approval routes are
-  not implemented yet; do not expose the unintegrated route patch.
+  Event reads round-trip validated finite recurrence rules. The signed-in
+  editor creates user-scoped, idempotent proposals; review presents the current
+  and proposed occurrences with conflict evidence; approval is a separate
+  explicit action. Normal one-off event edits/deletes continue to reject series
+  targets. Approval recovery stores only opaque draft IDs scoped to the signed-
+  in user and retries the same idempotent approval after an uncertain result.
+  Source tests pass, but the database-backed and authenticated browser path is
+  not verified in this environment.
 - The user requested staging at `https://testing.uwu.markets` through the
   supplied VPS and Cloudflare setup, without changing other VPS services.
   An HTTPS-only request could not resolve the hostname, and Cloudflare shows no
@@ -165,6 +172,11 @@ awaits narrow and zoom browser checks.
   passed (28), and typecheck and lint passed. The recurrence repository check
   uses the existing in-memory database fixture; no PostgreSQL service or
   authenticated session was available.
+- After `f66e449`, `npm run typecheck --workspace @chron/web` and
+  `npm run lint --workspace @chron/web` passed. Calendar layout/API/time suites
+  passed with 29/66/28 tests. The production build was not run because the
+  workspace volume has only 58 MB free; authenticated recurrence behavior is
+  still unverified without configured PostgreSQL/auth services.
 - Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
   is active but has no `testing.uwu.markets` DNS record. No hosting changes
   were made.
@@ -174,10 +186,11 @@ awaits narrow and zoom browser checks.
 1. Configure a disposable PostgreSQL test database/account, apply the auth and
    calendar migrations, and verify two-account search isolation plus the full
    authenticated calendar in desktop/mobile browsers.
-2. Continue C1 with bounded recurrence, reminders, and drag scheduling while
-   keeping landing work paused.
-3. Retain persisted, payload-bound draft approval before agent or bulk
-   integration can write calendar records.
+2. Verify recurring-series create/update/delete against a disposable PostgreSQL
+   database and authenticated browser session; retain the current explicit
+   proposal and approval boundary.
+3. Continue C1 with reminders, drag scheduling, and external calendar sync
+   while keeping landing work paused.
 4. Resume remaining landing browser checks only when the user reprioritizes it.
 5. Before every push, inspect staged paths and rescan staged content and commit
    history for secrets and excluded material.

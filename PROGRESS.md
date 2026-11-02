@@ -9,15 +9,14 @@ work is paused. Calendar reliability fixes and the bounded-search type
 contract are pushed to the single public `main` branch through `dfe1f07`.
 Bounded title search is implemented and pushed as API commit `afbef0e` and UI
 commit `4a092e8`. Full-series request validation is pushed as `521990b` and
-`8cda070`; persisted series proposals and approvals remain unfinished. No code
-or visual material was copied from another folder.
+`8cda070`. No code or visual material was copied from another folder.
 
-The latest calendar increment, `9e46615 update`, is on the single public
-`main` branch (584 non-empty commits after this progress update). Event reads
-now include validated finite recurrence rules, and ordinary single-event
-edits/deletes reject series targets until the reviewed series workflow is
-implemented. Calendar API (52), calendar time (28), typecheck, and lint pass.
-These repository tests do not replace live PostgreSQL or authenticated browser
+The latest recurrence increment is pushed to the single public `main` branch
+through `f66e449 update`. It includes finite recurring-series creation,
+whole-series update/delete proposals, conflict previews, explicit approval,
+response validation, and user-scoped recovery after uncertain approvals.
+Calendar layout/API/time suites (29/66/28), typecheck, and lint pass. These
+repository checks do not replace live PostgreSQL or authenticated browser
 verification.
 
 ## Completed
@@ -116,8 +115,8 @@ verification.
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
-- Continue C1 with recurrence, reminders, drag scheduling, and external
-  calendar synchronization. Search code is integrated; PostgreSQL ownership
+- Continue C1 with reminders, drag scheduling, and external calendar
+  synchronization. Recurrence is implemented in source; PostgreSQL ownership
   and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
   the user-authorized Chron-specific VPS and Cloudflare resources. DNS and the
@@ -154,11 +153,11 @@ verification.
   unverified.
 - Operator legal identity, deployment, retention, pricing, and data-protection
   obligations are not established. Public registration remains disabled.
-- Public GitHub `main` has 584 non-empty commits, with only `main` published.
+- Public GitHub has only `main` published and more than 500 non-empty commits.
   The calendar API, auth route, sign-in screen, calendar views, overlap review,
-  idempotent event creation, bounded search, recurrence parsing, and series
-  expiry worker are included. Never count empty or duplicate commits toward
-  the requested total.
+  idempotent event creation, bounded search, recurrence parsing and approval
+  flow, and series expiry worker are included. Never count empty or duplicate
+  commits toward the requested total.
 - The 3D scene is integrated. L1 remains incomplete because narrow viewport,
   reduced motion, keyboard, fallback, and performance review remain.
 
@@ -193,7 +192,7 @@ verification.
   scanned staged and outgoing content for common secret patterns, and pushed to
   `origin/main`. The remote exposes only `main`; the latest calendar changes
   were pushed as ordinary commits by the configured `2q9e` author. The remote
-  now has 563 non-empty commits.
+  continues to have more than 500 non-empty commits.
 - Inspected the real sign-in route in the browser at desktop and 390px mobile
   widths. The form remained usable with no horizontal overflow. With only a
   synthetic local auth configuration and an unreachable local PostgreSQL
@@ -207,6 +206,11 @@ verification.
   dependency vulnerabilities.
 - The GitHub Actions workflow YAML parses successfully. GitHub currently shows
   no Actions run, so the hosted `quality / verify` result is pending.
+- After `f66e449`, typecheck and lint passed; calendar layout/API/time suites
+  passed (29/66/28), including terminal proposal replay and approval-recovery
+  coverage. The production build and authenticated recurring-series workflow
+  were not run because disk space and database/auth configuration are
+  unavailable.
 - Rendered the production build in Chrome at an available 1230×480 desktop
   viewport. Inspected opening, Week, Study, Research, and closing sections;
   tested chapter navigation, `#week` reload, and reverse navigation. The scene
