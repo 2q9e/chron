@@ -1050,3 +1050,46 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   focused DST tests, audit entry, and updated progress/handoff on `main`.
 - **Status:** Source implementation is pushed as `833848a improve`. Real
   browser interaction and persisted creation remain unverified.
+
+### C1-resize0 — resize a timed event from the time grid
+
+- **Task ID:** C1-resize0
+- **Objective:** Let users propose a new end time for a sufficiently long,
+  wide, one-off timed event from day/week views, then reuse the existing editor,
+  conflict review, and explicit-save path.
+- **Assigned agent:** Main integration owner.
+- **Required model:** Runtime model identity was not attested; no model claim.
+- **Required reasoning level:** Runtime reasoning configuration was not
+  attested; no level claim.
+- **Dependencies:** C1 day/week time grid, owner-scoped event update API,
+  conflict review, event editor, and calendar time-zone utilities.
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-editor.tsx`,
+  `calendar-event-control.tsx`, `calendar-move.test.mjs`, `calendar-move.ts`,
+  `calendar-views.tsx`, `calendar-workspace.tsx`, and `calendar.module.css`.
+- **Read-only files:** Calendar update/conflict routes, repository, recurrence
+  flow, authentication middleware, database migrations, and date/time
+  validation.
+- **Required skills:** S362, S363, S369, S422, and S423; installed React,
+  TypeScript, accessibility, touch interaction, frontend-testing, and design
+  review guidance. These were read and applied.
+- **Security permissions:** Chron source and the existing `main` branch only;
+  no credentials, account data, reference materials, unrelated VPS files,
+  infrastructure changes, or direct persistence path. Approval remains in the
+  existing authenticated event editor.
+- **Acceptance criteria:** Day/week event segments that end on the selected
+  date, are at least 5.5rem tall, and occupy at least 75% of their lane expose
+  a 44px end handle. Dragging selects a 15-minute end slot; duration stays
+  between 15 minutes and 366 elapsed days; start time and event timezone are
+  preserved; fall-back occurrences retain their selected instant; keyboard
+  activation opens the editor; recurring events continue through the series
+  flow; every change is reviewed before explicit save.
+- **Tests:** Calendar presentation (51), API (89), and time (39) suites,
+  typecheck, lint, and `git diff --check` pass. Exact 366-day acceptance and
+  over-limit rejection are tested. Production build was skipped with 56 MB
+  free; authenticated browser, keyboard, and database checks require a
+  configured disposable PostgreSQL service/account.
+- **Expected deliverables:** DST-safe resize helper, end handle, reviewed editor
+  flow, focused tests, audit entry, and updated project memory; separate
+  reviewed commits on the existing `main` branch.
+- **Status:** Source is pushed as `590331f update` and `c1d7647 improve`.
+  Rendered interaction and persisted resize remain unverified.

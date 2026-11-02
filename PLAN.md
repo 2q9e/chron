@@ -49,8 +49,12 @@ and explicit save; recurring events continue through the series editor. Source
 tests cover time-zone and daylight-saving transitions, but a real
 database-backed browser walkthrough remains open. Clicking an empty day/week
 time-grid slot now starts an event draft at its snapped time; its one-hour
-duration is based on elapsed time and retains the correct DST fold. External
-calendar sync also remains open. See
+duration is based on elapsed time and retains the correct DST fold. Longer,
+wider one-off timed blocks on the day/week grid can now resize their end time;
+the change opens the existing conflict review and explicit-save flow, preserves
+the start and event timezone, and resolves repeated DST times from the selected
+instant. Browser and database verification remain open; external calendar sync
+also remains open. See
 `docs/architecture/calendar-reminders.md` for the reminder dependency graph
 and acceptance criteria.
 
