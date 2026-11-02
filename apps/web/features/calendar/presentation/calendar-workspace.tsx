@@ -21,6 +21,7 @@ import {
   navigateDate,
   newEventDraft,
   newEventDraftAtTimeSlot,
+  rebaseCalendarPreferenceDraft,
   updateEventDraft,
   validateCalendarEventDraft,
   visibleRange,
@@ -1121,11 +1122,14 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   }
   async function saveStudyPlannerDefaults(studyPlanner: StudyPlannerDefaults) {
     if (!preferences || calendarLocked) throw new Error("The calendar is busy. Try saving your study defaults again.");
+    const previousSaved = preferences;
     setBusy(true);
     try {
-      const saved = await saveStudyPlannerPreferences({ ...preferences, studyPlanner });
+      const saved = await saveStudyPlannerPreferences({ ...previousSaved, studyPlanner });
       setPreferences(saved);
-      setSettings((current) => current ? { ...current, studyPlanner: saved.studyPlanner } : saved);
+      setSettings((current) => current
+        ? rebaseCalendarPreferenceDraft(current, previousSaved, saved)
+        : saved);
     } finally {
       setBusy(false);
     }

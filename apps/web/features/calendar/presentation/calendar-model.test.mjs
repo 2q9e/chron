@@ -4,13 +4,32 @@ import { Temporal } from "@js-temporal/polyfill";
 import {
   allDayEventsForDate,
   buildEventDraft,
+  defaultPreferences,
   newEventDraft,
   newEventDraftAtTimeSlot,
+  rebaseCalendarPreferenceDraft,
   reminderReviewText,
   timedEventSegmentsForDate,
   updateEventDraft,
   validateCalendarEventDraft,
 } from "./calendar-model.ts";
+
+test("rebasing study defaults preserves local edits and refreshes untouched preferences", () => {
+  const previousSaved = defaultPreferences("America/Montreal", 0);
+  const draft = { ...previousSaved, theme: "premium-dark" };
+  const latestSaved = {
+    ...previousSaved,
+    density: "compact",
+    weekStartsOn: 1,
+    timeZone: "America/Toronto",
+    studyPlanner: { ...previousSaved.studyPlanner, sessionMinutes: 90 },
+  };
+
+  assert.deepEqual(rebaseCalendarPreferenceDraft(draft, previousSaved, latestSaved), {
+    ...latestSaved,
+    theme: "premium-dark",
+  });
+});
 
 function timedEvent(id, startLocal, endLocal, timeZone, startsAt, endsAt) {
   return {

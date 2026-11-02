@@ -577,6 +577,20 @@ test("search route authenticates a JSON body and uses private no-store responses
   assert.equal(response.headers.get("cache-control"), "private, no-store");
 });
 
+test("study planner preference patch is authenticated and same-origin", () => {
+  const route = readFileSync(
+    new URL("../../../app/api/calendar/preferences/route.ts", import.meta.url),
+    "utf8",
+  );
+  const patch = route.match(/export async function PATCH[\s\S]*$/u)?.[0] ?? "";
+
+  assert.notEqual(patch, "");
+  assert.match(patch, /requireSameOriginMutation\(request/u);
+  assert.match(patch, /requireCalendarUser\(request\)/u);
+  assert.match(patch, /repository\.setStudyPlannerPreferences\(userId, preferences\)/u);
+  assert.doesNotMatch(patch, /console\.(?:log|info|debug)/u);
+});
+
 test("cancelled occurrence lookup is authenticated, exact-range, and private", () => {
   const route = readFileSync(
     new URL("../../../app/api/calendar/events/cancelled/route.ts", import.meta.url),

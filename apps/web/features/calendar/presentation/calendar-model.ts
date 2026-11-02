@@ -131,6 +131,23 @@ export function defaultPreferences(
   };
 }
 
+export function rebaseCalendarPreferenceDraft(
+  draft: CalendarPreferences,
+  previousSaved: CalendarPreferences,
+  latestSaved: CalendarPreferences,
+): CalendarPreferences {
+  return {
+    ...latestSaved,
+    theme: draft.theme === previousSaved.theme ? latestSaved.theme : draft.theme,
+    accentColor: draft.accentColor === previousSaved.accentColor ? latestSaved.accentColor : draft.accentColor,
+    density: draft.density === previousSaved.density ? latestSaved.density : draft.density,
+    reduceMotion: draft.reduceMotion === previousSaved.reduceMotion ? latestSaved.reduceMotion : draft.reduceMotion,
+    weekStartsOn: draft.weekStartsOn === previousSaved.weekStartsOn ? latestSaved.weekStartsOn : draft.weekStartsOn,
+    timeZone: draft.timeZone === previousSaved.timeZone ? latestSaved.timeZone : draft.timeZone,
+    studyPlanner: latestSaved.studyPlanner,
+  };
+}
+
 function date(value: string): Temporal.PlainDate {
   return parseCalendarDate(value);
 }
