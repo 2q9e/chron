@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
-import { Temporal } from "@js-temporal/polyfill";
 import { calendarEventCategoryLabels, type CalendarEvent } from "../domain/types";
 import {
   prepareCalendarEventSearchRequest,
@@ -7,6 +6,7 @@ import {
   type CalendarEventSearchFields,
 } from "./calendar-api";
 import styles from "./calendar.module.css";
+import { calendarSearchEventDateLabel } from "./calendar-search-date";
 
 type Props = {
   initialDate: string;
@@ -22,32 +22,6 @@ type SearchState =
   | Readonly<{ status: "error"; message: string }>;
 
 type SearchField = "query" | "from" | "through";
-
-function eventDateLabel(event: CalendarEvent, locale: string): string {
-  if (event.kind === "all-day") {
-    try {
-      const start = Temporal.PlainDate.from(event.startDate);
-      const inclusiveEnd = Temporal.PlainDate.from(event.endDate).subtract({ days: 1 });
-      const startLabel = start.toLocaleString(locale, { dateStyle: "medium" });
-      return Temporal.PlainDate.compare(start, inclusiveEnd) === 0
-        ? startLabel
-        : `${startLabel} – ${inclusiveEnd.toLocaleString(locale, { dateStyle: "medium" })}`;
-    } catch {
-      return `${event.startDate} – ${event.endDate}`;
-    }
-  }
-
-  try {
-    const formatter = new Intl.DateTimeFormat(locale, {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: event.timeZone,
-    });
-    return `${formatter.format(new Date(event.startsAt))} – ${formatter.format(new Date(event.endsAt))} · ${event.timeZone}`;
-  } catch {
-    return `${event.startLocal.replace("T", " ")} – ${event.endLocal.replace("T", " ")} · ${event.timeZone}`;
-  }
-}
 
 function kindLabel(event: CalendarEvent): string {
   return event.kind === "all-day" ? "All day" : "Timed";
@@ -292,7 +266,7 @@ export function CalendarSearch({ initialDate, locale, timeZone, disabled, onSele
               >
                 <span className={styles.searchResultMain}>
                   <span className={styles.searchResultTitle}>{event.title}</span>
-                  <span className={styles.searchResultDate}>{eventDateLabel(event, locale)}</span>
+                  <span className={styles.searchResultDate}>{calendarSearchEventDateLabel(event, locale, timeZone)}</span>
                   <span className={styles.searchResultCategory}>
                     {event.category === undefined
                       ? "Category unavailable"
