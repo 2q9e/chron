@@ -2229,7 +2229,7 @@ async function transitionPendingSeriesDraft(
 ): Promise<SeriesDraftRow> {
   const result = await client.query<SeriesDraftRow>(
     `WITH resolution_clock AS (
-       SELECT clock_timestamp() AS resolved_at
+       SELECT clock_timestamp() AS transition_at
      )
      UPDATE calendar_event_series_proposal_drafts AS draft
      SET outcome = $3,
@@ -2240,12 +2240,12 @@ async function transitionPendingSeriesDraft(
          target_revision = NULL,
          result_event_id = NULL,
          resolved_at = CASE
-           WHEN $3 = 'expired' THEN GREATEST(resolution_clock.resolved_at, draft.expires_at)
-           ELSE resolution_clock.resolved_at
+           WHEN $3 = 'expired' THEN GREATEST(resolution_clock.transition_at, draft.expires_at)
+           ELSE resolution_clock.transition_at
          END,
          updated_at = CASE
-           WHEN $3 = 'expired' THEN GREATEST(resolution_clock.resolved_at, draft.expires_at)
-           ELSE resolution_clock.resolved_at
+           WHEN $3 = 'expired' THEN GREATEST(resolution_clock.transition_at, draft.expires_at)
+           ELSE resolution_clock.transition_at
          END
      FROM resolution_clock
      WHERE draft.user_id = $1
