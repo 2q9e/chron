@@ -59,6 +59,22 @@ export function CalendarPreferencesForm({ settings, busy, error, onChange, onSav
             <option value="compact">Compact</option>
           </select>
         </label>
+        <div className={styles.motionPreferenceGroup}>
+          <label className={styles.motionPreference} htmlFor="calendar-reduce-motion">
+            <input
+              id="calendar-reduce-motion"
+              type="checkbox"
+              checked={settings.reduceMotion}
+              aria-describedby="calendar-reduce-motion-help"
+              disabled={busy}
+              onChange={(event) => onChange({ ...settings, reduceMotion: event.target.checked })}
+            />
+            <span>Reduce calendar motion</span>
+          </label>
+          <p id="calendar-reduce-motion-help" className={styles.motionHelp}>
+            This reduces calendar animations and smooth scrolling. Your device&apos;s reduced-motion setting is always honored.
+          </p>
+        </div>
         <label>
           Week starts on
           <select disabled={busy} value={settings.weekStartsOn} onChange={(e) => onChange({ ...settings, weekStartsOn: Number(e.target.value) })}>

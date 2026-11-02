@@ -1123,6 +1123,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     className={styles.workspace}
     data-theme={previewPreferences?.theme}
     data-density={previewPreferences?.density}
+    data-reduced-motion={previewPreferences?.reduceMotion ? "true" : undefined}
     style={previewStyle}
   >
     <header className={styles.header}>

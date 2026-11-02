@@ -527,6 +527,7 @@ function isCalendarPreferences(value: unknown): value is CalendarPreferences {
   if (!calendarThemes.includes(value.theme as (typeof calendarThemes)[number])) return false;
   if (value.accentColor !== null && !isCalendarAccentColor(value.accentColor)) return false;
   if (value.density !== "comfortable" && value.density !== "compact") return false;
+  if (typeof value.reduceMotion !== "boolean") return false;
   if (!Number.isInteger(value.weekStartsOn) || typeof value.weekStartsOn !== "number") return false;
   if (value.weekStartsOn < 0 || value.weekStartsOn > 6 || !isNonEmptyString(value.timeZone)) return false;
 

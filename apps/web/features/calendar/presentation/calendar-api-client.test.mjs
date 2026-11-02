@@ -60,6 +60,7 @@ test("loads and saves the complete per-account calendar preference contract", as
     theme: "premium-dark",
     accentColor: "#c36b8e",
     density: "compact",
+    reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "America/Montreal",
   };
@@ -89,6 +90,29 @@ test("rejects an invalid accent returned by the calendar preference API", async 
       theme: "minimal-light",
       accentColor: "#ffffff; color: red",
       density: "comfortable",
+      reduceMotion: false,
+      weekStartsOn: 0,
+      timeZone: "UTC",
+    },
+  });
+
+  try {
+    await assert.rejects(
+      fetchCalendarPreferences(),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rejects an invalid motion preference returned by the calendar preference API", async () => {
+  globalThis.fetch = async () => response({
+    preferences: {
+      theme: "minimal-light",
+      accentColor: null,
+      density: "comfortable",
+      reduceMotion: "false",
       weekStartsOn: 0,
       timeZone: "UTC",
     },

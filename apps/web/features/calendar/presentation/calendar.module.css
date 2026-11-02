@@ -729,6 +729,28 @@
 .accentControl button {
   min-height: 2.75rem;
 }
+.motionPreferenceGroup {
+  display: grid;
+  gap: .3rem;
+}
+.form .motionPreference {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+}
+.form .motionPreference input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 1.2rem;
+  min-height: 1.2rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.motionHelp {
+  max-width: 38rem;
+  line-height: 1.45;
+}
 .form textarea {
   min-height: 6rem;
   resize: vertical;
@@ -903,12 +925,21 @@
     align-items: flex-start;
   }
 }
-@media(prefers-reduced-motion:reduce) {
-  .workspace * {
+@media (prefers-reduced-motion: reduce) {
+  .workspace *,
+  .workspace *::before,
+  .workspace *::after {
     scroll-behavior: auto;
     animation: none;
     transition: none;
   }
+}
+.workspace[data-reduced-motion="true"] *,
+.workspace[data-reduced-motion="true"] *::before,
+.workspace[data-reduced-motion="true"] *::after {
+  scroll-behavior: auto;
+  animation: none;
+  transition: none;
 }
 
 .workspace[data-theme="pink-liquid-glass"] .calendarSurface,
