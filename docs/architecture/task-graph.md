@@ -7,6 +7,46 @@ The runtime does not enforce per-agent filesystem isolation, so this slice was
 implemented and reviewed sequentially by the primary agent; no worker received
 credentials or private data.
 
+## C1-export0 — cancel stale calendar exports
+
+- **Task ID:** C1-export0
+- **Objective:** Cancel visible-range iCalendar export when its account,
+  displayed range, view, timezone, editor context, or page lifetime changes;
+  prevent stale results from downloading private calendar data.
+- **Assigned agent/model:** Primary integration agent; runtime model and effort
+  are not independently attested. A separate read-only reviewer identified
+  the original race and is rechecking the final diff.
+- **Dependencies:** Existing owner-scoped calendar event fetch, visible-range
+  calculation, and iCalendar serialization.
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-workspace.tsx`,
+  `calendar-export-session.ts`, `calendar-export-session.test.mjs`, and these
+  progress/handoff/task graph records.
+- **Read-only files:** Calendar API client and session-sign-out flow, existing
+  range/timezone controls, and presentation test conventions.
+- **Required skills:** S012 (effect lifecycle), S428 (context-scoped operation
+  cancellation), and S467 (accessibility feedback), plus installed React,
+  frontend security, and accessibility guidance. Read and applied.
+- **Security permissions:** Calendar presentation code, tests, and project
+  documentation only; no credentials, private data, excluded reference
+  material, VPS, or Cloudflare access. Filesystem isolation is not technically
+  enforced; the independent review is read-only.
+- **Acceptance criteria:** Allow one active export; pass an abort signal to the
+  same-origin fetch; invalidate results on sign-out, navigation, view/timezone
+  change, editor entry, and component cleanup; stale completions cannot
+  download, set errors/notices, or clear a newer attempt; expose pending state
+  to assistive technology; clear the prior notice and permit retry after
+  completion or failure.
+- **Tests:** Calendar presentation suite (82), TypeScript check, lint, and
+  `git diff --check` pass. Browser use is disabled in this session, so UI and
+  actual download behavior remain unverified in a rendered browser.
+- **Expected deliverables:** A testable export lifecycle shared by the React
+  workspace and deferred-response tests, with no placeholder code or new
+  dependency.
+- **Status:** Source/tests were pushed to the only published branch, `main`, in
+  commit `90166ed` (`fix`), authored as `2q9e` over HTTPS. No staging deploy was
+  made: the previously authorized VPS key is unavailable. Do not edit unrelated
+  VPS files or services; keep public and staging endpoints HTTPS.
+
 ## C1-focus-return — calendar create-editor focus restoration
 
 - **Task ID:** C1-focus-return

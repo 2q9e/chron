@@ -2,6 +2,31 @@
 
 ## Current checkpoint — 2026-11-02
 
+Calendar visible-range `.ics` export now shares a cancellable single-flight
+runner. The workspace aborts it on sign-out, navigation, view/time-zone change,
+editor entry, and component cleanup. The runner ignores stale successes and
+errors and cannot clear a newer attempt from an older `finally` block. Retry
+clears the previous notice; pending work is exposed in the button and polite
+status region. Four deferred-response tests use the production runner.
+
+Source and tests were pushed as commit `90166ed` (`fix`) to the one published
+branch, `main`, over HTTPS under author and committer `2q9e`. The calendar
+presentation suite (82), typecheck, lint, and diff check pass locally; GitHub
+Actions run `41465392379` also passed. The independent reviewer found and the
+implementation fixed an unannounced pending state and tests that imitated the
+guard instead of exercising shared orchestration; a final read-only recheck is
+pending. Browser use is disabled, so no rendered download or
+assistive-technology walkthrough was performed. Staging remains unchanged
+because the required authorized VPS key is unavailable. Do not edit unrelated
+VPS files/services; use only `https://testing.uwu.markets` when authorized
+access is restored.
+
+Next: continue calendar work on `main`, keep the landing page paused, and
+verify `.ics` export in a real browser with an authorized test account once
+the browser and staging access are available.
+
+## Current checkpoint — 2026-11-02
+
 Calendar event creation now passes the initiating button to the existing
 editor focus-restoration flow from month dates, day/week headers, agenda
 headers, the main toolbar, and the empty state. The time-grid click already

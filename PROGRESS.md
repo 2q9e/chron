@@ -2,6 +2,27 @@
 
 ## Current checkpoint — 2026-11-02
 
+Visible-range calendar export now uses an abortable single-flight lifecycle.
+It cancels on sign-out, editor entry, navigation, view/time-zone changes, and
+component cleanup; a stale response cannot download an `.ics` file or override
+a newer attempt. Pending work is announced through the status region, the
+previous success notice clears on retry, and failures can be retried. Four
+deferred-response tests exercise cancellation, stale completion, success, and
+error retry through the same runner used by the workspace.
+
+Commit `90166ed fix` was pushed to the only GitHub branch, `main`, over HTTPS
+as `2q9e`. The calendar presentation suite (82), typecheck, lint, and diff
+check pass locally; GitHub Actions run `41465392379` passed. An independent
+reviewer identified two issues in the first draft (pending announcement and
+tests that copied rather than exercised the runner); both were corrected, and
+final review is pending. Browser use is disabled in this session, so actual
+download and screen-reader behavior have not been verified in a rendered
+browser. The authorized VPS key remains unavailable, so this change is not
+deployed to `https://testing.uwu.markets`. Do not modify unrelated VPS files
+or services.
+
+## Current checkpoint — 2026-11-02
+
 Calendar event-editor focus restoration now receives the actual create button
 from month, day/week, agenda, header, and empty-state entry points. This avoids
 depending on `document.activeElement` in browsers that do not focus a clicked
