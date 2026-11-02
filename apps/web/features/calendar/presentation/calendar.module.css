@@ -539,6 +539,30 @@
   color: var(--muted);
   font-size: .875rem;
 }
+.reminderStatus {
+  border-left: 2px solid var(--accent);
+  padding: .25rem 0 .25rem .9rem;
+  display: grid;
+  gap: .45rem;
+}
+.reminderStatus h3, .reminderStatus p {
+  margin: 0;
+}
+.reminderStatus h3 {
+  font-size: .95rem;
+}
+.reminderStatus > div {
+  display: grid;
+  gap: .45rem;
+}
+.reminderStatusNote {
+  color: var(--muted);
+  font-size: .85rem;
+}
+.reminderStatusCounts {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
 .seriesOccurrences {
   margin: .75rem 0;
 }

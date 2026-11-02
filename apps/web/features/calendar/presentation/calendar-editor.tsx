@@ -10,6 +10,7 @@ import {
   allDayCalendarReminderChoices,
   timedCalendarReminderChoices,
 } from "../domain/reminders.ts";
+import { CalendarReminderStatus } from "./calendar-reminder-status";
 import styles from "./calendar.module.css";
 
 export type Editor = {
@@ -120,6 +121,7 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
             ? <p id="reminder-choice-error" className={styles.fieldError}>{editor.errors.reminderChoice}</p>
             : <p id="reminder-choice-note" aria-live="polite">{reminderNote}</p>}
         </fieldset>
+        {editor.event && <CalendarReminderStatus key={`${editor.event.id}:${editor.event.revision}`} event={editor.event} />}
         {(!editor.event || editor.event.recurrenceRule) && (
           <fieldset className={styles.recurrence}>
             <legend>{editor.event ? "Repeating series" : "Repeat"}</legend>
