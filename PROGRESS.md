@@ -2,24 +2,28 @@
 
 ## Current checkpoint — 2026-11-02
 
-`C1-category1` is implemented in the working tree on `main`. It adds six
-academic event categories with an additive nullable migration. Existing
+`C1-category1` is pushed to the only GitHub branch, `main`, in four small
+commits (`5808b3a`, `c74fb87`, `4161ee5`, and `2ab3047`), all authored by
+`2q9e`. It adds six academic event categories with an additive nullable
+migration. Existing
 records are left unchanged. The client distinguishes an explicitly empty
 category from a field omitted by an older API, omits unedited categories on
 create/update, and retains “Leave category unchanged” while editing an older
 event. Categories are displayed in the event editor, timeline, search results,
-and series review. The feature is not yet pushed, deployed, or active on staging.
+and series review. The feature is pushed but not deployed; staging remains on
+release `6ddcaf1`.
 
 Calendar domain (66), presentation (68), and server (115) tests pass, as do
 typecheck, lint, and `git diff --check`. The authenticated capability route
 keeps category entry unavailable against older releases and mutations
 recheck support before category-bearing writes. The PostgreSQL integration
-test was not run because `CHRON_TEST_DATABASE_URL` is unset. A production
-build has not been run locally because the workspace volume has 93 MB free;
-GitHub Actions must provide the build and migration verification after the
-push. Independent review drove fixes for mixed-version category clearing,
-unchanged-field submissions, the legacy select’s revert option, and the
-study-planner category preselection.
+test was not run locally because `CHRON_TEST_DATABASE_URL` is unset. A
+production build has not been run locally because the workspace volume has 93
+MB free. GitHub Actions run `41436641635` passed the production build,
+PostgreSQL tenant isolation and migration checks, test suites, lint, typecheck,
+and dependency audit. Independent review drove fixes for mixed-version
+category clearing, unchanged-field submissions, the legacy select’s revert
+option, and the study-planner category preselection.
 The independent read-only re-review found no remaining category blocker under
 the documented single-service rollout and rollback constraints.
 

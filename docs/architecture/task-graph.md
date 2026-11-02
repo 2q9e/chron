@@ -1553,7 +1553,8 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
 - **Expected deliverables:** Additive nullable migration, typed and validated
   category flow, reviewed UI controls, mixed-version omission safety, tests,
   and resumable deployment notes.
-- **Status:** Implemented locally on the only branch, `main`; not yet pushed or
-  deployed at this checkpoint. HTTPS staging still serves release `6ddcaf1`.
+- **Status:** Pushed to the only branch, `main`, in `5808b3a`, `c74fb87`,
+  `4161ee5`, and `2ab3047`, all authored by `2q9e`; not deployed. CI run
+  `41436641635` passed. HTTPS staging still serves release `6ddcaf1`.
   Independent read-only review found no category blocker within the documented
   single-service rollout and pending-draft rollback constraints.

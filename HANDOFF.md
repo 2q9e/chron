@@ -19,8 +19,9 @@ Verification on the working tree: calendar domain 66, presentation 68, server
 return no capability and category-bearing writes recheck support before
 submission. The local PostgreSQL suite was skipped because
 `CHRON_TEST_DATABASE_URL` is unset. The local production build was not run with
-only 93 MB available on the workspace volume. CI must run tests, migration
-checks, dependency audit, and production build before deployment. Migration
+only 93 MB available on the workspace volume. GitHub Actions run `41436641635`
+passed lint, typecheck, calendar suites, PostgreSQL tenant isolation and
+migration checks, dependency audit, and the production build. Migration
 0018 must precede starting the matching Chron release. Stop and drain the
 single `chron-web.service` before replacing the app process. Do not use a
 rolling multi-version deployment behind the same origin; if staging adds
@@ -33,23 +34,23 @@ All external, Git, and staging URLs remain HTTPS-only. Plain-HTTP inputs remain
 only in loopback and negative security tests; product fetches and deployment
 targets use HTTPS. No VPS files or services have changed. The current
 staging release remains `6ddcaf1`; authenticated browser verification still
-requires an authorized test account. Source has not yet been pushed from this
-checkpoint. An HTTPS request to `https://testing.uwu.markets/calendar`
+requires an authorized test account. Source is pushed to the only HTTPS remote
+branch, `main`, in commits `5808b3a`, `c74fb87`, `4161ee5`, and `2ab3047`, all
+authored by `2q9e`. An HTTPS request to `https://testing.uwu.markets/calendar`
 redirected to sign-in and returned HSTS. The independent read-only category
 review found no remaining code blocker under the single-service rollout and
 pending-draft rollback rules.
 
 Next actions:
 
-1. Push the reviewed feature commits to the existing HTTPS `main` remote.
-2. Review staged paths, keep `AGENTS.md` excluded, commit small changes on
-   `main`, and push over the HTTPS Git remote.
-3. Check GitHub Actions for passing tests, PostgreSQL migration verification,
-   lint, typecheck, dependency audit, and build.
-4. Deploy only after authorized VPS access is restored. Stop the single
-   `chron-web.service`, apply migration 0018, switch only Chron's release,
-   then start that service and verify via
+1. Deploy the pushed Chron release only after the documented VPS login works.
+   Stop the single `chron-web.service`, apply migration 0018, switch only
+   Chron's release, then start that service and verify via
    `https://testing.uwu.markets`; do not change unrelated VPS files or services.
+2. If authorized access still fails, leave staging unchanged and record the
+   blocker; do not guess credentials or alter Cloudflare/VPS configuration.
+3. Verify signed-in calendar category flows only with an authorized test
+   account.
 
 ## Latest checkpoint — 2026-11-02
 
