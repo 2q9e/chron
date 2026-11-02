@@ -2,40 +2,44 @@
 
 ## Current verified state — 2026-11-02
 
-C1 — calendar — remains the active milestone; landing-page work is paused.
-The public repository has one branch, `main`, with more than 500 commits,
-pushed as 2q9e over HTTPS. Occurrence cancellation, restoration, reviewed
-movement, and this-and-following split behavior for timed and all-day
-recurring events are implemented and pushed. Migration 0012 adds a stable
-series root and backfills existing recurring events; migration 0013 permits a
-one-occurrence segment and exact split proposal outcomes. Migration 0014 adds
-per-account calendar accent colors with strict validation; the five themes now
-preview a saved or edited accent with contrast correction. Migration 0015 adds
-a saved per-account reduced-motion preference; the calendar applies it
-immediately and always honors the operating-system preference.
+C1 — calendar — remains active and the landing page remains paused. The first
+R1 source-reader slice is implemented on the single `main` branch through
+7217f34. Commits 2019687 and 054f060 added the bounded HTTPS reader, session-
+protected same-origin API, owner-scoped quota, and migration 0016. Commit
+b71d104 added the Research route and calendar entry; 7217f34 added retrieval
+documentation and the dedicated CI step. This is direct URL reading only, not
+web search, source quality evaluation, citation synthesis, AI analysis, or a
+complete research agent.
 
-GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41417404297 passed on commit
-`e6f43d4`. Local calendar time/domain (53) and auth-configuration (15) suites,
-typecheck, lint, and production build pass. Earlier calendar API (111) and
-layout/API client (61) suites pass; PostgreSQL integration skips locally because
-`CHRON_TEST_DATABASE_URL` is unset.
+GitHub Actions run 41422411142 passed on b71d104, including migration 0016
+PostgreSQL integration checks, lint, typecheck, dependency audit, and build.
+Run 41423159092 for 7217f34 also passed, including the dedicated 21-test
+Research step. Locally, `npm run test:research --workspace @chron/web` passes
+all 21 tests, typecheck and lint pass, and production compilation listed `/research`
+and `/api/research/web/read`. The local build process emitted a Turbopack cache
+write warning on shutdown; hosted build succeeded. Local PostgreSQL integration
+skips because `CHRON_TEST_DATABASE_URL` is unset.
 
-Commit `e6f43d4` is deployed in `/opt/chron/releases/e6f43d4`; only the
-`chron-web.service` symlink and process were changed. The application was built
-from the public commit with a release-local npm cache; `npm ci` reported zero
-vulnerabilities. HTTPS `/sign-in` returns 200 with verified TLS and HSTS
-(`max-age=31536000`). HTTPS `/calendar` redirects to `/sign-in`; the sign-in
-page rendered in a real browser. No authenticated calendar account is
-available, so event export and saved preferences remain unverified end to end.
-No unrelated VPS service, environment file, or Cloudflare resource was changed.
+The active staging release is still e6f43d4 at `/opt/chron/releases/e6f43d4`;
+the new Research feature is not deployed yet. Next steps are to apply migration
+0016 and the minimum Chron-only runtime grant, deploy the app to
+https://testing.uwu.markets, then check TLS/HSTS and the signed-out Research
+redirect. No authenticated test account is available, so signed-in browser
+behavior and live retrieval cannot yet be verified. Prior release work changed
+only the Chron release symlink and `chron-web.service`; no unrelated VPS
+service, environment file, or Cloudflare resource was changed.
+
+The Codex Security diff review examined all 20 changed files from e6f43d4 to
+b71d104 and found no reportable candidates. It ran sequentially because the
+runtime does not enforce filesystem isolation for delegated agents. Runtime DB
+role attributes, proxy/firewall configuration, and network egress remain open
+deployment questions.
 
 External services, Git remotes, and staging or production hosts use HTTPS.
-HTTP references are limited to loopback test configuration and negative
-security tests. The latest remote tree has no AGENTS.md; local instructions
-remain untracked.
-No reference folder was inspected or used. Commits continue on `main` only,
-with author 2q9e.
+HTTP appears only in loopback development and negative rejection tests. The
+public tree has no AGENTS.md; local instructions remain untracked. No reference
+folder was inspected or used. Commits continue on `main` only, with author
+2q9e.
 
 Occurrence movement and split-series behavior are implemented, pushed, and
 verified by CI. Visible-range iCalendar export now includes RFC 5545 UTC timed

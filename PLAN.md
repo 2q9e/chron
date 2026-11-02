@@ -34,6 +34,14 @@ conflict review, finite recurring series with full-series proposals, and
 time-zone-aware reminders. One-off drag movement, time-grid creation, and
 resize interactions open the existing explicit-review flow.
 
+The first R1 implementation is a direct public HTTPS source reader on the
+single main branch. Commits 2019687, 054f060, and b71d104 add URL validation,
+pinned HTTPS retrieval, an authenticated same-origin route, per-account quota,
+and a signed-in Research screen. This is not web search, source evaluation,
+citations, AI analysis, or a complete research agent. Commit 7217f34 adds the
+focused test to CI and records the retrieval boundary. Deployment of the reader
+and authenticated browser verification remain pending.
+
 GitHub Actions run 41392185432 passed after applying all migrations to an
 ephemeral PostgreSQL 16 database and checking tenant isolation, RLS, transaction
 context reset, cross-owner access rejection, and account-deletion cascades.
@@ -42,6 +50,12 @@ This verifies PostgreSQL behavior in CI, not a staging user session. Commit
 with valid TLS and HSTS; `/calendar` redirects to sign-in. No test account is
 available, so authenticated calendar actions and the new iCalendar download
 remain unverified in-browser. Only the Chron service was restarted.
+
+GitHub Actions run 41423159092 passed on commit 7217f34. It includes all
+numbered migrations through 0016 on PostgreSQL 16, the 21 focused Research
+tests, lint, typecheck, dependency audit, and production build. The Research
+reader is not yet deployed; migration 0016 and a least-privilege runtime grant
+must be applied to the Chron database before activating it.
 
 Recurrence exceptions and split-series edits are implemented and pushed;
 migration 0013 and the split behavior passed PostgreSQL CI. Next calendar work

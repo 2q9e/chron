@@ -1,8 +1,168 @@
-# Foundation and landing-page task graph
+# Chron execution task graph
 
-This is the active dependency graph. Independent work stays in separate
-worktrees with a named owner per file. The runtime does not technically
-sandbox those worktrees; agents receive no credentials or personal data.
+The active milestone is the calendar plus the first direct HTTPS source-reader
+slice. The landing page remains paused. The reader is a retrieval foundation,
+not web search, source evaluation, citations, AI analysis, or a complete agent.
+The runtime does not enforce per-agent filesystem isolation, so this slice was
+implemented and reviewed sequentially by the primary agent; no worker received
+credentials or private data.
+
+## Active direct HTTPS source-reader graph
+
+```text
+R1a URL policy and bounded HTTPS reader
+  -> R1b authenticated same-origin endpoint, owner quota, migration 0016
+    -> R1c signed-in Research screen and calendar entry
+      -> R1d complete source diff review
+        -> R1e apply Chron migration/grant and deploy to HTTPS staging
+          -> R1f HTTPS browser verification with an authorized account
+```
+
+R1a through R1d are implemented and pushed on main. The Codex Security diff
+scan covered all 20 changed files from e6f43d4 through b71d104 and found no
+reportable candidates. It was a sequential review because OS-enforced worker
+isolation is unavailable. Runtime DB privileges, the production egress path,
+and authenticated browser behavior remain separate deployment gates.
+
+### R1a — bounded public HTTPS retrieval
+
+- **Task ID:** R1a
+- **Objective:** Read one user-selected public HTTPS page with DNS pinning,
+  redirect revalidation, strict size/time/type bounds, and untrusted-text output.
+- **Assigned agent:** Primary agent; no isolated subagent is available.
+- **Required model/reasoning:** GPT-6 Luna MAX / MAX requested; code-task
+  runtime identity and effort are not independently attested.
+- **Dependencies:** Existing Node.js application and TypeScript setup.
+- **Owned files:** research URL policy, reader, HTML extraction, errors, tests,
+  exact dependencies, and npm test script.
+- **Read-only files:** auth configuration, shared HTTP rules, SKILLS.md,
+  package documentation, and existing project security controls.
+- **Required skills:** S175–S177 and S190; TypeScript, SSRF, parsing, testing,
+  and untrusted-content guidance.
+- **Security permissions:** Project source only; no credentials, account data,
+  reference materials, or production-network access.
+- **Acceptance criteria:** HTTPS only; reject private/special DNS and redirects;
+  pin the selected public address; preserve TLS verification; enforce bounded
+  bytes, time, headers, content types, and extracted text.
+- **Tests:** HTTPS URL policy, IP/DNS ranges, redirects, body bounds, HTML
+  extraction, and error behavior.
+- **Expected deliverables:** Reader, deterministic tests, and explicit scope.
+- **Status:** Pushed in 2019687; URL policy and reader tests pass.
+
+### R1b — authenticated route and owner-scoped quota
+
+- **Task ID:** R1b
+- **Objective:** Require a valid session and canonical same-origin request,
+  apply a five-per-minute per-account quota, and cascade quota deletion.
+- **Assigned agent:** Primary agent; no isolated subagent is available.
+- **Required model/reasoning:** GPT-6 Luna MAX / MAX requested; code-task
+  runtime identity and effort are not independently attested.
+- **Dependencies:** R1a and the existing Better Auth/PostgreSQL runtime.
+- **Owned files:** research API route, endpoint/repository/tests, migration
+  0016, PostgreSQL integration assertions, and auth setup instructions.
+- **Read-only files:** Better Auth session flow, database pool, owner-scoped
+  calendar repository, migrations 0001–0015, and CI workflow.
+- **Required skills:** S041, S042, S044, S048, S049, S051, S178, S190, plus
+  authentication, RLS, API validation, and integration-test guidance.
+- **Security permissions:** Owner comes only from the authenticated session;
+  parameterized SQL and transaction-local RLS; no public signup, secrets, or
+  cross-account data.
+- **Acceptance criteria:** Unauthenticated and cross-origin calls stop before
+  retrieval; quota is atomic, account-scoped, private, and cascades on deletion.
+- **Tests:** Endpoint contracts and ephemeral PostgreSQL 16 RLS, quota,
+  account-isolation, and deletion checks.
+- **Expected deliverables:** Protected route, migration, repository, and tests.
+- **Status:** Pushed in 054f060; GitHub CI passed on PostgreSQL 16.
+
+### R1c — signed-in Research workspace
+
+- **Task ID:** R1c
+- **Objective:** Provide an accessible source input, honest scope, loading/error
+  states, fetched text, metadata, and calendar navigation.
+- **Assigned agent:** Primary agent; no isolated subagent is available.
+- **Required model/reasoning:** GPT-6 Luna MAX / MAX requested; code-task
+  runtime identity and effort are not independently attested.
+- **Dependencies:** R1b response contract and protected route.
+- **Owned files:** Research route and UI modules; calendar entry and styles.
+- **Read-only files:** shared design tokens, auth client, calendar workspace,
+  project UX/security rules, and endpoint response types.
+- **Required skills:** S005–S015, S421–S428, responsive layout, forms,
+  accessibility, and anti-slop review.
+- **Security permissions:** Display source text as escaped text only; do not
+  persist content or send it to an AI model; links must remain HTTPS.
+- **Acceptance criteria:** Real route and controls, responsive layout, keyboard
+  focus, explicit source limitations, useful error and loading states.
+- **Tests:** Typecheck, lint, focused API/reader tests, CI build, HTTPS browser
+  route check after deployment.
+- **Expected deliverables:** Protected Research screen and calendar entry.
+- **Status:** Pushed in b71d104; build and GitHub CI passed. Authenticated
+  browser review remains open.
+
+### R1d — security review
+
+- **Task ID:** R1d
+- **Objective:** Review the exact implementation diff for SSRF, auth/CSRF,
+  tenant isolation, content handling, and resource bounds.
+- **Assigned agent:** Primary agent; no OS-isolated reviewer is available.
+- **Required model/reasoning:** Codex Security reported GPT-6 Luna / MAX.
+- **Dependencies:** R1a–R1c pushed to main.
+- **Owned files:** Scan findings and coverage only; no source changes.
+- **Read-only files:** The 20-file immutable source diff and directly supporting
+  auth/database files.
+- **Required skills:** security-diff-scan, finding-discovery, threat-model,
+  SSRF, session, RLS, and untrusted-content review.
+- **Security permissions:** Read-only; no credentials or external writes.
+- **Acceptance criteria:** Every changed file reviewed, findings recorded,
+  unresolved runtime gates made explicit, no findings fabricated.
+- **Tests:** 21 focused tests passed; no authenticated live fetch.
+- **Expected deliverables:** Sealed scan report and scope notes.
+- **Status:** Completed for e6f43d4..b71d104; zero reportable candidates.
+
+### R1e — migration and staging deployment
+
+- **Task ID:** R1e
+- **Objective:** Apply migration 0016 and the minimum Chron-only runtime
+  grants, deploy the pushed source to the HTTPS test host, and verify health.
+- **Assigned agent:** Primary agent.
+- **Required model/reasoning:** GPT-6 Luna MAX / MAX requested; runtime
+  identity and effort are not independently attested.
+- **Dependencies:** R1a–R1d, successful CI, authorized Chron staging access.
+- **Owned files:** Chron release directory, Chron database migration/grant,
+  Chron release symlink, and chron-web.service only.
+- **Read-only files:** Existing staging service status and sanitized deployment
+  instructions; do not read or alter unrelated service state.
+- **Required skills:** deployment, migration safety, HTTPS validation, and
+  least-privilege operations.
+- **Security permissions:** Use the authorized login instructions privately;
+  never print credentials; no unrelated VPS or Cloudflare changes.
+- **Acceptance criteria:** Migration and runtime grant verified without
+  widening role privileges; only the Chron release/service changes; public
+  route responds over HTTPS.
+- **Tests:** Post-migration application health and HTTPS/TLS/HSTS checks.
+- **Expected deliverables:** Active release and exact deployment record.
+- **Status:** Pending.
+
+### R1f — browser verification
+
+- **Task ID:** R1f
+- **Objective:** Verify the signed-in Research workflow on desktop and mobile.
+- **Assigned agent:** Primary agent; no isolated browser-test account available.
+- **Required model/reasoning:** GPT-6 Luna MAX / MAX requested; runtime
+  identity and effort are not independently attested.
+- **Dependencies:** R1e and an authorized synthetic test account.
+- **Owned files:** Browser evidence and concise progress notes.
+- **Read-only files:** Deployed HTTPS UI and API behavior.
+- **Required skills:** browser testing, accessibility, responsive design, and
+  security verification.
+- **Security permissions:** Use only a synthetic account and public HTTPS
+  sources; do not fabricate or borrow a user session.
+- **Acceptance criteria:** Sign-in gate, form, errors, source output, clear,
+  sign-out, keyboard flow, and responsive layout verified in a real browser.
+- **Tests:** Real browser interaction and screenshots if account access exists.
+- **Expected deliverables:** Browser findings and verified walkthrough.
+- **Status:** Open; no test account is available.
+
+## Foundation and landing-page graph (historical; landing page paused)
 
 ## Dependency graph
 

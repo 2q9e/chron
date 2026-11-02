@@ -2,34 +2,45 @@
 
 ## Current state
 
-Chron is a standalone public repository on GitHub. The only remote branch is
-`main`, and commits are pushed by 2q9e with short titles over HTTPS. The branch
-contains occurrence cancellation, restoration, and reviewed movement of one
-timed or all-day recurrence instance. Migration 0012 persists a stable series
-root and backfills existing recurring events. Following-series splitting is
-implemented and pushed with migration 0013.
-The public tree contains no AGENTS.md; local operating instructions remain
-untracked. No old calendar reference folder was inspected or used.
+Chron is a standalone public repository on GitHub. The only branch is `main`,
+and 2q9e pushes short commits over HTTPS. The branch includes the calendar's
+recurrence exceptions, split-series editing, preferences, reminders, and
+iCalendar export, plus a direct HTTPS source reader. The public tree contains
+no AGENTS.md; local instructions remain untracked. No old calendar reference
+folder was inspected or used.
 
-GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41417404297 passed on commit
-`e6f43d4`. Local calendar time/domain (53) and auth-configuration (15) suites,
-typecheck, lint, and production build pass. Earlier calendar API (111) and
-layout/API client (61) suites pass. PostgreSQL integration skips locally
+Commits 2019687, 054f060, and b71d104 add public HTTPS retrieval, the signed-in
+Research page, and a navigation entry. Commit 7217f34 adds source-reader
+documentation and the dedicated CI test step. This feature reads a URL the user
+provides; it does not search the web, assess source quality, synthesize
+citations, use AI, or act as a complete research agent.
+
+GitHub Actions run 41422411142 passed on b71d104, including migration 0016
+PostgreSQL checks, lint, typecheck, dependency audit, and build. Run 41423159092
+for 7217f34 also passed, including the dedicated Research suite (21 tests).
+Those tests pass locally; typecheck and lint pass. Local production
+compilation listed both new routes but emitted a Turbopack cache-write warning
+during shutdown; hosted build passed. Local PostgreSQL integration skips
 because `CHRON_TEST_DATABASE_URL` is unset.
 
-Commit `e6f43d4` is active at `/opt/chron/releases/e6f43d4`. The deployment
-changed only the Chron release symlink and `chron-web.service`; it used a
-release-local npm cache after the shared cache proved root-owned. The install
-reported zero vulnerabilities. HTTPS `/sign-in` returns 200 with verified TLS
-and HSTS (`max-age=31536000`). HTTPS `/calendar` redirects to `/sign-in`, and
-the sign-in interface rendered in a real browser. No test account is available
-for authenticated calendar or export verification. No other VPS service,
-environment file, or Cloudflare resource was changed.
+The staging host is still running e6f43d4 at `/opt/chron/releases/e6f43d4`; the
+Research slice is not deployed. Prior deployment changed only the Chron release
+symlink and `chron-web.service`. No other VPS service, environment file, or
+Cloudflare resource was changed. Public HTTPS sign-in previously returned 200
+with valid TLS/HSTS, and `/calendar` redirected to sign-in. No test account is
+available for authenticated browser verification.
+
+The Codex Security scan reviewed all 20 changed files from e6f43d4 to b71d104
+and found zero reportable candidates. Review was sequential because this
+runtime cannot enforce filesystem isolation for delegated agents. Verify the
+live DB role/grants, migration 0016, HTTPS/HSTS, and signed-out route gate after
+deployment; authenticated UI verification still needs an authorized test
+account.
 
 ## Current milestone
 
-C1 — calendar — is active. Landing-page work remains paused. The calendar has
+C1 — calendar — and the first R1 retrieval slice are active. Landing-page work
+remains paused. The calendar has
 owner-scoped persisted events and preferences, including a validated custom
 accent color with contrast correction and a reduced-motion preference, four
 views, create/edit/delete, search, conflict review, finite recurrence with
@@ -50,6 +61,13 @@ executed by CI; live mail delivery, scheduler deployment, and inbox receipt
 remain unverified. Public signup remains closed, so do not simulate an account
 or claim an authenticated user journey. External calendar synchronization is
 not implemented.
+
+The Research page is protected by Better Auth and offers URL entry, safe
+retrieval metadata, an explicit untrusted-source notice, and escaped extracted
+text. Its URL policy requires HTTPS, validates and pins public DNS answers,
+revalidates redirects, and limits time and response size. Per-account quota is
+persisted with forced RLS and account-deletion cascade. Details are in
+docs/research/web-retrieval.md. No source text is saved or sent to AI.
 
 ## Product and security gates
 
@@ -86,6 +104,14 @@ not implemented.
 - PostgreSQL migrations and RLS behavior passed on an ephemeral CI database.
   Migration 0009 was also applied and catalog-verified on the Chron staging
   database. Do not simulate a session or claim authenticated persistence.
+- Research source reader: `apps/web/app/api/research/web/read/`,
+  `apps/web/features/research/server/`, `apps/web/app/research/`, and
+  `apps/web/features/research/presentation/`; migration 0016 persists the
+  owner-scoped quota. See `docs/research/web-retrieval.md`.
+- Run 41423159092 passed on 7217f34, including all migrations through 0016,
+  Research unit tests, PostgreSQL isolation/deletion checks, dependency audit,
+  and production build. The Research feature remains undeployed until 0016 and
+  the minimum Chron-only runtime grant are applied.
 - The `e6f43d4` release is active. HTTPS sign-in, calendar redirect, valid TLS,
   and HSTS were verified after restarting only `chron-web.service`.
 - Occurrence movement and following-series splitting are pushed on `main`;
