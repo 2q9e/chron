@@ -46,6 +46,27 @@ test("requires verified TLS for remote databases", () => {
   assert.equal(config.databaseTls, true);
 });
 
+test("supports an explicit TLS server name without accepting IPs or URL syntax", () => {
+  const base = {
+    NODE_ENV: "production",
+    BETTER_AUTH_URL: "https://chron.example.test",
+    DATABASE_URL: "postgresql://chron:synthetic-test-password@localhost/chron",
+    AUTH_TRUSTED_PROXY_CIDRS: "127.0.0.1/32",
+    DATABASE_TLS_SERVERNAME: "db-internal.example.test",
+  };
+
+  const config = loadAuthEnvironment(validEnvironment(base));
+  assert.equal(config.databaseTls, true);
+  assert.equal(config.databaseTlsServername, "db-internal.example.test");
+
+  for (const servername of ["127.0.0.1", "db.example.test:5432", "*.example.test"]) {
+    assert.throws(
+      () => loadAuthEnvironment(validEnvironment({ ...base, DATABASE_TLS_SERVERNAME: servername })),
+      (error) => error instanceof AuthConfigurationError && /DNS hostname/.test(error.message),
+    );
+  }
+});
+
 test("requires HTTPS for non-loopback authentication origins outside production", () => {
   assert.throws(
     () => loadAuthEnvironment(validEnvironment({

@@ -15,6 +15,9 @@ export const database = authGlobal.__chronAuthPool ?? new Pool({
         ssl: {
           rejectUnauthorized: true,
           ...(environment.databaseTlsCA ? { ca: environment.databaseTlsCA } : {}),
+          ...(environment.databaseTlsServername
+            ? { servername: environment.databaseTlsServername }
+            : {}),
         },
       }
     : {}),

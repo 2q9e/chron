@@ -5,6 +5,7 @@ export type AuthEnvironment = Readonly<{
   databaseURL: string;
   databaseTls: boolean;
   databaseTlsCA?: string;
+  databaseTlsServername?: string;
   production: boolean;
   secret: string;
   trustedProxies: string[];
@@ -53,6 +54,16 @@ function isValidProxyRange(value: string): boolean {
   const minimum = version === 4 ? 16 : 32;
 
   return Number.isInteger(bits) && bits >= minimum && bits <= maximum;
+}
+
+function isValidTlsServername(value: string): boolean {
+  if (value.length > 253 || isIP(value) !== 0) return false;
+
+  return value.split(".").every((label) =>
+    label.length > 0 &&
+    label.length <= 63 &&
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label),
+  );
 }
 
 export function loadAuthEnvironment(
@@ -137,11 +148,17 @@ export function loadAuthEnvironment(
     throw new AuthConfigurationError("DATABASE_TLS_CA must contain a PEM certificate.");
   }
 
+  const databaseTlsServername = environment.DATABASE_TLS_SERVERNAME?.trim();
+  if (databaseTlsServername && !isValidTlsServername(databaseTlsServername)) {
+    throw new AuthConfigurationError("DATABASE_TLS_SERVERNAME must be a valid DNS hostname.");
+  }
+
   return {
     baseURL: base.origin,
     databaseURL: database.toString(),
     databaseTls,
     ...(databaseTlsCA ? { databaseTlsCA } : {}),
+    ...(databaseTlsServername ? { databaseTlsServername } : {}),
     production,
     secret,
     trustedProxies,

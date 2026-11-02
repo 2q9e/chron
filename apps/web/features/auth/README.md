@@ -16,6 +16,7 @@ Set these values through the deployment platform's secret and environment config
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS_MODE`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM`: verified SMTP delivery settings. Use port 465 with `implicit` TLS, or another port with required STARTTLS.
 - `AUTH_TRUSTED_PROXY_CIDRS`: in production, the narrow CIDRs of the reverse proxies that overwrite forwarded-IP headers.
 - `DATABASE_TLS_CA`: optional PEM CA certificate for a private database CA.
+- `DATABASE_TLS_SERVERNAME`: optional DNS name to verify when the database URL host differs from its TLS certificate name.
 
 Production requires HTTPS, a remote PostgreSQL connection with certificate verification, and explicit trusted proxy ranges. Restrict direct access to the application so clients cannot bypass the trusted edge.
 
