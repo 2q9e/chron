@@ -48,6 +48,7 @@ async function applyMigrations(client) {
   assert.ok(names.length > 0, "Expected calendar and authentication migrations.");
   for (const name of names) {
     let lineageFixture;
+    let categoryFixture;
     if (name === "0012_calendar_series_lineage.sql") {
       const userId = `chron-lineage-${randomUUID()}`;
       const eventId = randomUUID();
@@ -68,6 +69,22 @@ async function applyMigrations(client) {
       );
       lineageFixture = { userId, eventId };
     }
+    if (name === "0018_calendar_event_categories.sql") {
+      const userId = `chron-category-${randomUUID()}`;
+      const eventId = randomUUID();
+      await client.query(
+        `INSERT INTO "user" (id, name, email, "updatedAt")
+         VALUES ($1, 'Synthetic category migration fixture', $2, CURRENT_TIMESTAMP)`,
+        [userId, `${userId}@example.invalid`],
+      );
+      await client.query(
+        `INSERT INTO calendar_events (
+           id, user_id, kind, title, start_date, end_date
+         ) VALUES ($1::uuid, $2, 'all-day', 'Existing uncategorized event', DATE '2026-11-02', DATE '2026-11-03')`,
+        [eventId, userId],
+      );
+      categoryFixture = { userId, eventId };
+    }
     await client.query(await readFile(join(migrationDirectory, name), "utf8"));
     if (lineageFixture) {
       const backfill = await client.query(
@@ -76,6 +93,23 @@ async function applyMigrations(client) {
       );
       assert.equal(backfill.rows[0]?.series_root_id, lineageFixture.eventId);
       await client.query(`DELETE FROM "user" WHERE id = $1`, [lineageFixture.userId]);
+    }
+    if (categoryFixture) {
+      const category = await client.query(
+        `SELECT category FROM calendar_events WHERE id = $1::uuid`,
+        [categoryFixture.eventId],
+      );
+      assert.equal(category.rows[0]?.category, null, "Existing events stay accurately uncategorized.");
+      await assert.rejects(
+        client.query(
+          `INSERT INTO calendar_events (
+             id, user_id, kind, title, start_date, end_date, category
+           ) VALUES ($1::uuid, $2, 'all-day', 'Invalid category check', DATE '2026-11-02', DATE '2026-11-03', 'webinar')`,
+          [randomUUID(), categoryFixture.userId],
+        ),
+        /calendar_events_category_valid/u,
+      );
+      await client.query(`DELETE FROM "user" WHERE id = $1`, [categoryFixture.userId]);
     }
   }
 }
@@ -210,6 +244,65 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       ...preferences,
       studyPlanner: alternateStudyPlanner,
     });
+
+    const categorizedEvent = await repository.createEvent(accountA, {
+      kind: "timed",
+      title: "Category persistence check",
+      category: "assignment",
+      startLocal: "2027-01-05T09:00",
+      endLocal: "2027-01-05T10:00",
+      timeZone: "UTC",
+    }, "UTC", [], `postgres-category-create-${randomUUID()}`);
+    assert.equal(categorizedEvent.event.category, "assignment");
+    const legacyUpdate = await repository.updateEvent(accountA, categorizedEvent.event.id, 1, {
+      kind: "timed",
+      title: "Category persistence check updated",
+      startLocal: "2027-01-05T09:00",
+      endLocal: "2027-01-05T10:00",
+      timeZone: "UTC",
+    }, "UTC", []);
+    assert.equal(legacyUpdate.category, "assignment", "Omitted categories preserve existing values.");
+    const clearedCategory = await repository.updateEvent(accountA, legacyUpdate.id, legacyUpdate.revision, {
+      kind: "timed",
+      title: legacyUpdate.title,
+      category: null,
+      startLocal: legacyUpdate.startLocal,
+      endLocal: legacyUpdate.endLocal,
+      timeZone: legacyUpdate.timeZone,
+    }, "UTC", []);
+    assert.equal(clearedCategory.category, null, "An explicit null clears the category.");
+
+    const categorizedSeriesDraft = await repository.createSeriesDraft(accountA, {
+      action: "create",
+      scope: "series",
+      event: {
+        kind: "all-day",
+        title: "Category series",
+        category: "exam",
+        startDate: "2027-02-01",
+        endDate: "2027-02-02",
+      },
+      recurrenceRule: { frequency: "daily", interval: 1, count: 2 },
+      calendarTimeZone: "UTC",
+    }, `postgres-category-series-create-${randomUUID()}`);
+    const categorizedSeries = await repository.approveSeriesDraft(accountA, categorizedSeriesDraft.id);
+    assert.equal(categorizedSeries.event.category, "exam");
+    const retainedSeriesDraft = await repository.createSeriesDraft(accountA, {
+      action: "update",
+      scope: "series",
+      targetEventId: categorizedSeries.event.id,
+      targetRevision: categorizedSeries.event.revision,
+      event: {
+        kind: "all-day",
+        title: "Updated category series",
+        startDate: "2027-02-01",
+        endDate: "2027-02-02",
+      },
+      recurrenceRule: { frequency: "daily", interval: 1, count: 2 },
+      calendarTimeZone: "UTC",
+    }, `postgres-category-series-update-${randomUUID()}`);
+    const retainedSeries = await repository.approveSeriesDraft(accountA, retainedSeriesDraft.id);
+    assert.equal(retainedSeries.event.category, "exam", "Omitted series categories preserve the stored value.");
 
     const cancelledOccurrenceKey = `${eventA}:2098-11-09`;
     await databasePool.query(
@@ -452,6 +545,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       event: {
         kind: "all-day",
         title: "Following segment source",
+        category: "study",
         startDate: "2099-02-02",
         endDate: "2099-02-03",
         reminderChoice: "event-day-9am",
@@ -464,6 +558,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     assert.equal(splitSource.outcome, "approved");
     assert.equal(splitSource.event.reminderChoice, "event-day-9am");
     assert.equal(splitSource.event.reminderTimeZone, "UTC");
+    assert.equal(splitSource.event.category, "study");
     const splitSourceId = splitSource.event.id;
     const seededSplitReminders = await databasePool.query(
       `SELECT occurrence_key
@@ -518,6 +613,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
     assert.equal(splitApproval.outcome, "approved");
     assert.notEqual(splitApproval.event.id, splitSourceId);
     assert.equal(splitApproval.event.seriesRootId, splitSourceId);
+    assert.equal(splitApproval.event.category, "study", "Omitted split categories inherit the stored series category.");
     assert.deepEqual(splitApproval.event.recurrenceRule, {
       frequency: "weekly",
       interval: 1,

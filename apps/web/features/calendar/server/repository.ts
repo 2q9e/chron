@@ -13,6 +13,7 @@ import type {
   CalendarConflictReview,
   CalendarEventCommit,
   CalendarEvent,
+  CalendarEventCategory,
   CalendarEventEntry,
   CalendarEventOccurrence,
   CalendarEventMutation,
@@ -65,6 +66,7 @@ type EventRow = QueryResultRow & {
   kind: "timed" | "all-day";
   title: string;
   details: string | null;
+  category?: CalendarEventCategory | null;
   revision: number;
   reminder_choice: string | null;
   reminder_time_zone: string | null;
@@ -252,6 +254,7 @@ const eventColumns = `
   kind,
   title,
   details,
+  category,
   revision,
   reminder_choice,
   reminder_time_zone,
@@ -465,6 +468,7 @@ function toCalendarEvent(row: EventRow): CalendarEvent {
     ...(row.series_root_id ? { seriesRootId: row.series_root_id } : {}),
     title: row.title,
     details: row.details,
+    category: row.category ?? null,
     revision: row.revision,
     ...(recurrenceRule ? { recurrenceRule } : {}),
     createdAt: asIsoTimestamp(row.created_at),
@@ -856,6 +860,7 @@ function fingerprintCreateRequest(commit: CalendarEventCommit): Buffer {
         kind: "timed",
         title: commit.event.title,
         details: commit.event.details ?? null,
+        ...(commit.event.category === undefined ? {} : { category: commit.event.category }),
         startLocal: commit.event.startLocal,
         endLocal: commit.event.endLocal,
         timeZone: commit.event.timeZone,
@@ -866,6 +871,7 @@ function fingerprintCreateRequest(commit: CalendarEventCommit): Buffer {
         kind: "all-day",
         title: commit.event.title,
         details: commit.event.details ?? null,
+        ...(commit.event.category === undefined ? {} : { category: commit.event.category }),
         startDate: commit.event.startDate,
         endDate: commit.event.endDate,
       };
@@ -1253,6 +1259,7 @@ function canonicalSeriesRequest(request: CalendarSeriesDraftRequest): Record<str
         kind: "timed",
         title: request.event.title,
         details: request.event.details ?? null,
+        ...(request.event.category === undefined ? {} : { category: request.event.category }),
         startLocal: request.event.startLocal,
         endLocal: request.event.endLocal,
         timeZone: request.event.timeZone,
@@ -1263,6 +1270,7 @@ function canonicalSeriesRequest(request: CalendarSeriesDraftRequest): Record<str
         kind: "all-day",
         title: request.event.title,
         details: request.event.details ?? null,
+        ...(request.event.category === undefined ? {} : { category: request.event.category }),
         startDate: request.event.startDate,
         endDate: request.event.endDate,
       };
@@ -1312,12 +1320,14 @@ function seriesEventFromMutation(
   createdAt: string,
   updatedAt: string,
   seriesRootId: string = id,
+  fallbackCategory: CalendarEventCategory | null = null,
 ): CalendarEvent {
   const rule = normalizeRecurrenceRule(recurrenceRule);
   const base = {
     id,
     title: mutation.title,
     details: mutation.details ?? null,
+    category: mutation.category === undefined ? fallbackCategory : mutation.category,
     revision,
     recurrenceRule: rule,
     seriesRootId,
@@ -1431,6 +1441,7 @@ function planCalendarSeriesSplit(
     target.createdAt,
     now,
     target.seriesRootId,
+    target.category,
   );
   const segmentOccurrences = expandFullCalendarSeries(segment, request.recurrenceRule);
   if (segmentOccurrences.length !== suffixCount) {
@@ -2137,6 +2148,8 @@ function buildSeriesProposalSnapshot(
     target ? target.revision + 1 : 1,
     target?.createdAt ?? now,
     now,
+    target?.seriesRootId ?? eventId,
+    target?.category ?? null,
   );
   let comparison: ReturnType<typeof findCalendarSeriesConflicts>;
   try {
@@ -2347,8 +2360,10 @@ async function insertSeriesEvent(
   mutation: CalendarEventMutation,
   rule: CalendarRecurrenceRule,
   seriesRootId: string = eventId,
+  fallbackCategory: CalendarEventCategory | null = null,
 ): Promise<CalendarEvent> {
   const recurrence = normalizeRecurrenceRule(rule);
+  const category = mutation.category === undefined ? fallbackCategory : mutation.category;
   const result = mutation.kind === "timed"
     ? await (() => {
         const start = resolveLocalDateTime(
@@ -2367,11 +2382,11 @@ async function insertSeriesEvent(
              id, user_id, kind, title, details, start_local, end_local,
              time_zone, starts_at, ends_at, recurrence_frequency,
              recurrence_interval, recurrence_count, reminder_choice,
-             reminder_time_zone, revision, series_root_id
+             reminder_time_zone, revision, series_root_id, category
            ) VALUES (
              $1, $2, 'timed', $3, $4, $5::timestamp, $6::timestamp,
              $7, $8::timestamptz, $9::timestamptz, $10, $11, $12, $13,
-             NULL, 1, $14::uuid
+             NULL, 1, $14::uuid, $15
            )
            RETURNING ${eventColumns}`,
           [
@@ -2389,6 +2404,7 @@ async function insertSeriesEvent(
             recurrence.count,
             mutation.reminderChoice ?? "none",
             seriesRootId,
+            category,
           ],
         );
       })()
@@ -2396,10 +2412,10 @@ async function insertSeriesEvent(
         `INSERT INTO calendar_events (
            id, user_id, kind, title, details, start_date, end_date,
            recurrence_frequency, recurrence_interval, recurrence_count,
-           reminder_choice, reminder_time_zone, revision, series_root_id
+           reminder_choice, reminder_time_zone, revision, series_root_id, category
          ) VALUES (
            $1, $2, 'all-day', $3, $4, $5::date, $6::date, $7, $8, $9,
-           $10, $11, 1, $12::uuid
+           $10, $11, 1, $12::uuid, $13
          )
          RETURNING ${eventColumns}`,
         [
@@ -2417,6 +2433,7 @@ async function insertSeriesEvent(
             ? null
             : mutation.reminderTimeZone,
           seriesRootId,
+          category,
         ],
       );
   if (!result.rows[0]) throw new Error("Recurring event insert returned no row.");
@@ -2462,6 +2479,7 @@ async function updateSeriesEvent(
                recurrence_count = $13,
                reminder_choice = $14,
                reminder_time_zone = NULL,
+               category = CASE WHEN $16::boolean THEN $15::text ELSE category END,
                revision = revision + 1,
                updated_at = clock_timestamp()
            WHERE user_id = $1 AND id = $2::uuid AND revision = $3
@@ -2481,6 +2499,8 @@ async function updateSeriesEvent(
             recurrence.interval,
             recurrence.count,
             mutation.reminderChoice ?? "none",
+            mutation.category ?? null,
+            mutation.category !== undefined,
           ],
         );
       })()
@@ -2501,6 +2521,7 @@ async function updateSeriesEvent(
              recurrence_count = $10,
              reminder_choice = $11,
              reminder_time_zone = $12,
+             category = CASE WHEN $14::boolean THEN $13::text ELSE category END,
              revision = revision + 1,
              updated_at = clock_timestamp()
          WHERE user_id = $1 AND id = $2::uuid AND revision = $3
@@ -2520,6 +2541,8 @@ async function updateSeriesEvent(
           mutation.reminderChoice === "none" || mutation.reminderChoice === undefined
             ? null
             : mutation.reminderTimeZone,
+          mutation.category ?? null,
+          mutation.category !== undefined,
         ],
       );
   return result.rows[0] ? toCalendarEvent(result.rows[0]) : null;
@@ -3300,8 +3323,8 @@ export class CalendarRepository {
         : await client.query<EventRow>(
           `INSERT INTO calendar_events (
              id, user_id, kind, title, details, start_date, end_date,
-             reminder_choice, reminder_time_zone, revision
-           ) VALUES ($1, $2, 'all-day', $3, $4, $5::date, $6::date, $7, $8, 1)
+             reminder_choice, reminder_time_zone, revision, category
+           ) VALUES ($1, $2, 'all-day', $3, $4, $5::date, $6::date, $7, $8, 1, $9)
            RETURNING ${eventColumns}`,
           [
             eventId,
@@ -3314,6 +3337,7 @@ export class CalendarRepository {
             mutation.reminderChoice === undefined || mutation.reminderChoice === "none"
               ? null
               : mutation.reminderTimeZone,
+            mutation.category ?? null,
           ],
         );
       const row = result.rows[0];
@@ -3420,10 +3444,10 @@ export class CalendarRepository {
       `INSERT INTO calendar_events (
          id, user_id, kind, title, details, start_local, end_local,
          time_zone, starts_at, ends_at, reminder_choice, reminder_time_zone,
-         revision
+         revision, category
        ) VALUES (
          $1, $2, 'timed', $3, $4, $5::timestamp, $6::timestamp,
-         $7, $8::timestamptz, $9::timestamptz, $10, NULL, 1
+         $7, $8::timestamptz, $9::timestamptz, $10, NULL, 1, $11
        )
        RETURNING ${eventColumns}`,
       [
@@ -3437,6 +3461,7 @@ export class CalendarRepository {
         start.instant,
         end.instant,
         mutation.reminderChoice ?? "none",
+        mutation.category ?? null,
       ],
     );
   }
@@ -3473,6 +3498,7 @@ export class CalendarRepository {
                end_date = $7::date,
                reminder_choice = $8,
                reminder_time_zone = $9,
+               category = CASE WHEN $11::boolean THEN $10::text ELSE category END,
                revision = revision + 1,
                updated_at = CURRENT_TIMESTAMP
            WHERE user_id = $1 AND id = $2::uuid AND revision = $3
@@ -3489,6 +3515,8 @@ export class CalendarRepository {
             mutation.reminderChoice === undefined || mutation.reminderChoice === "none"
               ? null
               : mutation.reminderTimeZone,
+            mutation.category ?? null,
+            mutation.category !== undefined,
           ],
         );
 
@@ -3537,6 +3565,7 @@ export class CalendarRepository {
            end_date = NULL,
            reminder_choice = $11,
            reminder_time_zone = NULL,
+           category = CASE WHEN $13::boolean THEN $12::text ELSE category END,
            revision = revision + 1,
            updated_at = CURRENT_TIMESTAMP
        WHERE user_id = $1 AND id = $2::uuid AND revision = $3
@@ -3553,6 +3582,8 @@ export class CalendarRepository {
         start.instant,
         end.instant,
         mutation.reminderChoice ?? "none",
+        mutation.category ?? null,
+        mutation.category !== undefined,
       ],
     );
   }
@@ -4059,6 +4090,7 @@ export class CalendarRepository {
           request.event,
           request.recurrenceRule,
           target.seriesRootId,
+          target.category,
         );
         await transferSplitOccurrenceExceptions(
           client,

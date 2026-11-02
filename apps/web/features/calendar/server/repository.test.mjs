@@ -36,6 +36,7 @@ test("creates an owner-scoped event inside one transaction", async () => {
     kind: "timed",
     title: "Study session",
     details: null,
+    category: "study",
     revision: 1,
     start_local: "2026-10-30T09:00",
     end_local: "2026-10-30T10:00",
@@ -59,6 +60,7 @@ test("creates an owner-scoped event inside one transaction", async () => {
   const result = await repository.createEvent(ownerId, {
     kind: "timed",
     title: "Study session",
+    category: "study",
     startLocal: "2026-10-30T09:00",
     endLocal: "2026-10-30T10:00",
     timeZone: "America/Montreal",
@@ -68,6 +70,7 @@ test("creates an owner-scoped event inside one transaction", async () => {
   const event = result.event;
   assert.equal(event.id, row.id);
   assert.equal(event.kind, "timed");
+  assert.equal(event.category, "study");
   assert.equal(calls.length, 10);
   assert.equal(calls[0].sql, "BEGIN");
   assert.equal(calls[1].sql, "SELECT set_config('chron.user_id', $1, true)");
@@ -79,6 +82,7 @@ test("creates an owner-scoped event inside one transaction", async () => {
   assert.equal(calls[9].sql, "COMMIT");
   assert.equal(calls[1].values[0], ownerId);
   assert.equal(calls[7].values[1], ownerId);
+  assert.equal(calls[7].values.at(-1), "study");
 });
 
 test("persists an opted-in timed reminder with its event in the owner transaction", async () => {
@@ -88,6 +92,7 @@ test("persists an opted-in timed reminder with its event in the owner transactio
     kind: "timed",
     title: "Review session",
     details: null,
+    category: "exam",
     revision: 1,
     reminder_choice: "15-minutes-before",
     reminder_time_zone: null,
@@ -144,6 +149,7 @@ test("updates cancel stale reminder work and insert only the current revision", 
     kind: "timed",
     title: "Review session",
     details: null,
+    category: "exam",
     revision: 2,
     reminder_choice: "30-minutes-before",
     reminder_time_zone: null,
@@ -177,7 +183,13 @@ test("updates cancel stale reminder work and insert only the current revision", 
   }, "America/Montreal", []);
 
   assert.equal(event.revision, 2);
+  assert.equal(event.category, "exam");
   assert.equal(event.reminderChoice, "30-minutes-before");
+  const update = calls.find(({ sql }) => sql.startsWith("UPDATE calendar_events"));
+  assert.ok(update);
+  assert.match(update.sql, /category = CASE WHEN \$13::boolean THEN \$12::text ELSE category END/u);
+  assert.equal(update.values.at(-2), null);
+  assert.equal(update.values.at(-1), false);
   const cancellation = calls.find(({ sql }) => sql.includes("UPDATE calendar_event_reminders"));
   assert.ok(cancellation);
   assert.match(cancellation.sql, /event_revision < \$3/u);
@@ -233,7 +245,7 @@ test("captures the calendar zone for an all-day reminder without storing event t
 
   assert.equal(result.event.reminderTimeZone, "America/Montreal");
   const eventInsert = calls.find(({ sql }) => sql.startsWith("INSERT INTO calendar_events"));
-  assert.deepEqual(eventInsert.values.slice(-2), ["previous-day-9am", "America/Montreal"]);
+  assert.deepEqual(eventInsert.values.slice(-3), ["previous-day-9am", "America/Montreal", null]);
   const reminderInsert = calls.find(({ sql }) => sql.includes("INSERT INTO calendar_event_reminders"));
   assert.ok(reminderInsert);
   const [job] = JSON.parse(reminderInsert.values[3]);

@@ -1,6 +1,8 @@
 import { Temporal } from "@js-temporal/polyfill";
 import {
+  calendarEventCategories,
   calendarThemes,
+  type CalendarEventCategory,
   type CalendarConflictReview,
   type CalendarDensity,
   type CalendarSeriesDraftRequest,
@@ -83,6 +85,15 @@ function parseDetails(value: unknown): string | undefined {
   return details || undefined;
 }
 
+function parseEventCategory(value: unknown): CalendarEventCategory | null | undefined {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === "string" && calendarEventCategories.includes(value as CalendarEventCategory)) {
+    return value as CalendarEventCategory;
+  }
+  return invalidPayload("Choose a supported calendar category.");
+}
+
 function optionalDisambiguation(value: unknown): "earlier" | "later" | undefined {
   if (value === undefined) return undefined;
   if (value !== "earlier" && value !== "later") {
@@ -158,6 +169,7 @@ function assertRecurrenceFullyExpandable(
     id: "00000000-0000-4000-8000-000000000000",
     title: event.title,
     details: event.details ?? null,
+    category: event.category ?? null,
     revision: 1,
     createdAt: "2000-01-01T00:00:00.000Z",
     updatedAt: "2000-01-01T00:00:00.000Z",
@@ -440,12 +452,14 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
   const value = objectRecord(input);
   const title = parseTitle(value.title);
   const details = parseDetails(value.details);
+  const category = parseEventCategory(value.category);
 
   if (value.kind === "timed") {
     assertAllowedFields(value, [
       "kind",
       "title",
       "details",
+      "category",
       "startLocal",
       "endLocal",
       "timeZone",
@@ -463,6 +477,7 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
       kind: "timed",
       title,
       ...(details ? { details } : {}),
+      ...(category !== undefined ? { category } : {}),
       startLocal: start.local,
       endLocal: end.local,
       timeZone: start.timeZone,
@@ -477,6 +492,7 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
       "kind",
       "title",
       "details",
+      "category",
       "startDate",
       "endDate",
       "reminderChoice",
@@ -503,6 +519,7 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
       kind: "all-day",
       title,
       ...(details ? { details } : {}),
+      ...(category !== undefined ? { category } : {}),
       ...(reminderChoice !== undefined ? { reminderChoice } : {}),
       ...(reminderTimeZone ? { reminderTimeZone } : {}),
       ...range,

@@ -63,6 +63,22 @@ test("accepts a valid timed event and normalizes optional details", () => {
   });
 });
 
+test("validates academic event categories while preserving omission for older clients", () => {
+  assert.deepEqual(parseCalendarEventMutation({ ...validTimedEvent, category: "exam" }), {
+    ...validTimedEvent,
+    category: "exam",
+  });
+  assert.deepEqual(parseCalendarEventMutation({ ...validTimedEvent, category: null }), {
+    ...validTimedEvent,
+    category: null,
+  });
+  assert.equal(Object.hasOwn(parseCalendarEventMutation(validTimedEvent), "category"), false);
+  assert.throws(
+    () => parseCalendarEventMutation({ ...validTimedEvent, category: "webinar" }),
+    (error) => error instanceof CalendarRouteError && error.code === "INVALID_CALENDAR_FIELDS",
+  );
+});
+
 test("accepts only timed reminder choices for timed events", () => {
   assert.deepEqual(parseCalendarEventMutation({
     ...validTimedEvent,
@@ -575,6 +591,19 @@ test("search route authenticates a JSON body and uses private no-store responses
 
   const response = calendarJson({ events: [] });
   assert.equal(response.headers.get("cache-control"), "private, no-store");
+});
+
+test("calendar capability route is authenticated and private", () => {
+  const route = readFileSync(
+    new URL("../../../app/api/calendar/capabilities/route.ts", import.meta.url),
+    "utf8",
+  );
+  assert.match(route, /export async function GET/u);
+  assert.match(route, /requireCalendarUser\(request\)/u);
+  assert.match(route, /eventCategories: true/u);
+  assert.match(route, /calendarJson\(/u);
+  assert.match(route, /withCalendarErrors/u);
+  assert.equal(calendarJson({ features: { eventCategories: true } }).headers.get("cache-control"), "private, no-store");
 });
 
 test("study planner preference patch is authenticated and same-origin", () => {
@@ -1110,6 +1139,14 @@ test("rejects same-owner key reuse when the normalized event or review snapshot 
 
   await assert.rejects(
     createCalendarEvent(repository, "owner-one", "create-2", validAllDayCommit("Different title")),
+    (error) => error instanceof CalendarRouteError && error.code === "IDEMPOTENCY_KEY_REUSED" && error.status === 409,
+  );
+  const categorizedCommit = validAllDayCommit();
+  await assert.rejects(
+    createCalendarEvent(repository, "owner-one", "create-2", {
+      ...categorizedCommit,
+      event: { ...categorizedCommit.event, category: "exam" },
+    }),
     (error) => error instanceof CalendarRouteError && error.code === "IDEMPOTENCY_KEY_REUSED" && error.status === 409,
   );
   await assert.rejects(

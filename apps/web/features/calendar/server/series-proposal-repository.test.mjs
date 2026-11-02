@@ -161,7 +161,7 @@ class SeriesProposalPool {
           if (!draft || queryOwner !== owner || draft.user_id !== queryOwner) return { rows: [] };
           return { rows: [this.projectedDraft(draft)] };
         }
-        if (statement.startsWith("SELECT id, kind, title, details, revision,")) {
+        if (statement.startsWith("SELECT id, kind, title, details, category, revision,")) {
           const [queryOwner, selector] = values;
           if (statement.includes("id = $2::uuid")) {
             const row = this.events.get(selector);
@@ -228,9 +228,9 @@ class SeriesProposalPool {
           if (statement.includes("VALUES ($1, $2, 'timed'")) {
             const [id, user_id, title, details, start_local, end_local, time_zone,
               starts_at, ends_at, recurrence_frequency, recurrence_interval,
-              recurrence_count, reminder_choice, series_root_id] = values;
+              recurrence_count, reminder_choice, series_root_id, category] = values;
             const row = {
-              id, user_id, kind: "timed", title, details, revision: 1,
+              id, user_id, kind: "timed", title, details, category, revision: 1,
               start_local, end_local, time_zone, starts_at, ends_at,
               start_date: null, end_date: null,
               recurrence_frequency, recurrence_interval, recurrence_count,
@@ -242,9 +242,9 @@ class SeriesProposalPool {
           }
           const [id, user_id, title, details, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
-            reminder_choice, reminder_time_zone, series_root_id] = values;
+            reminder_choice, reminder_time_zone, series_root_id, category] = values;
           const row = {
-            id, user_id, kind: "all-day", title, details, revision: 1,
+            id, user_id, kind: "all-day", title, details, category, revision: 1,
             start_local: null, end_local: null, time_zone: null,
             starts_at: null, ends_at: null, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
@@ -490,7 +490,7 @@ class SeriesProposalPool {
         if (statement.startsWith("UPDATE calendar_events") && statement.includes("SET kind = 'all-day'")) {
           const [queryOwner, id, revision, title, details, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
-            reminder_choice, reminder_time_zone] = values;
+            reminder_choice, reminder_time_zone, category, hasCategory] = values;
           const row = this.events.get(id);
           if (!row || row.user_id !== queryOwner || queryOwner !== owner || row.revision !== revision) return { rows: [] };
           Object.assign(row, {
@@ -498,6 +498,7 @@ class SeriesProposalPool {
             time_zone: null, starts_at: null, ends_at: null, start_date, end_date,
             recurrence_frequency, recurrence_interval, recurrence_count,
             reminder_choice, reminder_time_zone,
+            ...(hasCategory ? { category } : {}),
             revision: row.revision + 1, updated_at: new Date().toISOString(),
           });
           return { rows: [row] };
@@ -505,7 +506,7 @@ class SeriesProposalPool {
         if (statement.startsWith("UPDATE calendar_events") && statement.includes("SET kind = 'timed'")) {
           const [queryOwner, id, revision, title, details, start_local, end_local,
             time_zone, starts_at, ends_at, recurrence_frequency,
-            recurrence_interval, recurrence_count, reminder_choice] = values;
+            recurrence_interval, recurrence_count, reminder_choice, category, hasCategory] = values;
           const row = this.events.get(id);
           if (!row || row.user_id !== queryOwner || queryOwner !== owner || row.revision !== revision) return { rows: [] };
           Object.assign(row, {
@@ -513,6 +514,7 @@ class SeriesProposalPool {
             starts_at, ends_at, start_date: null, end_date: null,
             recurrence_frequency, recurrence_interval, recurrence_count,
             reminder_choice, reminder_time_zone: null,
+            ...(hasCategory ? { category } : {}),
             revision: row.revision + 1, updated_at: new Date().toISOString(),
           });
           return { rows: [row] };
@@ -552,6 +554,14 @@ test("persists a full-series conflict snapshot without writing an event and repl
   await assert.rejects(
     repository.createSeriesDraft(ownerId, proposal({
       event: { kind: "all-day", title: "Different plan", startDate: "2026-11-02", endDate: "2026-11-03" },
+    }), "series-create-1"),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "IDEMPOTENCY_KEY_REUSED"
+      && error.status === 409,
+  );
+  await assert.rejects(
+    repository.createSeriesDraft(ownerId, proposal({
+      event: { ...request.event, category: "exam" },
     }), "series-create-1"),
     (error) => error instanceof CalendarRouteError
       && error.code === "IDEMPOTENCY_KEY_REUSED"

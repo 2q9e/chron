@@ -84,6 +84,7 @@ function singleEventOccurrence(event: CalendarEvent): CalendarRecurrenceOccurren
     occurrenceKey: `${event.id}:single`,
     title: event.title,
     details: event.details,
+    category: event.category,
     revision: event.revision,
     createdAt: event.createdAt,
     updatedAt: event.updatedAt,
