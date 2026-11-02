@@ -1,4 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
+import { useRef } from "react";
 import { calendarEventEntryKey, type CalendarEventEntry } from "../domain/types";
 import {
   allDayEventsForDate,
@@ -10,6 +11,7 @@ import {
   timedEventSegmentsForDate,
   type CalendarView,
 } from "./calendar-model";
+import { calendarMinuteAtPointer } from "./calendar-move.ts";
 import { CalendarEventControl, type CalendarMoveAction } from "./calendar-event-control";
 import styles from "./calendar.module.css";
 
@@ -169,7 +171,7 @@ type CalendarViewProps = Readonly<{
   weekStartsOn: number;
   timeZone: string;
   locale: string;
-  onCreate: (date: string) => void;
+  onCreate: (date: string, minute?: number, returnFocusTarget?: HTMLButtonElement | null) => void;
   onSelectEvent: (event: CalendarEventEntry) => void;
   onMoveEvent?: CalendarMoveAction;
 }>;
@@ -253,6 +255,7 @@ function DayColumn({
   const timeline = timedEventSegmentsForDate(dayEvents, date, timeZone, locale);
   const dateTitle = Temporal.PlainDate.from(date)
     .toLocaleString(locale, { weekday: "long", month: "short", day: "numeric" });
+  const addEventButton = useRef<HTMLButtonElement>(null);
 
   return (
     <article
@@ -266,6 +269,7 @@ function DayColumn({
         <button
           className={styles.addDayEvent}
           type="button"
+          ref={addEventButton}
           onClick={() => onCreate(date)}
           aria-label={`Create an event on ${dateTitle}`}
         >
@@ -300,6 +304,21 @@ function DayColumn({
         data-calendar-drop-time-zone={timeZone}
         data-calendar-drop-track
         style={{ "--track-height": `${timeline.trackHeightRem}rem` } as React.CSSProperties}
+        title="Click an open time to start an event draft there."
+        onClick={(event) => {
+          const target = event.target instanceof Element
+            ? event.target
+            : event.target instanceof Node ? event.target.parentElement : null;
+          if (target?.closest("button")) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          const minute = calendarMinuteAtPointer(
+            event.clientY,
+            rect.top,
+            rect.height,
+            timeline.dayDurationMinutes,
+          );
+          if (minute !== null) onCreate(date, minute, addEventButton.current);
+        }}
       >
         <div className={styles.hourAxis} aria-hidden="true">
           {timeline.hourLabels.map((label, index) => (

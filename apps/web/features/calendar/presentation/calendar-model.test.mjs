@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { Temporal } from "@js-temporal/polyfill";
 import {
   allDayEventsForDate,
   buildEventDraft,
   newEventDraft,
+  newEventDraftAtTimeSlot,
   reminderReviewText,
   timedEventSegmentsForDate,
   updateEventDraft,
@@ -38,6 +40,54 @@ function utcEvent(id, start, end) {
     `${date}T${end}:00Z`,
   );
 }
+
+test("time-slot creation starts at the snapped local slot and defaults to one elapsed hour", () => {
+  const draft = newEventDraftAtTimeSlot("2026-06-15", 615, "America/Toronto");
+
+  assert.equal(draft?.startLocal, "2026-06-15T10:15");
+  assert.equal(draft?.endLocal, "2026-06-15T11:15");
+  assert.equal(draft?.kind, "timed");
+  assert.equal(draft?.title, "");
+});
+
+test("time-slot creation skips the spring-forward gap using elapsed day time", () => {
+  const draft = newEventDraftAtTimeSlot("2026-03-08", 150, "America/Toronto");
+
+  assert.equal(draft?.startLocal, "2026-03-08T03:30");
+  assert.equal(draft?.endLocal, "2026-03-08T04:30");
+  assert.equal(draft?.startDisambiguation, "");
+});
+
+test("time-slot creation distinguishes both occurrences in a fall-back fold", () => {
+  const earlier = newEventDraftAtTimeSlot("2026-11-01", 90, "America/Toronto");
+  const later = newEventDraftAtTimeSlot("2026-11-01", 150, "America/Toronto");
+
+  assert.equal(earlier?.startLocal, "2026-11-01T01:30");
+  assert.equal(earlier?.startDisambiguation, "earlier");
+  assert.equal(earlier?.endLocal, "2026-11-01T01:30");
+  assert.equal(earlier?.endDisambiguation, "later");
+  assert.equal(later?.startLocal, "2026-11-01T01:30");
+  assert.equal(later?.startDisambiguation, "later");
+  assert.equal(later?.endLocal, "2026-11-01T02:30");
+
+  const start = Temporal.ZonedDateTime.from(
+    `${earlier?.startLocal}[America/Toronto]`,
+    { disambiguation: "earlier" },
+  ).toInstant();
+  const end = Temporal.ZonedDateTime.from(
+    `${earlier?.endLocal}[America/Toronto]`,
+    { disambiguation: "later" },
+  ).toInstant();
+  assert.equal(end.epochMilliseconds - start.epochMilliseconds, 60 * 60 * 1000);
+});
+
+test("time-slot creation rejects dates, zones, and offsets outside the day", () => {
+  assert.equal(newEventDraftAtTimeSlot("not-a-date", 0, "UTC"), null);
+  assert.equal(newEventDraftAtTimeSlot("2026-06-15", 10, "UTC"), null);
+  assert.equal(newEventDraftAtTimeSlot("2026-06-15", -15, "UTC"), null);
+  assert.equal(newEventDraftAtTimeSlot("2026-06-15", 1440, "UTC"), null);
+  assert.equal(newEventDraftAtTimeSlot("2026-03-08", 1380, "America/Toronto"), null);
+});
 
 test("adjacent five-minute events occupy separate rendered lanes", () => {
   const timeline = timedEventSegmentsForDate([

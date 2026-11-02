@@ -7,7 +7,21 @@ import { calendarEventSeries, type CalendarEventEntry, type CalendarPreferences,
 import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
-import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, navigateDate, newEventDraft, updateEventDraft, validateCalendarEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
+import {
+  buildEventDraft,
+  defaultPreferences,
+  formatRangeHeading,
+  localeWeekStart,
+  localTimeZone,
+  navigateDate,
+  newEventDraft,
+  newEventDraftAtTimeSlot,
+  updateEventDraft,
+  validateCalendarEventDraft,
+  visibleRange,
+  type CalendarView,
+  type EventDraft,
+} from "./calendar-model";
 import { CalendarEditor, type Editor } from "./calendar-editor";
 import type { CalendarMoveAction } from "./calendar-event-control";
 import { moveCalendarEventDraft } from "./calendar-move.ts";
@@ -223,12 +237,42 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     if (!preferences) return;
     navigateTo(calendarToday(preferences.timeZone));
   }
-  const openNew = useCallback((day: string) => {
+  const openNew = useCallback((
+    day: string,
+    minute?: number,
+    returnFocusTarget?: HTMLButtonElement | null,
+  ) => {
     if (!preferences || calendarLocked) return;
-    rememberEditorOpener();
+    const draft = minute === undefined
+      ? newEventDraft(day)
+      : newEventDraftAtTimeSlot(day, minute, preferences.timeZone);
+    if (!draft) {
+      setNotice("Choose a valid time slot before creating an event.");
+      return;
+    }
+    if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
+    else rememberEditorOpener();
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
-    setEditor({ generation: editorGeneration.current, event: null, operationKey: crypto.randomUUID(), operationAction: "create", draft: newEventDraft(day), zone: preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false, seriesDraft: null }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
+    setEditor({
+      generation: editorGeneration.current,
+      event: null,
+      operationKey: crypto.randomUUID(),
+      operationAction: "create",
+      draft,
+      zone: preferences.timeZone,
+      errors: {},
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+    });
+    setEditorError("");
+    setEditorStale(false);
+    setEditorRetryOnly(false);
+    setEditorReauthRequired(false);
+    setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
   const openEvent = useCallback((selected: CalendarEventEntry, returnFocusTarget?: HTMLElement | null) => {
     if (!preferences || calendarLocked) return;

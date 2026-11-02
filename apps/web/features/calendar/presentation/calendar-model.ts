@@ -323,6 +323,51 @@ export function newEventDraft(selectedDate: string): EventDraft {
   };
 }
 
+export function newEventDraftAtTimeSlot(
+  selectedDate: string,
+  elapsedMinutes: number,
+  timeZone: string,
+): EventDraft | null {
+  if (!Number.isInteger(elapsedMinutes) || elapsedMinutes < 0
+    || elapsedMinutes % 15 !== 0) return null;
+
+  try {
+    const dateValue = parseCalendarDate(selectedDate);
+    const startOfDay = dateValue.toZonedDateTime(timeZone).toInstant();
+    const endOfDay = dateValue.add({ days: 1 }).toZonedDateTime(timeZone).toInstant();
+    const dayMinutes = Number(endOfDay.epochMilliseconds - startOfDay.epochMilliseconds) / 60_000;
+    if (elapsedMinutes >= dayMinutes) return null;
+
+    const startInstant = startOfDay.add({ minutes: elapsedMinutes });
+    const endInstant = startInstant.add({ minutes: 60 });
+    const startLocal = startInstant.toZonedDateTimeISO(timeZone)
+      .toPlainDateTime().toString({ smallestUnit: "minute" });
+    const endLocal = endInstant.toZonedDateTimeISO(timeZone)
+      .toPlainDateTime().toString({ smallestUnit: "minute" });
+    const disambiguationFor = (
+      local: string,
+      instant: Temporal.Instant,
+    ): "" | "earlier" | "later" => {
+      const resolution = inspectLocalDateTime(local, timeZone);
+      if (resolution.kind !== "ambiguous") return "";
+      return Temporal.Instant.compare(
+        Temporal.Instant.from(resolution.earlier),
+        instant,
+      ) === 0 ? "earlier" : "later";
+    };
+
+    return {
+      ...newEventDraft(dateValue.toString()),
+      startLocal,
+      endLocal,
+      startDisambiguation: disambiguationFor(startLocal, startInstant),
+      endDisambiguation: disambiguationFor(endLocal, endInstant),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function updateEventDraft(
   draft: EventDraft,
   field: keyof EventDraft,

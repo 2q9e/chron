@@ -348,6 +348,7 @@
 .dayTrack {
   height: var(--track-height);
   position: relative;
+  cursor: crosshair;
   background: repeating-linear-gradient(to bottom,transparent 0,transparent calc(2.75rem - 1px),var(--line) calc(2.75rem - 1px),var(--line) 2.75rem);
 }
 .hourAxis {
