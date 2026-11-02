@@ -17,6 +17,20 @@ jobs:
   verify:
     name: verify
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: chron-ci-test-only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -47,6 +61,12 @@ jobs:
 
       - name: Test calendar API contracts
         run: npm run test:calendar-api --workspace @chron/web
+
+      - name: Test PostgreSQL calendar tenant isolation
+        run: npm run test:calendar-postgres --workspace @chron/web
+        env:
+          CHRON_TEST_DATABASE_URL: postgresql://postgres:chron-ci-test-only@127.0.0.1:5432/postgres
+          CHRON_TEST_REQUIRED: "1"
 
       - name: Test calendar layout
         run: npm run test:calendar-layout --workspace @chron/web
