@@ -4,8 +4,10 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 622 non-merge commits after this
-checkpoint. The reminder event and outbox integration was pushed as
+remote branch. Public `main` contains 627 non-merge commits at this
+checkpoint. The latest calendar resize source commits are `590331f update`
+and `c1d7647 improve`; both were pushed over HTTPS to `main`. The reminder
+event and outbox integration was pushed as
 `be722e9`; bounded reminder delivery source was pushed in six small commits
 through `f44ed03`. Public history exceeds 600 non-merge commits. New commits
 are authored as `2q9e`, not `codex`.
@@ -70,7 +72,15 @@ The draft starts at the snapped 15-minute slot and defaults to one elapsed
 hour; repeated fall-back times retain the selected occurrence. The calendar
 presentation suite passes 46 tests, with typecheck and lint passing. The new
 interaction has source-level coverage only; authenticated browser and database
-verification remain open.
+verification remain open. Commits `590331f update` and `c1d7647 improve` add a
+15-minute end handle for sufficiently long and wide one-off timed events in
+day/week views. It opens the existing event editor for conflict review and
+explicit save, preserves the start and timezone, retains the selected repeated
+hour occurrence, and honors the server's 366-day duration bound. The calendar
+presentation (51), API (89), and time (39) suites, typecheck, lint, and diff
+check pass. No production build or authenticated browser/database resize check
+was performed; only 56 MB was free, and there is no configured database or
+test account.
 C-01 through C-14 have
 source-level fixes recorded in the audit; C-15 tracks unverified PostgreSQL
 owner isolation and C-16 records the source-fixed return-focus issue. Rendered
@@ -251,6 +261,11 @@ awaits narrow and zoom browser checks.
   lint, and `git diff --check` passed. Time-slot creation is covered for normal,
   spring-forward, repeated-hour, and invalid inputs. No authenticated browser
   or database verification was available.
+- After `590331f` and `c1d7647`, calendar presentation (51), API (89), and time
+  (39) suites passed; typecheck, lint, and `git diff --check` passed. Resize
+  tests cover timezone conversion, DST fold selection, the exact duration cap,
+  and invalid targets. A production build and authenticated browser/database
+  verification were unavailable.
 - Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
   is active but has no `testing.uwu.markets` DNS record. No hosting changes
   were made. The HTTPS-only check was repeated on 2026-11-01 and DNS still
@@ -259,8 +274,9 @@ awaits narrow and zoom browser checks.
 ## Next actions
 
 1. Configure a disposable PostgreSQL test database/account, apply migrations,
-   and verify drag-move persistence, owner isolation, conflict review, keyboard
-   editor access, and pointer/touch behavior in a real browser.
+   and verify drag-move, empty-slot create, and resize persistence, owner
+   isolation, conflict review, keyboard editor access, and pointer/touch
+   behavior in a real browser.
 2. Continue C1-rmd4 with browser and keyboard review of the integrated reminder
    flow; database and browser acceptance remain open.
 3. Configure only the Chron-specific staging DNS/tunnel/app route, preserving

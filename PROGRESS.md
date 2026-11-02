@@ -41,11 +41,17 @@ handling. Calendar layout/time/API suites (42/39/89), typecheck, and lint pass.
 Commit `833848a improve` makes an empty day/week time-grid click open a timed
 event draft at the selected 15-minute slot. The default duration is one elapsed
 hour, with explicit choice of repeated DST times. Calendar presentation tests
-(46), typecheck, and lint pass. The production build and authenticated browser
-interaction were not verified: the workspace had 56 MB free, no database or
-account was configured, and HTTPS staging DNS is still absent. All work remains
-on the same `main` branch; this documentation checkpoint brings public history
-to 622 non-merge commits.
+(46), typecheck, and lint pass. Commits `590331f update` and `c1d7647 improve`
+add a 15-minute end handle for longer, wide, one-off timed blocks in day/week
+views. Resizing preserves the start and timezone, honors DST folds and the
+366-day server limit, and opens the existing conflict-review editor for explicit
+approval. Calendar presentation (51), API (89), and time (39) suites, typecheck,
+lint, and `git diff --check` pass. The production build and authenticated
+browser interaction were not verified: the workspace had 56 MB free, no
+database or account was configured, and HTTPS staging DNS is still absent.
+The source commits are on the single public `main` branch. Public history had
+626 non-merge commits immediately before this documentation checkpoint; this
+checkpoint brings it to 627.
 
 The focused Codex Security diff review covered all ten changed files from
 `c7d9771` through `b0395ec` and found no source candidates. It was a sequential
@@ -167,6 +173,9 @@ database, browser, SMTP, and staging checks remain open.
   One-off drag scheduling is implemented in source at `3b6028c`; the review
   editor reuses the existing owner-scoped conflict and update paths. Browser
   pointer/touch/keyboard behavior and database persistence remain unverified.
+  Empty-slot event creation is source-verified at `833848a`, and timed-event
+  resize proposals are source-verified at `590331f` and `c1d7647`. Their
+  authenticated browser and persisted-save paths remain open.
   Recurring-series drag and external calendar synchronization remain open.
   PostgreSQL ownership and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
