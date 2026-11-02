@@ -19,6 +19,14 @@ Calendar layout/API/time suites (29/66/28), typecheck, and lint pass. These
 repository checks do not replace live PostgreSQL or authenticated browser
 verification.
 
+The next C1 increment has begun on the same `main` branch. Reminder policy and
+task dependencies are committed in `f75155f`; the tested DST-aware schedule
+calculator is committed through `a906351`. The calendar time suite now passes
+39 tests; typecheck and lint pass. This calculator is domain code only: event
+mutations do not yet persist reminder choices or outbox jobs, and no reminder
+is scheduled or delivered by the application yet. This checkpoint records 597
+non-merge commits with file changes on the only published branch, `main`.
+
 ## Completed
 
 - Created Chron as a separate project with its own Git history. No application
@@ -115,14 +123,16 @@ verification.
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
-- Continue C1 with reminders, drag scheduling, and external calendar
-  synchronization. Recurrence is implemented in source; PostgreSQL ownership
-  and authenticated browser verification remain open.
+- Continue C1 at C1-rmd1: add the owner-scoped reminder outbox and integrate it
+  atomically with one-off event writes and approved recurring-series writes.
+  Then implement bounded SMTP delivery and truthful editor/status behavior.
+  Drag scheduling and external calendar synchronization remain later work.
+  PostgreSQL ownership and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
-  the user-authorized Chron-specific VPS and Cloudflare resources. DNS and the
-  tunnel route are not configured yet; an HTTPS request could not resolve the
-  hostname, and Cloudflare has no `testing.uwu.markets` DNS record. No remote
-  change was made. Use HTTPS only for all staging checks and public access.
+  the user-authorized Chron-specific VPS and Cloudflare resources. Rechecked
+  over HTTPS on 2026-11-01: DNS resolution still fails and Cloudflare has no
+  `testing.uwu.markets` DNS record. No remote change was made. Use HTTPS only
+  for all staging checks and public access.
 - Keep each reviewed change small, commit it, and push it to public `main` only
   after reviewing the staged paths and history scan.
 - Do not add signup or Meta-key controls until related policy and operator
@@ -211,6 +221,12 @@ verification.
   coverage. The production build and authenticated recurring-series workflow
   were not run because disk space and database/auth configuration are
   unavailable.
+- After `a906351`, `npm run test:calendar-time --workspace @chron/web` passed
+  with 39 tests, including all timed minute offsets, DST local-day behavior,
+  all-day timezone choices, and invalid choice/time combinations.
+  `npm run typecheck --workspace @chron/web` and `npm run lint --workspace
+  @chron/web` passed. No production build, database, authenticated browser, or
+  reminder delivery has been verified.
 - Rendered the production build in Chrome at an available 1230×480 desktop
   viewport. Inspected opening, Week, Study, Research, and closing sections;
   tested chapter navigation, `#week` reload, and reverse navigation. The scene

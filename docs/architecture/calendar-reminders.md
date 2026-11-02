@@ -63,6 +63,10 @@ C1-rmd0 time and delivery contract
 - **Tests:** timed elapsed-minute offsets, local-day offset across DST, all-day
   timezone behavior, DST ambiguity/gap policy, and recurrence occurrence keys.
 - **Expected deliverables:** tested schedule calculation and this contract.
+- **Status:** Complete for the pure scheduling unit. `reminders.ts` resolves
+  every timed minute offset, the same-local-day rule, and both all-day choices;
+  11 reminder-specific tests pass in the 39-test calendar time suite.
+  Persistence and delivery are not part of this completed task.
 
 ### C1-rmd1 — event values and transactional outbox
 
@@ -86,6 +90,8 @@ C1-rmd0 time and delivery contract
 - **Tests:** one-off and recurring writes, no-reminder default, opt-out,
   reschedule, deletion, rollback, duplicate proposal replay and owner scope.
 - **Expected deliverables:** migration, repository integration and tests.
+- **Status:** Active; no reminder schema or event/outbox transaction is
+  implemented yet.
 
 ### C1-rmd2 — bounded email delivery worker
 

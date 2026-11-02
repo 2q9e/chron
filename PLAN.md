@@ -31,9 +31,12 @@ The user has reprioritized C1 ahead of L1. Landing-page work is paused. The
 first calendar increment now includes a persisted event and preference API,
 protected sign-in/route, day/week/month/agenda views, editable events, themes,
 and a server-side conflict check before approval. Bounded event-title search is
-implemented in source with a date and event-kind filter. Recurrence, reminders,
-drag scheduling, external sync, and a real database/browser walkthrough stay
-open until each is implemented and verified.
+implemented in source with a date and event-kind filter. Finite recurrence and
+the reminder delivery contract plus DST-aware time calculation are implemented
+in source. Reminder persistence, delivery, editor controls, drag scheduling,
+external sync, and a real database/browser walkthrough remain open until each
+is integrated and verified. See `docs/architecture/calendar-reminders.md` for
+the reminder dependency graph and acceptance criteria.
 
 ## Skill library category allocation
 

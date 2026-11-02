@@ -2,9 +2,11 @@
 
 ## Current state
 
-Chron is a standalone repository on one published branch, public GitHub
-`main`. Remote and local `main` matched at the last checked code push; public
-`main` has 584 purposeful commits after this handoff update.
+Chron is a standalone repository on public GitHub `main`. At the start of this
+checkpoint, local and remote `main` matched at code commit `a906351`; `main` is
+the only remote branch. Public history had 596 non-merge commits with file
+changes before this checkpoint; this handoff snapshot records 597 after the
+progress/documentation update. New commits are authored as `2q9e`, not `codex`.
 The calendar API, protected route, sign-in, views, preferences, and conflict
 review are pushed. Idempotent event creation, safe recovery, reload-safe focus,
 and accessible short-event targets were pushed as `f304c19` and `ec93688`;
@@ -28,8 +30,12 @@ storage, preserves uncertain requests for reconciliation, and restores focus
 after reload. Bounded title search is implemented. Finite recurring-series
 creation, review, update, delete, explicit approval, and uncertain-approval
 recovery are implemented and pushed through `f66e449` on the single public
-`main` branch. Reminders, drag scheduling, external sync, database-backed
-runtime verification, and a real authenticated browser walkthrough remain open.
+`main` branch. Reminder policy and task dependencies are committed in
+`f75155f`; the DST-aware reminder time calculator and its tests are pushed
+through `a906351`. The calculator is not yet connected to event persistence,
+an outbox, delivery, or the UI, so reminders are not available in the product.
+Drag scheduling, external sync, database-backed runtime verification, and a
+real authenticated browser walkthrough remain open.
 C-01 through C-14 have
 source-level fixes recorded in the audit; C-15 tracks unverified PostgreSQL
 owner isolation and C-16 records the source-fixed return-focus issue. Rendered
@@ -92,6 +98,13 @@ and database-backed verification remains pending.
   in user and retries the same idempotent approval after an uncertain result.
   Source tests pass, but the database-backed and authenticated browser path is
   not verified in this environment.
+- Reminder scheduling contract and dependency graph: `docs/architecture/calendar-reminders.md`.
+  Pure time calculation: `apps/web/features/calendar/domain/reminders.ts`, with
+  11 reminder-specific cases in `reminders.test.mjs`. Choices resolve using
+  event time zones for timed events and the captured calendar zone for all-day
+  events. The existing event types, mutations, persistence, delivery worker,
+  status API, and editor do not use this helper yet; reminders are not
+  user-visible or delivered.
 - The user requested staging at `https://testing.uwu.markets` through the
   supplied VPS and Cloudflare setup, without changing other VPS services.
   An HTTPS-only request could not resolve the hostname, and Cloudflare shows no
@@ -177,20 +190,27 @@ awaits narrow and zoom browser checks.
   passed with 29/66/28 tests. The production build was not run because the
   workspace volume has only 58 MB free; authenticated recurrence behavior is
   still unverified without configured PostgreSQL/auth services.
+- After `a906351`, calendar domain/time tests passed (39), typecheck passed, and
+  lint passed. No production build, configured database, authenticated
+  browser, reminder persistence, or delivery was verified.
 - Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
   is active but has no `testing.uwu.markets` DNS record. No hosting changes
-  were made.
+  were made. The HTTPS-only check was repeated on 2026-11-01 and DNS still
+  failed. Do not use HTTP or edit unrelated VPS configuration.
 
 ## Next actions
 
-1. Configure a disposable PostgreSQL test database/account, apply the auth and
-   calendar migrations, and verify two-account search isolation plus the full
-   authenticated calendar in desktop/mobile browsers.
-2. Verify recurring-series create/update/delete against a disposable PostgreSQL
-   database and authenticated browser session; retain the current explicit
-   proposal and approval boundary.
-3. Continue C1 with reminders, drag scheduling, and external calendar sync
-   while keeping landing work paused.
-4. Resume remaining landing browser checks only when the user reprioritizes it.
-5. Before every push, inspect staged paths and rescan staged content and commit
+1. Implement C1-rmd1: add an owner-scoped reminder outbox migration and make
+   one-off creates, updates, deletes, and approved series changes update
+   reminder rows atomically with calendar events.
+2. Implement the bounded email worker using the existing verified-TLS SMTP
+   configuration; test claims, retries, redaction, and cancellation races.
+3. Add accessible editor choices, exact local-time review, saved all-day zone,
+   and truthful persisted delivery status. Keep reminders disabled by default.
+4. Configure disposable PostgreSQL and account fixtures; apply migrations and
+   verify owner isolation and reminder persistence.
+5. Repeat the authenticated walkthrough over HTTPS at desktop and mobile sizes
+   once staging DNS, database, SMTP, and test-account prerequisites are present.
+   Keep landing work paused.
+6. Before every push, inspect staged paths and rescan staged content and commit
    history for secrets and excluded material.
