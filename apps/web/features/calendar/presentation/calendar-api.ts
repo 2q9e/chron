@@ -8,7 +8,13 @@ import type {
   CalendarEventEntry,
   CalendarEventSearchRequest,
   CalendarEventMutation,
+  CalendarRecurrenceRule,
   CalendarPreferences,
+  CalendarSeriesApproval,
+  CalendarSeriesDraft,
+  CalendarSeriesDraftRequest,
+  CalendarSeriesOccurrenceConflict,
+  CalendarSeriesOccurrenceSnapshot,
 } from "../domain/types.ts";
 
 export type CalendarEventSearchFields = Readonly<{
@@ -45,6 +51,208 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
+}
+
+function sameJsonValue(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left)
+      && Array.isArray(right)
+      && left.length === right.length
+      && left.every((value, index) => sameJsonValue(value, right[index]));
+  }
+  if (!isRecord(left) || !isRecord(right)) return false;
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+  return leftKeys.length === rightKeys.length
+    && leftKeys.every((key, index) => key === rightKeys[index]
+      && sameJsonValue(left[key], right[key]));
+}
+
+function isCalendarRecurrenceRule(value: unknown): value is CalendarRecurrenceRule {
+  return isRecord(value)
+    && (value.frequency === "daily" || value.frequency === "weekly")
+    && typeof value.interval === "number"
+    && Number.isInteger(value.interval)
+    && value.interval >= 1
+    && value.interval <= 4
+    && typeof value.count === "number"
+    && Number.isInteger(value.count)
+    && value.count >= 2
+    && value.count <= 366;
+}
+
+function isCalendarEventMutation(value: unknown): value is CalendarEventMutation {
+  if (!isRecord(value)
+    || !isNonEmptyString(value.title)
+    || !(value.details === undefined || typeof value.details === "string")) return false;
+  if (value.kind === "all-day") {
+    return isNonEmptyString(value.startDate) && isNonEmptyString(value.endDate);
+  }
+  return value.kind === "timed"
+    && isNonEmptyString(value.startLocal)
+    && isNonEmptyString(value.endLocal)
+    && isNonEmptyString(value.timeZone)
+    && (value.startDisambiguation === undefined
+      || value.startDisambiguation === "earlier"
+      || value.startDisambiguation === "later")
+    && (value.endDisambiguation === undefined
+      || value.endDisambiguation === "earlier"
+      || value.endDisambiguation === "later");
+}
+
+function isCalendarSeriesOccurrenceSnapshot(
+  value: unknown,
+): value is CalendarSeriesOccurrenceSnapshot {
+  if (!isRecord(value) || !isNonEmptyString(value.occurrenceKey)) return false;
+  if (value.kind === "all-day") {
+    return isNonEmptyString(value.startDate) && isNonEmptyString(value.endDate);
+  }
+  return value.kind === "timed"
+    && isNonEmptyString(value.startLocal)
+    && isNonEmptyString(value.endLocal)
+    && isNonEmptyString(value.timeZone)
+    && isNonEmptyString(value.startsAt)
+    && isNonEmptyString(value.endsAt);
+}
+
+function isCalendarSeriesOccurrenceConflict(
+  value: unknown,
+): value is CalendarSeriesOccurrenceConflict {
+  return isRecord(value)
+    && isNonEmptyString(value.candidateOccurrenceKey)
+    && isNonEmptyString(value.conflictingEventId)
+    && typeof value.conflictingEventRevision === "number"
+    && Number.isSafeInteger(value.conflictingEventRevision)
+    && value.conflictingEventRevision > 0
+    && typeof value.conflictingTitle === "string"
+    && isCalendarSeriesOccurrenceSnapshot(value.conflictingOccurrence);
+}
+
+function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
+  if (!isRecord(value)
+    || !isNonEmptyString(value.id)
+    || (value.action !== "create" && value.action !== "update" && value.action !== "delete")
+    || value.scope !== "series"
+    || !["pending", "approved", "stale", "expired", "deleted"].includes(String(value.outcome))
+    || typeof value.replayed !== "boolean"
+    || !(value.targetEventId === null || isNonEmptyString(value.targetEventId))
+    || !(value.targetRevision === null
+      || (typeof value.targetRevision === "number" && Number.isSafeInteger(value.targetRevision) && value.targetRevision > 0))
+    || !(value.event === null || isCalendarEventMutation(value.event))
+    || !(value.recurrenceRule === null || isCalendarRecurrenceRule(value.recurrenceRule))
+    || !(value.calendarTimeZone === null || isNonEmptyString(value.calendarTimeZone))
+    || !Array.isArray(value.beforeOccurrences)
+    || value.beforeOccurrences.length > 366
+    || !value.beforeOccurrences.every(isCalendarSeriesOccurrenceSnapshot)
+    || !Array.isArray(value.afterOccurrences)
+    || value.afterOccurrences.length > 366
+    || !value.afterOccurrences.every(isCalendarSeriesOccurrenceSnapshot)
+    || !Array.isArray(value.conflicts)
+    || value.conflicts.length > 32
+    || !value.conflicts.every(isCalendarSeriesOccurrenceConflict)
+    || !isNonEmptyString(value.expiresAt)
+    || !Number.isFinite(Date.parse(value.expiresAt))) return false;
+
+  if (value.outcome !== "pending") {
+    return value.event === null
+      && value.recurrenceRule === null
+      && value.calendarTimeZone === null
+      && value.beforeOccurrences.length === 0
+      && value.afterOccurrences.length === 0
+      && value.conflicts.length === 0;
+  }
+
+  if (value.action === "delete") {
+    return value.targetEventId !== null
+      && value.targetRevision !== null
+      && value.event === null
+      && value.recurrenceRule === null
+      && value.beforeOccurrences.length > 0
+      && value.afterOccurrences.length === 0;
+  }
+  return (value.action === "create"
+      ? value.targetEventId === null && value.targetRevision === null && value.beforeOccurrences.length === 0
+      : value.targetEventId !== null && value.targetRevision !== null && value.beforeOccurrences.length > 0)
+    && value.event !== null
+    && value.recurrenceRule !== null
+    && value.calendarTimeZone !== null;
+}
+
+function isCalendarSeriesApproval(value: unknown): value is CalendarSeriesApproval {
+  return isRecord(value)
+    && isNonEmptyString(value.id)
+    && (value.action === "create" || value.action === "update" || value.action === "delete")
+    && ["approved", "stale", "expired", "deleted"].includes(String(value.outcome))
+    && (value.event === null || isCalendarEvent(value.event));
+}
+
+function matchesSeriesDraftRequest(
+  draft: CalendarSeriesDraft,
+  request: CalendarSeriesDraftRequest,
+): boolean {
+  if (draft.action !== request.action || draft.scope !== "series") return false;
+  if (draft.outcome !== "pending") {
+    const requestedTarget = request.action === "create" ? null : request.targetEventId;
+    const requestedRevision = request.action === "create" ? null : request.targetRevision;
+    return (draft.targetEventId === null && draft.targetRevision === null)
+      || (draft.targetEventId === requestedTarget && draft.targetRevision === requestedRevision);
+  }
+  if (request.action === "create") {
+    return draft.targetEventId === null
+      && draft.targetRevision === null
+      && draft.beforeOccurrences.length === 0
+      && draft.event !== null
+      && sameJsonValue(draft.event, request.event)
+      && draft.recurrenceRule !== null
+      && sameJsonValue(draft.recurrenceRule, request.recurrenceRule)
+      && draft.calendarTimeZone === request.calendarTimeZone
+      && draft.afterOccurrences.length === request.recurrenceRule.count;
+  }
+  if (draft.targetEventId !== request.targetEventId
+    || draft.targetRevision !== request.targetRevision) return false;
+  if (request.action === "delete") {
+    return draft.event === null
+      && draft.recurrenceRule === null
+      && draft.afterOccurrences.length === 0
+      && draft.beforeOccurrences.length > 0;
+  }
+  return draft.event !== null
+    && sameJsonValue(draft.event, request.event)
+    && draft.recurrenceRule !== null
+    && sameJsonValue(draft.recurrenceRule, request.recurrenceRule)
+    && draft.calendarTimeZone === request.calendarTimeZone
+    && draft.beforeOccurrences.length > 0
+    && draft.afterOccurrences.length === request.recurrenceRule.count;
+}
+
+function matchesApprovedEvent(
+  approval: CalendarSeriesApproval,
+  draft: CalendarSeriesDraft,
+): boolean {
+  if (approval.id !== draft.id || approval.action !== draft.action) return false;
+  if (approval.outcome !== "approved") return approval.event === null;
+  if (draft.action === "delete") return approval.event === null;
+  if (!approval.event || !draft.event || !draft.recurrenceRule) return false;
+
+  const expectedId = draft.action === "update"
+    ? draft.targetEventId
+    : draft.afterOccurrences[0]?.occurrenceKey.split(":", 1)[0] ?? null;
+  const event = approval.event;
+  if (!expectedId
+    || event.id !== expectedId
+    || event.kind !== draft.event.kind
+    || event.title !== draft.event.title
+    || event.details !== (draft.event.details ?? null)
+    || !sameJsonValue(event.recurrenceRule, draft.recurrenceRule)) return false;
+  return event.kind === "all-day"
+    ? draft.event.kind === "all-day"
+      && event.startDate === draft.event.startDate
+      && event.endDate === draft.event.endDate
+    : draft.event.kind === "timed"
+      && event.startLocal === draft.event.startLocal
+      && event.endLocal === draft.event.endLocal
+      && event.timeZone === draft.event.timeZone;
 }
 
 function isAbortError(reason: unknown): reason is Error {
@@ -494,4 +702,93 @@ export async function deleteCalendarEvent(event: CalendarEvent): Promise<void> {
       "INVALID_RESPONSE",
     );
   }
+}
+
+export async function createCalendarSeriesDraft(
+  request: CalendarSeriesDraftRequest,
+  operationKey: string,
+): Promise<CalendarSeriesDraft> {
+  const response = await fetch("/api/calendar/events/series-drafts", {
+    method: "POST",
+    cache: "no-store",
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "Idempotency-Key": operationKey,
+    },
+    body: JSON.stringify(request),
+  });
+  if (!response.ok) throw await readCalendarError(response);
+  const payload = await parseJson(response);
+  if (!isRecord(payload) || !isCalendarSeriesDraft(payload.draft)) {
+    throw new CalendarRequestError(
+      "Chron returned a recurring proposal in an unexpected format. Review the series again.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  if (!matchesSeriesDraftRequest(payload.draft, request)) {
+    throw new CalendarRequestError(
+      "Chron returned a recurring proposal that did not match the reviewed changes. Review the series again.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  return payload.draft;
+}
+
+export async function approveCalendarSeriesDraft(
+  draftId: string,
+  expectedAction: CalendarSeriesDraft["action"],
+  expectedDraft?: CalendarSeriesDraft,
+): Promise<CalendarSeriesApproval> {
+  const response = await fetch(
+    `/api/calendar/events/series-drafts/${encodeURIComponent(draftId)}/approve`,
+    {
+      method: "POST",
+      cache: "no-store",
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    },
+  );
+  if (!response.ok && response.status !== 409 && response.status !== 410) {
+    throw await readCalendarError(response);
+  }
+  const payload = await parseJson(response);
+  if (!isRecord(payload) || !isCalendarSeriesApproval(payload.approval)) {
+    if (!response.ok) throw await readCalendarError(response);
+    throw new CalendarRequestError(
+      "Chron returned a recurring approval in an unexpected format. Check the calendar before retrying.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  if (payload.approval.id !== draftId || payload.approval.action !== expectedAction) {
+    throw new CalendarRequestError(
+      "Chron returned an approval for a different recurring proposal. Check the calendar before retrying.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  const expectedStatus = payload.approval.outcome === "approved"
+    ? 200
+    : payload.approval.outcome === "stale"
+      ? 409
+      : 410;
+  const outcomeMatchesAction = payload.approval.outcome !== "approved"
+    ? payload.approval.event === null
+    : expectedAction === "delete"
+      ? payload.approval.event === null
+      : payload.approval.event !== null;
+  if (response.status !== expectedStatus
+    || !outcomeMatchesAction
+    || (expectedDraft && !matchesApprovedEvent(payload.approval, expectedDraft))) {
+    throw new CalendarRequestError(
+      "Chron returned a recurring approval that did not match the reviewed proposal. Check the calendar before retrying.",
+      response.status,
+      "INVALID_RESPONSE",
+    );
+  }
+  return payload.approval;
 }
