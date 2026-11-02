@@ -247,6 +247,36 @@
   display: grid;
   gap: .25rem;
 }
+.monthOverflow {
+  min-width: 0;
+}
+.monthOverflow > summary {
+  display: flex;
+  min-height: 2.75rem;
+  align-items: center;
+  padding: .35rem;
+  border-radius: .3rem;
+  color: var(--accent);
+  font-size: .75rem;
+  font-weight: 700;
+  list-style: none;
+}
+.monthOverflow > summary::-webkit-details-marker {
+  display: none;
+}
+.monthOverflow > summary:hover {
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+.monthOverflow[open] .monthMoreLabel,
+.monthOverflow:not([open]) .monthFewerLabel {
+  display: none;
+}
+.monthOverflowEvents {
+  display: grid;
+  gap: .25rem;
+  margin-top: .25rem;
+}
 .eventControl {
   display: flex;
   align-items: stretch;

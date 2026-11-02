@@ -9,6 +9,8 @@ export type CalendarMoveAction = (
   targetDate: string,
   targetMinute: number | null,
   calendarTimeZone: string,
+  sourceDate: string,
+  sourceTarget: HTMLButtonElement,
 ) => void;
 export type CalendarResizeAction = CalendarMoveAction;
 
@@ -31,11 +33,12 @@ type PointerInteraction = {
 
 type Props = Readonly<{
   event: CalendarEventEntry;
+  sourceDate: string;
   calendarTimeZone: string;
   locale: string;
   timeLabel: string;
   accessibleLabel: string;
-  onSelect: (event: CalendarEventEntry) => void;
+  onSelect: (event: CalendarEventEntry, returnFocusTarget: HTMLButtonElement) => void;
   onMove?: CalendarMoveAction;
   onResize?: CalendarResizeAction;
   compact?: boolean;
@@ -126,6 +129,7 @@ function announceTarget(
 
 export function CalendarEventControl({
   event,
+  sourceDate,
   calendarTimeZone,
   locale,
   timeLabel,
@@ -211,7 +215,14 @@ export function CalendarEventControl({
       event.preventDefault();
       const action = current.mode === "move" ? onMove : onResize;
       if (current.target && action) {
-        action(calendarEvent, current.target.date, current.target.minute, calendarTimeZone);
+        action(
+          calendarEvent,
+          current.target.date,
+          current.target.minute,
+          calendarTimeZone,
+          sourceDate,
+          event.currentTarget,
+        );
         setDragAnnouncement(current.mode === "resize"
           ? "Resize proposed. Review its end time and conflicts before saving."
           : movesWholeSeries
@@ -253,7 +264,7 @@ export function CalendarEventControl({
       <button
         className={`${styles.eventButton} ${compact ? styles.compactEvent : ""}`}
         type="button"
-        onClick={() => onSelect(event)}
+        onClick={(clickEvent) => onSelect(event, clickEvent.currentTarget)}
         aria-label={`${accessibleLabel}, ${event.category === undefined ? "Category unavailable" : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category]}`}
         title={`${event.title} · ${event.category === undefined ? "Category unavailable" : event.category === null ? "Uncategorized" : calendarEventCategoryLabels[event.category]}`}
       >
@@ -277,7 +288,7 @@ export function CalendarEventControl({
               suppressNextClick.current = false;
               return;
             }
-            onSelect(event);
+            onSelect(event, clickEvent.currentTarget);
           }}
           onPointerDown={(pointerEvent) => beginInteraction(pointerEvent, "move")}
           onPointerMove={continueInteraction}
@@ -307,7 +318,7 @@ export function CalendarEventControl({
               suppressNextClick.current = false;
               return;
             }
-            onSelect(event);
+            onSelect(event, clickEvent.currentTarget);
           }}
           onPointerDown={(pointerEvent) => beginInteraction(pointerEvent, "resize")}
           onPointerMove={continueInteraction}

@@ -105,6 +105,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [preferences, setPreferences] = useState<CalendarPreferences | null>(null);
   const [settings, setSettings] = useState<CalendarPreferences | null>(null);
   const [events, setEvents] = useState<CalendarEventEntry[]>([]);
+  const [expandedMonthOverflowDate, setExpandedMonthOverflowDate] = useState<string | null>(null);
   const [eventCategoriesAvailable, setEventCategoriesAvailable] = useState(false);
   const [cancelledOccurrences, setCancelledOccurrences] = useState<CalendarEventOccurrence[]>([]);
   const [cancelledLoadError, setCancelledLoadError] = useState("");
@@ -126,6 +127,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [settingsError, setSettingsError] = useState("");
   const editorGeneration = useRef(0);
   const editorOpener = useRef<HTMLElement | null>(null);
+  const editorOpenerRecoveryDate = useRef<string | null>(null);
   const focusAfterEditor = useRef<"immediate" | "after-load" | null>(null);
   const newEventButton = useRef<HTMLButtonElement | null>(null);
   const calendarHeading = useRef<HTMLHeadingElement | null>(null);
@@ -288,12 +290,22 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     focusAfterEditor.current = null;
     const opener = editorOpener.current;
     editorOpener.current = null;
+    const recoveryDate = editorOpenerRecoveryDate.current;
+    editorOpenerRecoveryDate.current = null;
     if (opener?.isConnected && !(opener instanceof HTMLButtonElement && opener.disabled)) {
       opener.focus();
-    } else if (!loadError && newEventButton.current && !newEventButton.current.disabled) {
-      newEventButton.current.focus();
     } else {
-      calendarHeading.current?.focus();
+      const recoveryTarget = recoveryDate
+        ? document.getElementById(`month-overflow-summary-${recoveryDate}`)
+          ?? document.getElementById(`month-date-${recoveryDate}`)
+        : null;
+      if (recoveryTarget instanceof HTMLElement) {
+        recoveryTarget.focus();
+      } else if (!loadError && newEventButton.current && !newEventButton.current.disabled) {
+        newEventButton.current.focus();
+      } else {
+        calendarHeading.current?.focus();
+      }
     }
   }, [editor, loading, busy, events, loadError, recoveryState]);
 
@@ -324,13 +336,21 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   function navigateTo(nextDate: string) {
     if (calendarLocked) return;
     setNotice("");
+    setExpandedMonthOverflowDate(null);
     setDate(nextDate);
   }
   function changeView(nextView: CalendarView) {
     if (calendarLocked) return;
     setNotice("");
+    setExpandedMonthOverflowDate(null);
     setView(nextView);
   }
+  const handleMonthOverflowToggle = useCallback((sourceDate: string, open: boolean) => {
+    setExpandedMonthOverflowDate((currentDate) => {
+      if (open) return sourceDate;
+      return currentDate === sourceDate ? null : currentDate;
+    });
+  }, []);
   function goToToday() {
     if (!preferences) return;
     navigateTo(calendarToday(preferences.timeZone));
@@ -354,6 +374,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       : baseDraft;
     if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
     else rememberEditorOpener();
+    editorOpenerRecoveryDate.current = null;
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
     setEditor({
@@ -383,8 +404,18 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const openEvent = useCallback((selected: CalendarEventEntry, returnFocusTarget?: HTMLElement | null) => {
     if (!preferences || calendarLocked) return;
     const event = calendarEventSeries(selected);
-    if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
-    else rememberEditorOpener();
+    editorOpenerRecoveryDate.current = null;
+    if (returnFocusTarget?.isConnected) {
+      editorOpener.current = returnFocusTarget;
+      const overflowDate = returnFocusTarget
+        .closest<HTMLElement>("[data-calendar-month-overflow-date]")
+        ?.dataset.calendarMonthOverflowDate ?? null;
+      editorOpenerRecoveryDate.current = overflowDate;
+      if (overflowDate) setExpandedMonthOverflowDate(overflowDate);
+    } else {
+      editorOpenerRecoveryDate.current = null;
+      rememberEditorOpener();
+    }
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
     const occurrence = "occurrenceKey" in selected ? selected : undefined;
@@ -418,6 +449,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     if (!preferences || calendarLocked) return;
     if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
     else rememberEditorOpener();
+    editorOpenerRecoveryDate.current = null;
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
     setEditor({
@@ -447,7 +479,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorReauthRequired(false);
     setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
-  const moveEvent: CalendarMoveAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone) => {
+  const moveEvent: CalendarMoveAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone, sourceDate, sourceTarget) => {
     if (!preferences || calendarLocked) return;
     const event = calendarEventSeries(selected);
     const isOccurrenceMove = "occurrenceKey" in selected && !!event.recurrenceRule;
@@ -464,7 +496,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setNotice(moved.message);
       return;
     }
-    rememberEditorOpener();
+    editorOpener.current = sourceTarget;
+    editorOpenerRecoveryDate.current = view === "month" ? sourceDate : null;
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
     setEditor({
@@ -489,8 +522,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorRetryOnly(false);
     setEditorReauthRequired(false);
     setNotice("");
-  }, [preferences, calendarLocked, rememberEditorOpener]);
-  const resizeEvent: CalendarResizeAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone) => {
+  }, [preferences, calendarLocked, view]);
+  const resizeEvent: CalendarResizeAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone, sourceDate, sourceTarget) => {
     if (!preferences || calendarLocked) return;
     if ("series" in selected) {
       setNotice("Open the repeating series to review a duration change.");
@@ -501,7 +534,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setNotice(resized.message);
       return;
     }
-    rememberEditorOpener();
+    editorOpener.current = sourceTarget;
+    editorOpenerRecoveryDate.current = view === "month" ? sourceDate : null;
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
     setEditor({
@@ -525,7 +559,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorRetryOnly(false);
     setEditorReauthRequired(false);
     setNotice("");
-  }, [preferences, calendarLocked, rememberEditorOpener]);
+  }, [preferences, calendarLocked, view]);
   function changeDraft(field: keyof EventDraft, value: string) {
     if (editorStale || calendarLocked) return;
     const nextOperationKey = crypto.randomUUID();
@@ -1272,7 +1306,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         <button type="button" onClick={() => setReload((value) => value + 1)}>Retry loading</button>
       </div>
     )}
-    {preferences && !loading && !loadError && <><div className={styles.calendarSurface} inert={calendarLocked}>{view === "month" ? <MonthCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onSelectEvent={openEvent} /> : view === "agenda" ? <AgendaCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : <TimeCalendar view={view} events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onResizeEvent={resizeEvent} onSelectEvent={openEvent} />}</div>{events.length === 0 && <p className={styles.empty}>No events in this period. <button type="button" disabled={calendarLocked} onClick={() => openNew(date)}>Create an event</button></p>}</>}
+    {preferences && !loading && !loadError && <><div className={styles.calendarSurface} inert={calendarLocked}>{view === "month" ? <MonthCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onSelectEvent={openEvent} expandedOverflowDate={expandedMonthOverflowDate} onExpandedOverflowDateChange={handleMonthOverflowToggle} /> : view === "agenda" ? <AgendaCalendar events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onSelectEvent={openEvent} /> : <TimeCalendar view={view} events={events} selectedDate={date} weekStartsOn={preferences.weekStartsOn} timeZone={preferences.timeZone} locale={locale} onCreate={openNew} onMoveEvent={moveEvent} onResizeEvent={resizeEvent} onSelectEvent={openEvent} />}</div>{events.length === 0 && <p className={styles.empty}>No events in this period. <button type="button" disabled={calendarLocked} onClick={() => openNew(date)}>Create an event</button></p>}</>}
     {preferences && !loading && !loadError && cancelledOccurrences.length > 0 && (
       <section className={styles.cancelledOccurrences} aria-labelledby="cancelled-occurrences-heading">
         <div>

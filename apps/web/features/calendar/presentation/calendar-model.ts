@@ -30,6 +30,19 @@ import { calendarEventCategories } from "../domain/types.ts";
 
 export type CalendarView = "day" | "week" | "month" | "agenda";
 export type CalendarRange = Readonly<{ from: string; to: string }>;
+export const monthCellVisibleEventLimit = 2;
+
+export function splitMonthCellEvents(
+  events: readonly CalendarEventEntry[],
+): Readonly<{
+  visible: readonly CalendarEventEntry[];
+  overflow: readonly CalendarEventEntry[];
+}> {
+  return {
+    visible: events.slice(0, monthCellVisibleEventLimit),
+    overflow: events.slice(monthCellVisibleEventLimit),
+  };
+}
 
 export type EventDraft = Readonly<{
   kind: "timed" | "all-day";

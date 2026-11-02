@@ -8,6 +8,7 @@ import {
   formatInstant,
   monthGrid,
   startOfWeek,
+  splitMonthCellEvents,
   timedEventSegmentsForDate,
   type CalendarView,
 } from "./calendar-model";
@@ -24,7 +25,7 @@ type EventButtonProps = Readonly<{
   date: string;
   timeZone: string;
   locale: string;
-  onSelect: (event: CalendarEventEntry) => void;
+  onSelect: (event: CalendarEventEntry, returnFocusTarget: HTMLButtonElement) => void;
   onMove?: CalendarMoveAction;
   onResize?: CalendarResizeAction;
   compact?: boolean;
@@ -162,6 +163,7 @@ export function CalendarEventButton({
       className={className}
       compact={compact}
       event={event}
+      sourceDate={date}
       locale={locale}
       onMove={onMove}
       onResize={onResize}
@@ -179,7 +181,7 @@ type CalendarViewProps = Readonly<{
   timeZone: string;
   locale: string;
   onCreate: (date: string, minute?: number, returnFocusTarget?: HTMLButtonElement | null) => void;
-  onSelectEvent: (event: CalendarEventEntry) => void;
+  onSelectEvent: (event: CalendarEventEntry, returnFocusTarget: HTMLElement) => void;
   onMoveEvent?: CalendarMoveAction;
   onResizeEvent?: CalendarResizeAction;
 }>;
@@ -191,8 +193,24 @@ function weekdayLabels(weekStartsOn: number, locale: string): readonly string[] 
     .toLocaleString(locale, { weekday: "short" }));
 }
 
-export function MonthCalendar(props: CalendarViewProps) {
-  const { events, selectedDate, weekStartsOn, timeZone, locale, onCreate, onSelectEvent, onMoveEvent } = props;
+type MonthCalendarProps = CalendarViewProps & Readonly<{
+  expandedOverflowDate: string | null;
+  onExpandedOverflowDateChange: (date: string, open: boolean) => void;
+}>;
+
+export function MonthCalendar(props: MonthCalendarProps) {
+  const {
+    events,
+    selectedDate,
+    weekStartsOn,
+    timeZone,
+    locale,
+    onCreate,
+    onSelectEvent,
+    onMoveEvent,
+    expandedOverflowDate,
+    onExpandedOverflowDateChange,
+  } = props;
   const grid = monthGrid(selectedDate, weekStartsOn);
   const labels = weekdayLabels(weekStartsOn, locale);
   return (
@@ -204,17 +222,25 @@ export function MonthCalendar(props: CalendarViewProps) {
         {grid.days.map((day) => {
           const dateKey = day.toString();
           const dayEvents = eventsOnDate(events, dateKey, timeZone);
+          const { visible: visibleEvents, overflow: overflowEvents } = splitMonthCellEvents(dayEvents);
           const currentMonth = day.month === grid.month.month;
+          const dayLabel = day.toLocaleString(locale, {
+            weekday: "long",
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+          });
           return (
             <article
               className={`${styles.monthCell} ${currentMonth ? "" : styles.adjacentMonthCell}`}
               data-calendar-drop-date={dateKey}
               data-calendar-drop-time-zone={timeZone}
               key={dateKey}
-              aria-label={`${day.toLocaleString(locale, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}${dayEvents.length ? `, ${dayEvents.length} events` : ", no events"}`}
+              aria-label={`${dayLabel}${dayEvents.length ? `, ${dayEvents.length} events` : ", no events"}`}
             >
               <button
                 className={styles.monthDate}
+                id={`month-date-${dateKey}`}
                 type="button"
                 onClick={() => onCreate(dateKey)}
                 aria-label={`Create an event on ${day.toLocaleString(locale, { month: "long", day: "numeric", year: "numeric" })}`}
@@ -226,7 +252,7 @@ export function MonthCalendar(props: CalendarViewProps) {
                 </span>
               </button>
               <div className={styles.monthEvents}>
-                {dayEvents.map((event) => (
+                {visibleEvents.map((event) => (
                   <CalendarEventButton
                     compact
                     date={dateKey}
@@ -238,6 +264,41 @@ export function MonthCalendar(props: CalendarViewProps) {
                     timeZone={timeZone}
                   />
                 ))}
+                {overflowEvents.length > 0 && (
+                  <details
+                    className={styles.monthOverflow}
+                    data-calendar-month-overflow-date={dateKey}
+                    open={expandedOverflowDate === dateKey}
+                    onToggle={(toggleEvent) => {
+                      onExpandedOverflowDateChange(dateKey, toggleEvent.currentTarget.open);
+                    }}
+                  >
+                    <summary
+                      id={`month-overflow-summary-${dateKey}`}
+                      aria-controls={`month-overflow-${dateKey}`}
+                    >
+                      <span className={styles.monthMoreLabel}>
+                        Show {overflowEvents.length} more {overflowEvents.length === 1 ? "event" : "events"}
+                      </span>
+                      <span className={styles.monthFewerLabel}>Show fewer events</span>
+                      <span className={styles.visuallyHidden}> on {dayLabel}</span>
+                    </summary>
+                    <div className={styles.monthOverflowEvents} id={`month-overflow-${dateKey}`}>
+                      {overflowEvents.map((event) => (
+                        <CalendarEventButton
+                          compact
+                          date={dateKey}
+                          event={event}
+                          key={calendarEventEntryKey(event)}
+                          locale={locale}
+                          onMove={onMoveEvent}
+                          onSelect={onSelectEvent}
+                          timeZone={timeZone}
+                        />
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             </article>
           );

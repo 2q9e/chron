@@ -6,10 +6,12 @@ import {
   buildStudySessionEventDraft,
   buildEventDraft,
   defaultPreferences,
+  monthGrid,
   newEventDraft,
   newEventDraftAtTimeSlot,
   rebaseCalendarPreferenceDraft,
   reminderReviewText,
+  splitMonthCellEvents,
   timedEventSegmentsForDate,
   updateEventDraft,
   validateCalendarEventDraft,
@@ -29,6 +31,39 @@ test("rebasing study defaults preserves local edits and refreshes untouched pref
   assert.deepEqual(rebaseCalendarPreferenceDraft(draft, previousSaved, latestSaved), {
     ...latestSaved,
     theme: "premium-dark",
+  });
+});
+
+test("month grid keeps complete weeks for four-, five-, and six-row months", () => {
+  const rowCounts = new Set();
+  for (let year = 2020; year <= 2030; year += 1) {
+    for (let month = 1; month <= 12; month += 1) {
+      const value = `${year}-${String(month).padStart(2, "0")}-15`;
+      const grid = monthGrid(value, 1);
+      rowCounts.add(grid.rows);
+      assert.equal(grid.days.length, grid.rows * 7);
+      assert.equal(grid.first.dayOfWeek, 1);
+    }
+  }
+  assert.deepEqual([...rowCounts].sort(), [4, 5, 6]);
+});
+
+test("month cells cap visible events and preserve every overflow event in order", () => {
+  const events = Array.from({ length: 6 }, (_, index) =>
+    utcEvent(
+      `event-${index + 1}`,
+      `${String(9 + index).padStart(2, "0")}:00`,
+      `${String(10 + index).padStart(2, "0")}:00`,
+    ),
+  );
+  const summary = splitMonthCellEvents(events);
+
+  assert.deepEqual(summary.visible.map((event) => event.id), ["event-1", "event-2"]);
+  assert.deepEqual(summary.overflow.map((event) => event.id), ["event-3", "event-4", "event-5", "event-6"]);
+  assert.deepEqual([...summary.visible, ...summary.overflow], events);
+  assert.deepEqual(splitMonthCellEvents(events.slice(0, 2)), {
+    visible: events.slice(0, 2),
+    overflow: [],
   });
 });
 
