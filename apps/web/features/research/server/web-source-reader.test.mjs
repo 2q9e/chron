@@ -117,7 +117,7 @@ test("DNS validation rejects any private answer in a mixed public/private set", 
   );
 });
 
-test("reader resolves and pins each HTTPS redirect, then extracts visible text only", async () => {
+test("reader pins each HTTPS redirect and extracts readable text without active content", async () => {
   const visited = [];
   const resolved = [];
   const source = await readPublicWebSource(

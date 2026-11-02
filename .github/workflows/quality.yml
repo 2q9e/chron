@@ -56,13 +56,16 @@ jobs:
       - name: Test authentication configuration
         run: npm run test:auth-config --workspace @chron/web
 
+      - name: Test public HTTPS source retrieval
+        run: npm run test:research --workspace @chron/web
+
       - name: Test calendar time semantics
         run: npm run test:calendar-time --workspace @chron/web
 
       - name: Test calendar API contracts
         run: npm run test:calendar-api --workspace @chron/web
 
-      - name: Test PostgreSQL calendar tenant isolation
+      - name: Test PostgreSQL tenant isolation and account cleanup
         run: npm run test:calendar-postgres --workspace @chron/web
         env:
           CHRON_TEST_DATABASE_URL: postgresql://postgres:chron-ci-test-only@127.0.0.1:5432/postgres
