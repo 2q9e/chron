@@ -67,6 +67,16 @@ export type CalendarSeriesDraftRequest =
       calendarTimeZone: string;
     }>
   | Readonly<{
+      action: "split-series";
+      scope: "following";
+      targetEventId: string;
+      targetRevision: number;
+      occurrenceKey: string;
+      event: CalendarEventMutation;
+      recurrenceRule: CalendarRecurrenceRule;
+      calendarTimeZone: string;
+    }>
+  | Readonly<{
       action: "delete";
       scope: "series";
       targetEventId: string;
@@ -120,7 +130,7 @@ export type CalendarSeriesOccurrenceConflict = Readonly<{
 export type CalendarSeriesDraft = Readonly<{
   id: string;
   action: CalendarSeriesDraftRequest["action"];
-  scope: "series" | "occurrence";
+  scope: "series" | "occurrence" | "following";
   outcome: "pending" | "approved" | "stale" | "expired" | "deleted";
   replayed: boolean;
   targetEventId: string | null;
@@ -171,6 +181,7 @@ export type CalendarReminderStatusSummary = Readonly<{
 
 type CalendarEventBase = Readonly<{
   id: string;
+  seriesRootId?: string;
   title: string;
   details: string | null;
   revision: number;

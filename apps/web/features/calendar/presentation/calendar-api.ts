@@ -61,6 +61,11 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.length > 0;
 }
 
+function isUuid(value: unknown): value is string {
+  return typeof value === "string"
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(value);
+}
+
 function sameJsonValue(left: unknown, right: unknown): boolean {
   if (left === right) return true;
   if (Array.isArray(left) || Array.isArray(right)) {
@@ -86,7 +91,7 @@ function isCalendarRecurrenceRule(value: unknown): value is CalendarRecurrenceRu
     && value.interval <= 4
     && typeof value.count === "number"
     && Number.isInteger(value.count)
-    && value.count >= 2
+    && value.count >= 1
     && value.count <= 366;
 }
 
@@ -152,17 +157,20 @@ function isCalendarSeriesOccurrenceConflict(
 }
 
 function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
+  const action = isRecord(value) ? value.action : null;
+  const isOccurrenceAction = action === "cancel-occurrence"
+    || action === "restore-occurrence"
+    || action === "move-occurrence";
+  const isSplitAction = action === "split-series";
   if (!isRecord(value)
     || !isNonEmptyString(value.id)
     || (value.action !== "create" && value.action !== "update" && value.action !== "delete"
       && value.action !== "cancel-occurrence" && value.action !== "restore-occurrence"
-      && value.action !== "move-occurrence")
-    || !(((value.action === "cancel-occurrence" || value.action === "restore-occurrence"
-      || value.action === "move-occurrence")
+      && value.action !== "move-occurrence" && value.action !== "split-series")
+    || !((isOccurrenceAction
       && value.scope === "occurrence")
-      || ((value.action !== "cancel-occurrence" && value.action !== "restore-occurrence"
-        && value.action !== "move-occurrence")
-        && value.scope === "series"))
+      || (isSplitAction && value.scope === "following")
+      || (!isOccurrenceAction && !isSplitAction && value.scope === "series"))
     || !["pending", "approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     || typeof value.replayed !== "boolean"
     || !(value.targetEventId === null || isNonEmptyString(value.targetEventId))
@@ -220,6 +228,38 @@ function isCalendarSeriesDraft(value: unknown): value is CalendarSeriesDraft {
       && value.afterOccurrences.length === 1
       && value.beforeOccurrences[0].occurrenceKey === value.afterOccurrences[0].occurrenceKey;
   }
+  if (value.action === "split-series") {
+    if (value.scope !== "following"
+      || value.targetEventId === null
+      || value.targetRevision === null
+      || value.event === null
+      || value.recurrenceRule === null
+      || value.calendarTimeZone === null
+      || value.beforeOccurrences.length < 2
+      || value.afterOccurrences.length !== value.beforeOccurrences.length
+      || value.beforeOccurrences.some(({ occurrenceKey }) =>
+        !occurrenceKey.startsWith(`${value.targetEventId}:`)
+      )) return false;
+
+    const splitIndex = value.afterOccurrences.findIndex(({ occurrenceKey }) =>
+      !occurrenceKey.startsWith(`${value.targetEventId}:`)
+    );
+    if (splitIndex < 1) return false;
+    const prefix = value.beforeOccurrences.slice(0, splitIndex);
+    const proposedPrefix = value.afterOccurrences.slice(0, splitIndex);
+    const following = value.afterOccurrences.slice(splitIndex);
+    const segmentId = seriesIdFromOccurrenceKey(following[0]?.occurrenceKey);
+    return segmentId !== null
+      && segmentId !== value.targetEventId
+      && following.length === value.recurrenceRule.count
+      && following.every(({ occurrenceKey }) =>
+        occurrenceKey.startsWith(`${segmentId}:`)
+      )
+      && prefix.every((occurrence, index) =>
+        sameJsonValue(occurrence, proposedPrefix[index])
+      )
+      && matchesOccurrenceStart(following[0], value.event);
+  }
   return (value.action === "create"
       ? value.targetEventId === null && value.targetRevision === null && value.beforeOccurrences.length === 0
       : value.targetEventId !== null && value.targetRevision !== null && value.beforeOccurrences.length > 0)
@@ -233,7 +273,7 @@ function isCalendarSeriesApproval(value: unknown): value is CalendarSeriesApprov
     && isNonEmptyString(value.id)
     && (value.action === "create" || value.action === "update" || value.action === "delete"
       || value.action === "cancel-occurrence" || value.action === "restore-occurrence"
-      || value.action === "move-occurrence")
+      || value.action === "move-occurrence" || value.action === "split-series")
     && ["approved", "stale", "expired", "deleted"].includes(String(value.outcome))
     && (value.event === null || isCalendarEvent(value.event));
 }
@@ -296,6 +336,34 @@ function matchesSeriesDraftRequest(
           && after.startDate === request.movement.startDate
           && after.endDate === request.movement.endDate);
   }
+  if (request.action === "split-series") {
+    const splitIndex = draft.beforeOccurrences.findIndex(({ occurrenceKey }) =>
+      occurrenceKey === request.occurrenceKey
+    );
+    if (splitIndex < 1 || draft.beforeOccurrences.length !== draft.afterOccurrences.length
+      || draft.beforeOccurrences.some(({ occurrenceKey }) =>
+        !occurrenceKey.startsWith(`${request.targetEventId}:`)
+      )) return false;
+
+    const prefix = draft.beforeOccurrences.slice(0, splitIndex);
+    const proposedPrefix = draft.afterOccurrences.slice(0, splitIndex);
+    const following = draft.afterOccurrences.slice(splitIndex);
+    const segmentId = seriesIdFromOccurrenceKey(following[0]?.occurrenceKey);
+    const event = draft.event;
+    if (!event || !draft.recurrenceRule) return false;
+    return sameJsonValue(event, request.event)
+      && sameJsonValue(draft.recurrenceRule, request.recurrenceRule)
+      && draft.calendarTimeZone === request.calendarTimeZone
+      && draft.beforeOccurrences.length > splitIndex
+      && following.length === request.recurrenceRule.count
+      && prefix.every((occurrence, index) =>
+        sameJsonValue(occurrence, proposedPrefix[index])
+      )
+      && !!segmentId
+      && segmentId !== request.targetEventId
+      && following.every(({ occurrenceKey }) => occurrenceKey.startsWith(`${segmentId}:`))
+      && matchesOccurrenceStart(following[0], event);
+  }
   if (request.action === "delete") {
     return draft.event === null
       && draft.recurrenceRule === null
@@ -325,7 +393,11 @@ function matchesApprovedEvent(
 
   const expectedId = draft.action === "update"
     ? draft.targetEventId
-    : draft.afterOccurrences[0]?.occurrenceKey.split(":", 1)[0] ?? null;
+    : draft.action === "split-series"
+      ? draft.afterOccurrences.find(({ occurrenceKey }) =>
+          !occurrenceKey.startsWith(`${draft.targetEventId}:`)
+        )?.occurrenceKey.split(":", 1)[0] ?? null
+      : draft.afterOccurrences[0]?.occurrenceKey.split(":", 1)[0] ?? null;
   const event = approval.event;
   if (!expectedId
     || event.id !== expectedId
@@ -333,7 +405,9 @@ function matchesApprovedEvent(
     || event.title !== draft.event.title
     || event.details !== (draft.event.details ?? null)
     || event.reminderChoice !== (draft.event.reminderChoice ?? "none")
-    || !sameJsonValue(event.recurrenceRule, draft.recurrenceRule)) return false;
+    || !sameJsonValue(event.recurrenceRule, draft.recurrenceRule)
+    || (draft.action === "split-series"
+      && (!isUuid(event.seriesRootId) || event.id === draft.targetEventId))) return false;
   return event.kind === "all-day"
     ? draft.event.kind === "all-day"
       && event.startDate === draft.event.startDate
@@ -343,6 +417,25 @@ function matchesApprovedEvent(
       && event.startLocal === draft.event.startLocal
       && event.endLocal === draft.event.endLocal
       && event.timeZone === draft.event.timeZone;
+}
+
+function matchesOccurrenceStart(
+  occurrence: CalendarSeriesOccurrenceSnapshot | undefined,
+  event: CalendarEventMutation,
+): boolean {
+  if (!occurrence || occurrence.kind !== event.kind) return false;
+  const separator = occurrence.occurrenceKey.indexOf(":");
+  const scheduledStart = separator < 0 ? "" : occurrence.occurrenceKey.slice(separator + 1);
+  return event.kind === "all-day"
+    ? scheduledStart === event.startDate
+    : occurrence.kind === "timed"
+      && scheduledStart === event.startLocal;
+}
+
+function seriesIdFromOccurrenceKey(value: string | undefined): string | null {
+  if (!value) return null;
+  const separator = value.indexOf(":");
+  return separator > 0 ? value.slice(0, separator) : null;
 }
 
 function isAbortError(reason: unknown): reason is Error {
@@ -356,6 +449,7 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
     || !(typeof value.details === "string" || value.details === null)
     || !Number.isInteger(value.revision)
     || typeof value.revision !== "number"
+    || (Object.hasOwn(value, "seriesRootId") && !isUuid(value.seriesRootId))
     || !isNonEmptyString(value.createdAt)
     || !isNonEmptyString(value.updatedAt)) return false;
 
@@ -369,7 +463,7 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
       || rule.interval > 4
       || !Number.isInteger(rule.count)
       || typeof rule.count !== "number"
-      || rule.count < 2
+      || rule.count < 1
       || rule.count > 366) return false;
   }
 

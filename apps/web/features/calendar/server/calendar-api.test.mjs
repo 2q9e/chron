@@ -147,6 +147,33 @@ test("normalizes exact create and update series draft scopes", () => {
     ...target,
   });
 
+  const split = {
+    action: "split-series",
+    scope: "following",
+    ...target,
+    occurrenceKey: `${target.targetEventId}:2026-11-06`,
+    event: {
+      kind: "all-day",
+      title: "Study group",
+      startDate: "2026-11-06",
+      endDate: "2026-11-07",
+    },
+    recurrenceRule: { frequency: "weekly", interval: 1, count: 1 },
+    calendarTimeZone: "America/Montreal",
+  };
+  assert.deepEqual(parseCalendarSeriesDraftRequest(split), split);
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest({ ...split, scope: "series" }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarSeriesDraftRequest({
+      ...validSeriesCreate,
+      recurrenceRule: { frequency: "weekly", interval: 1, count: 1 },
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+
   const occurrence = {
     action: "cancel-occurrence",
     scope: "occurrence",

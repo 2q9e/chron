@@ -107,12 +107,16 @@ function parseAllDayReminderChoice(value: unknown): AllDayCalendarReminderChoice
   return value as AllDayCalendarReminderChoice;
 }
 
-function parseRecurrenceRule(input: unknown): RecurrenceRule {
+function parseRecurrenceRule(input: unknown, minimumCount = 2): RecurrenceRule {
   let rule: RecurrenceRule;
   try {
     rule = normalizeRecurrenceRule(input);
   } catch {
-    return invalidPayload("Choose a finite daily or weekly recurrence from 2 to 366 occurrences.");
+    return invalidPayload(`Choose a finite daily or weekly recurrence from ${minimumCount} to 366 occurrences.`);
+  }
+
+  if (rule.count < minimumCount) {
+    return invalidPayload(`Choose at least ${minimumCount} occurrences for this recurring event.`);
   }
 
   const periodDays = rule.frequency === "weekly" ? 7 : 1;
@@ -226,8 +230,53 @@ function parseSeriesTarget(value: Record<string, unknown>): Readonly<{
   return { targetEventId, targetRevision };
 }
 
+function parseOccurrenceKey(value: unknown): string {
+  if (typeof value !== "string"
+    || value.length < 1
+    || value.length > 200
+    || /[\u0000-\u001f\u007f]/u.test(value)) {
+    return invalidPayload("Choose a valid occurrence from this recurring series.");
+  }
+  return value;
+}
+
 export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesDraftRequest {
   const value = objectRecord(input);
+  if (value.action === "split-series") {
+    if (value.scope !== "following") {
+      return invalidPayload("Choose this occurrence and following occurrences as the change scope.");
+    }
+    assertAllowedFields(value, [
+      "action",
+      "scope",
+      "targetEventId",
+      "targetRevision",
+      "occurrenceKey",
+      "event",
+      "recurrenceRule",
+      "calendarTimeZone",
+    ]);
+    const target = parseSeriesTarget(value);
+    const occurrenceKey = parseOccurrenceKey(value.occurrenceKey);
+    if (!occurrenceKey.startsWith(`${target.targetEventId}:`)) {
+      return invalidPayload("Choose an occurrence that belongs to the selected recurring series.");
+    }
+    const event = parseCalendarEventMutation(value.event);
+    assertRecurringMutationDuration(event);
+    const recurrenceRule = parseRecurrenceRule(value.recurrenceRule, 1);
+    const calendarTimeZone = validateTimeZone(value.calendarTimeZone);
+    assertRecurrenceFullyExpandable(event, recurrenceRule, calendarTimeZone);
+    return {
+      action: "split-series",
+      scope: "following",
+      ...target,
+      occurrenceKey,
+      event,
+      recurrenceRule,
+      calendarTimeZone,
+    };
+  }
+
   if (value.action === "cancel-occurrence" || value.action === "restore-occurrence"
     || value.action === "move-occurrence") {
     if (value.scope !== "occurrence") {
@@ -256,18 +305,13 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
       "occurrenceKey",
     ]);
     const target = parseSeriesTarget(value);
-    if (typeof value.occurrenceKey !== "string"
-      || value.occurrenceKey.length < 1
-      || value.occurrenceKey.length > 200
-      || /[\u0000-\u001f\u007f]/u.test(value.occurrenceKey)) {
-      return invalidPayload("Choose a valid occurrence from this recurring series.");
-    }
+    const occurrenceKey = parseOccurrenceKey(value.occurrenceKey);
     if (value.action === "restore-occurrence") {
       return {
         action: "restore-occurrence",
         scope: "occurrence",
         ...target,
-        occurrenceKey: value.occurrenceKey,
+        occurrenceKey,
         calendarTimeZone: validateTimeZone(value.calendarTimeZone),
       };
     }
@@ -276,7 +320,7 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
         action: "move-occurrence",
         scope: "occurrence",
         ...target,
-        occurrenceKey: value.occurrenceKey,
+        occurrenceKey,
         calendarTimeZone: validateTimeZone(value.calendarTimeZone),
         movement: parseCalendarOccurrenceMovement(value.movement),
       };
@@ -285,7 +329,7 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
       action: "cancel-occurrence",
       scope: "occurrence",
       ...target,
-      occurrenceKey: value.occurrenceKey,
+      occurrenceKey,
     };
   }
 
@@ -327,7 +371,7 @@ export function parseCalendarSeriesDraftRequest(input: unknown): CalendarSeriesD
     const target = parseSeriesTarget(value);
     const event = parseCalendarEventMutation(value.event);
     assertRecurringMutationDuration(event);
-    const recurrenceRule = parseRecurrenceRule(value.recurrenceRule);
+    const recurrenceRule = parseRecurrenceRule(value.recurrenceRule, 1);
     const calendarTimeZone = validateTimeZone(value.calendarTimeZone);
     assertRecurrenceFullyExpandable(event, recurrenceRule, calendarTimeZone);
     return {

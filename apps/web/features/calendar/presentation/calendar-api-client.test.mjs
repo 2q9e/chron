@@ -191,6 +191,103 @@ test("restoration proposals bind the exact occurrence, timezone, and user approv
   }
 });
 
+test("following-series split binds the unchanged prefix, exact tail, and new segment approval", async () => {
+  const followingId = "9d8f52e6-b3e7-4a95-b180-0e1d9f2561a4";
+  const request = {
+    action: "split-series",
+    scope: "following",
+    targetEventId: seriesId,
+    targetRevision: 2,
+    occurrenceKey: `${seriesId}:2026-06-08`,
+    event: {
+      kind: "all-day",
+      title: "Weekly seminar",
+      startDate: "2026-06-08",
+      endDate: "2026-06-09",
+    },
+    recurrenceRule: { frequency: "weekly", interval: 1, count: 3 },
+    calendarTimeZone: "America/Montreal",
+  };
+  const beforeOccurrences = [1, 8, 15, 22].map((day) => {
+    const startDate = `2026-06-${String(day).padStart(2, "0")}`;
+    const endDate = `2026-06-${String(day + 1).padStart(2, "0")}`;
+    return {
+      occurrenceKey: `${seriesId}:${startDate}`,
+      kind: "all-day",
+      startDate,
+      endDate,
+    };
+  });
+  const afterOccurrences = [
+    beforeOccurrences[0],
+    ...[8, 15, 22].map((day) => {
+      const startDate = `2026-06-${String(day).padStart(2, "0")}`;
+      const endDate = `2026-06-${String(day + 1).padStart(2, "0")}`;
+      return {
+        occurrenceKey: `${followingId}:${startDate}`,
+        kind: "all-day",
+        startDate,
+        endDate,
+      };
+    }),
+  ];
+  afterOccurrences[1] = {
+    ...afterOccurrences[1],
+    startDate: "2026-06-12",
+    endDate: "2026-06-13",
+  };
+  const draft = {
+    id: "74953a92-52d7-4bb1-b623-1c5e18371490",
+    action: request.action,
+    scope: request.scope,
+    outcome: "pending",
+    replayed: false,
+    targetEventId: seriesId,
+    targetRevision: 2,
+    event: request.event,
+    recurrenceRule: request.recurrenceRule,
+    calendarTimeZone: request.calendarTimeZone,
+    beforeOccurrences,
+    afterOccurrences,
+    conflicts: [],
+    expiresAt: "2026-06-01T12:15:00.000Z",
+  };
+  let captured;
+  globalThis.fetch = async (url, init) => {
+    captured = { url, init };
+    return response({ draft }, 201);
+  };
+  try {
+    const created = await createCalendarSeriesDraft(request, "split-following-occurrences");
+    assert.equal(created.action, "split-series");
+    assert.deepEqual(JSON.parse(captured.init.body), request);
+    assert.equal(captured.init.headers["Idempotency-Key"], "split-following-occurrences");
+
+    const approvedEvent = {
+      ...rootEvent(),
+      id: followingId,
+      seriesRootId: seriesId,
+      title: request.event.title,
+      startDate: request.event.startDate,
+      endDate: request.event.endDate,
+      recurrenceRule: request.recurrenceRule,
+    };
+    const approval = {
+      id: draft.id,
+      action: "split-series",
+      outcome: "approved",
+      event: approvedEvent,
+    };
+    globalThis.fetch = async () => response({ approval });
+    assert.deepEqual(
+      await approveCalendarSeriesDraft(draft.id, request.action, draft),
+      approval,
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("single-occurrence moves bind the stable key and exact proposed schedule", async () => {
   const request = {
     action: "move-occurrence",
