@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node server.mjs",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test:agent-skills": "node --no-warnings --experimental-strip-types --test features/agent/skills/*.test.mjs",
