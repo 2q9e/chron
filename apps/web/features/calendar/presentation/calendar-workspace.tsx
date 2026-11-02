@@ -1294,6 +1294,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         <p>Signed in as {userName}</p>
       </div>
       <div className={styles.actions}>
+        <a className={styles.researchLink} href="/study">Study</a>
         <a className={styles.researchLink} href="/research">Research</a>
         <button type="button" aria-expanded={studyPlannerOpen} aria-controls={studyPlannerOpen ? "calendar-study-planner" : undefined} onClick={() => setStudyPlannerOpen(true)} disabled={!preferences || !date || loading || !!loadError || calendarLocked || !!editor || studyPlannerOpen}>{studyPlannerOpen ? "Planner open" : "Plan study time"}</button>
         <button ref={newEventButton} type="button" onClick={() => openNew(date)} disabled={!preferences || !date || calendarLocked}>New event</button>

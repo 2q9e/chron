@@ -128,6 +128,7 @@ export function ResearchWorkspace({ userName }: { userName: string }) {
         <a className={styles.wordmark} href="/calendar" aria-label="Chron, go to calendar">Chron</a>
         <nav className={styles.navigation} aria-label="Main navigation">
           <a href="/calendar">Calendar</a>
+          <a href="/study">Study</a>
           <span className={styles.current} aria-current="page">Research</span>
           <span className={styles.userName}>Signed in as {userName}</span>
           <button type="button" onClick={signOut} disabled={signingOut}>
