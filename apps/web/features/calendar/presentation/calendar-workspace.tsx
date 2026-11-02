@@ -3,7 +3,7 @@
 import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
-import { type CalendarEvent, type CalendarPreferences } from "../domain/types";
+import { calendarEventSeries, type CalendarEventEntry, type CalendarPreferences } from "../domain/types";
 import { CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, deleteCalendarEvent, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { buildEventDraft, defaultPreferences, formatRangeHeading, localeWeekStart, localTimeZone, navigateDate, newEventDraft, validateEventDraft, visibleRange, type CalendarView, type EventDraft } from "./calendar-model";
@@ -30,7 +30,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [view, setView] = useState<CalendarView>("month");
   const [preferences, setPreferences] = useState<CalendarPreferences | null>(null);
   const [settings, setSettings] = useState<CalendarPreferences | null>(null);
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
+  const [events, setEvents] = useState<CalendarEventEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState("");
@@ -189,8 +189,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     editorGeneration.current += 1;
     setEditor({ generation: editorGeneration.current, event: null, operationKey: crypto.randomUUID(), draft: newEventDraft(day), zone: preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
-  const openEvent = useCallback((event: CalendarEvent, returnFocusTarget?: HTMLElement | null) => {
+  const openEvent = useCallback((selected: CalendarEventEntry, returnFocusTarget?: HTMLElement | null) => {
     if (!preferences || calendarLocked) return;
+    const event = calendarEventSeries(selected);
     if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
     else rememberEditorOpener();
     focusAfterEditor.current = null;

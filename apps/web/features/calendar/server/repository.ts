@@ -13,6 +13,8 @@ import type {
   CalendarConflictReview,
   CalendarEventCommit,
   CalendarEvent,
+  CalendarEventEntry,
+  CalendarEventOccurrence,
   CalendarEventMutation,
   CalendarEventSearchRequest,
   CalendarPreferences,
@@ -1405,7 +1407,7 @@ export class CalendarRepository {
     from: string,
     to: string,
     timeZone: string,
-  ): Promise<CalendarEvent[]> {
+  ): Promise<CalendarEventEntry[]> {
     const range = resolveCalendarRange(from, to, timeZone);
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
       const result = await client.query<EventRow>(
@@ -1413,16 +1415,27 @@ export class CalendarRepository {
          FROM calendar_events
          WHERE user_id = $1
            AND (
-             (kind = 'all-day' AND start_date < $3::date AND end_date > $2::date)
+             (
+               recurrence_frequency IS NULL
+               AND (
+                 (kind = 'all-day' AND start_date < $3::date AND end_date > $2::date)
+                 OR
+                 (kind = 'timed' AND starts_at < $5::timestamptz AND ends_at > $4::timestamptz)
+               )
+             )
              OR
-             (kind = 'timed' AND starts_at < $5::timestamptz AND ends_at > $4::timestamptz)
+             (
+               recurrence_frequency IS NOT NULL
+               AND (
+                 (kind = 'all-day' AND start_date < $3::date
+                   AND start_date >= $2::date - 374)
+                 OR
+                 (kind = 'timed' AND starts_at < $5::timestamptz
+                   AND starts_at >= $4::timestamptz - interval '374 days')
+               )
+             )
            )
-         ORDER BY
-           CASE WHEN kind = 'all-day'
-             THEN start_date::timestamp without time zone AT TIME ZONE $7::text
-             ELSE starts_at
-           END,
-           id
+         ORDER BY id
          LIMIT $6`,
         [
           ownerId,
@@ -1431,18 +1444,83 @@ export class CalendarRepository {
           range.startsAt,
           range.endsAt,
           maximumEventsPerRange + 1,
-          timeZone,
         ],
       );
 
       if (result.rows.length > maximumEventsPerRange) {
         throw new CalendarRouteError(
           422,
-          "RANGE_RESULT_LIMIT",
-          "Narrow the date range to see these events.",
+          "RANGE_CANDIDATE_LIMIT",
+          "There are too many calendar events to verify in this range. Narrow the date range and try again.",
         );
       }
-      return result.rows.map(toCalendarEvent);
+
+      const events: CalendarEventEntry[] = [];
+      try {
+        for (const row of result.rows) {
+          const event = toCalendarEvent(row);
+          if (!event.recurrenceRule) {
+            events.push(event);
+          } else {
+            const occurrences = expandCalendarRecurrenceRange(
+              event,
+              event.recurrenceRule,
+              {
+                fromDate: range.fromDate,
+                toDate: range.toDate,
+                timeZone,
+              },
+            );
+            for (const occurrence of occurrences) {
+              const entry: CalendarEventOccurrence = {
+                ...occurrence,
+                id: occurrence.occurrenceKey,
+                series: event,
+              };
+              events.push(entry);
+              if (events.length > maximumEventsPerRange) {
+                throw new CalendarRouteError(
+                  422,
+                  "RANGE_RESULT_LIMIT",
+                  "Narrow the date range to see these events.",
+                );
+              }
+            }
+          }
+          if (events.length > maximumEventsPerRange) {
+            throw new CalendarRouteError(
+              422,
+              "RANGE_RESULT_LIMIT",
+              "Narrow the date range to see these events.",
+            );
+          }
+        }
+      } catch (error) {
+        if (error instanceof CalendarRouteError) throw error;
+        if (error instanceof RangeError || error instanceof RecurrenceError) {
+          throw new CalendarRouteError(
+            422,
+            "RECURRENCE_RANGE_UNVERIFIABLE",
+            "Chron could not verify every recurring event in this range. Narrow the date range and try again.",
+          );
+        }
+        throw error;
+      }
+
+      const startForOrder = (event: CalendarEventEntry) => event.kind === "timed"
+        ? event.startsAt
+        : Temporal.PlainDate.from(event.startDate)
+            .toZonedDateTime(timeZone)
+            .toInstant()
+            .toString();
+      const seriesIdForOrder = (event: CalendarEventEntry) =>
+        "series" in event ? event.series.id : event.id;
+      return events.sort((left, right) =>
+        startForOrder(left).localeCompare(startForOrder(right))
+        || seriesIdForOrder(left).localeCompare(seriesIdForOrder(right))
+        || ("occurrenceKey" in left ? left.occurrenceKey : "")
+          .localeCompare("occurrenceKey" in right ? right.occurrenceKey : ""),
+      );
     });
   }
 

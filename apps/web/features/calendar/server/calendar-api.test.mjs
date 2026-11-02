@@ -912,7 +912,9 @@ test("round-trips recurrence rules and prevents single-event edits or deletes of
     "2026-11-09",
     "America/Montreal",
   );
-  assert.deepEqual(listed[0].recurrenceRule, {
+  assert.equal(listed[0].series.id, created.event.id);
+  assert.equal(listed[0].occurrenceKey, `${created.event.id}:2026-11-02`);
+  assert.deepEqual(listed[0].series.recurrenceRule, {
     frequency: "weekly",
     interval: 1,
     count: 6,

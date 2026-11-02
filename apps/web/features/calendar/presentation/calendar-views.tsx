@@ -1,5 +1,5 @@
 import { Temporal } from "@js-temporal/polyfill";
-import type { CalendarEvent } from "../domain/types";
+import { calendarEventEntryKey, type CalendarEventEntry } from "../domain/types";
 import {
   allDayEventsForDate,
   eventsOnDate,
@@ -13,11 +13,11 @@ import {
 import styles from "./calendar.module.css";
 
 type EventButtonProps = Readonly<{
-  event: CalendarEvent;
+  event: CalendarEventEntry;
   date: string;
   timeZone: string;
   locale: string;
-  onSelect: (event: CalendarEvent) => void;
+  onSelect: (event: CalendarEventEntry) => void;
   compact?: boolean;
   timeLabelOverride?: string;
 }>;
@@ -29,7 +29,7 @@ type TimedEventDaySegment = Readonly<{
 }>;
 
 function timedEventDaySegment(
-  event: Extract<CalendarEvent, { kind: "timed" }>,
+  event: Extract<CalendarEventEntry, { kind: "timed" }>,
   selectedDate: string,
   timeZone: string,
 ): TimedEventDaySegment {
@@ -52,7 +52,7 @@ function timedEventDaySegment(
 }
 
 function timedEventEndLabel(
-  event: Extract<CalendarEvent, { kind: "timed" }>,
+  event: Extract<CalendarEventEntry, { kind: "timed" }>,
   selectedDate: string,
   timeZone: string,
   locale: string,
@@ -65,7 +65,7 @@ function timedEventEndLabel(
 }
 
 function timedEventDayLabel(
-  event: Extract<CalendarEvent, { kind: "timed" }>,
+  event: Extract<CalendarEventEntry, { kind: "timed" }>,
   selectedDate: string,
   timeZone: string,
   locale: string,
@@ -84,7 +84,7 @@ function timedEventDayLabel(
 }
 
 function shortTimedEventLabel(
-  event: Extract<CalendarEvent, { kind: "timed" }>,
+  event: Extract<CalendarEventEntry, { kind: "timed" }>,
   selectedDate: string,
   timeZone: string,
   locale: string,
@@ -105,7 +105,7 @@ function shortTimedEventLabel(
 }
 
 function eventAccessibleLabel(
-  event: CalendarEvent,
+  event: CalendarEventEntry,
   selectedDate: string,
   timeZone: string,
   locale: string,
@@ -155,13 +155,13 @@ export function CalendarEventButton({
 }
 
 type CalendarViewProps = Readonly<{
-  events: readonly CalendarEvent[];
+  events: readonly CalendarEventEntry[];
   selectedDate: string;
   weekStartsOn: number;
   timeZone: string;
   locale: string;
   onCreate: (date: string) => void;
-  onSelectEvent: (event: CalendarEvent) => void;
+  onSelectEvent: (event: CalendarEventEntry) => void;
 }>;
 
 function weekdayLabels(weekStartsOn: number, locale: string): readonly string[] {
@@ -209,7 +209,7 @@ export function MonthCalendar(props: CalendarViewProps) {
                     compact
                     date={dateKey}
                     event={event}
-                    key={event.id}
+                    key={calendarEventEntryKey(event)}
                     locale={locale}
                     onSelect={onSelectEvent}
                     timeZone={timeZone}
@@ -261,7 +261,7 @@ function DayColumn({
               compact
               date={date}
               event={event}
-              key={event.id}
+              key={calendarEventEntryKey(event)}
               locale={locale}
               onSelect={onSelectEvent}
               timeZone={timeZone}
@@ -296,7 +296,7 @@ function DayColumn({
               <button
                 className={`${styles.timedEvent} ${styles.eventButton}`}
                 type="button"
-                key={segment.event.id}
+                key={calendarEventEntryKey(segment.event)}
                 onClick={() => onSelectEvent(segment.event)}
                 aria-label={eventAccessibleLabel(segment.event, date, timeZone, locale)}
                 title={`${segment.event.title} · ${time}${suffix}`}
@@ -317,7 +317,7 @@ function DayColumn({
       {timeline.belowTrackEvents.length > 0 && (
         <ul className={styles.shortTimedEvents} aria-label={`Short events for ${dateTitle}`}>
           {timeline.belowTrackEvents.map((segment) => (
-            <li key={segment.event.id}>
+            <li key={calendarEventEntryKey(segment.event)}>
               <CalendarEventButton
                 date={date}
                 event={segment.event}
@@ -332,7 +332,7 @@ function DayColumn({
       )}
       <div className={styles.mobileTimedEvents}>
         {dayEvents.filter((event) => event.kind === "timed").map((event) => (
-          <CalendarEventButton date={date} event={event} key={event.id} locale={locale} onSelect={onSelectEvent} timeZone={timeZone} />
+          <CalendarEventButton date={date} event={event} key={calendarEventEntryKey(event)} locale={locale} onSelect={onSelectEvent} timeZone={timeZone} />
         ))}
       </div>
       {dayEvents.length === 0 && (
@@ -404,11 +404,11 @@ export function AgendaCalendar(props: CalendarViewProps) {
           </header>
           <ul className={styles.agendaEvents}>
             {dayEvents.map((event) => (
-              <li key={event.id}>
+              <li key={calendarEventEntryKey(event)}>
                 <CalendarEventButton
                   date={date}
                   event={event}
-                  key={event.id}
+                  key={calendarEventEntryKey(event)}
                   locale={locale}
                   onSelect={onSelectEvent}
                   timeZone={timeZone}

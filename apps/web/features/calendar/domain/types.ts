@@ -48,6 +48,45 @@ export type AllDayCalendarEvent = CalendarEventBase & Readonly<{
 
 export type CalendarEvent = TimedCalendarEvent | AllDayCalendarEvent;
 
+type CalendarOccurrenceMetadata = Readonly<{
+  /** Stable UI identity for one generated instance, not a database event ID. */
+  id: string;
+  seriesId: string;
+  occurrenceKey: string;
+  title: string;
+  details: string | null;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
+  /** Persisted root used for whole-series actions. */
+  series: CalendarEvent;
+}>;
+
+export type CalendarEventOccurrence =
+  | (CalendarOccurrenceMetadata & Readonly<{
+      kind: "timed";
+      startLocal: string;
+      endLocal: string;
+      timeZone: string;
+      startsAt: string;
+      endsAt: string;
+    }>)
+  | (CalendarOccurrenceMetadata & Readonly<{
+      kind: "all-day";
+      startDate: string;
+      endDate: string;
+    }>);
+
+export type CalendarEventEntry = CalendarEvent | CalendarEventOccurrence;
+
+export function calendarEventEntryKey(event: CalendarEventEntry): string {
+  return "occurrenceKey" in event ? event.occurrenceKey : event.id;
+}
+
+export function calendarEventSeries(event: CalendarEventEntry): CalendarEvent {
+  return "series" in event ? event.series : event;
+}
+
 export type CalendarEventSearchRequest = Readonly<{
   query: string; // Case-insensitive literal substring of the event title.
   from: string; // Inclusive YYYY-MM-DD calendar date.

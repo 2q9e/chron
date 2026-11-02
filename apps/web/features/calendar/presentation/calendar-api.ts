@@ -5,6 +5,7 @@ import type {
   CalendarConflict,
   CalendarConflictReview,
   CalendarEvent,
+  CalendarEventEntry,
   CalendarEventSearchRequest,
   CalendarEventMutation,
   CalendarPreferences,
@@ -84,6 +85,23 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
     && isNonEmptyString(value.timeZone)
     && isNonEmptyString(value.startsAt)
     && isNonEmptyString(value.endsAt);
+}
+
+function isCalendarEventEntry(value: unknown): value is CalendarEventEntry {
+  if (!isCalendarEvent(value) || !isRecord(value)) return false;
+  const record = value as Record<string, unknown>;
+  const hasOccurrenceField = Object.hasOwn(record, "seriesId")
+    || Object.hasOwn(record, "occurrenceKey")
+    || Object.hasOwn(record, "series");
+  if (!hasOccurrenceField) return true;
+
+  return isNonEmptyString(record.seriesId)
+    && isNonEmptyString(record.occurrenceKey)
+    && value.id === record.occurrenceKey
+    && record.occurrenceKey.startsWith(`${record.seriesId}:`)
+    && isCalendarEvent(record.series)
+    && record.series.id === record.seriesId
+    && Object.hasOwn(record.series, "recurrenceRule");
 }
 
 function isCalendarPreferences(value: unknown): value is CalendarPreferences {
@@ -250,7 +268,7 @@ export async function fetchCalendarEvents(
   to: string,
   timeZone: string,
   signal?: AbortSignal,
-): Promise<CalendarEvent[]> {
+): Promise<CalendarEventEntry[]> {
   const query = new URLSearchParams({ from, to, timeZone });
   const response = await fetch(`/api/calendar/events?${query.toString()}`, {
     method: "GET",
@@ -261,7 +279,7 @@ export async function fetchCalendarEvents(
   });
   if (!response.ok) throw await readCalendarError(response);
   const payload = await parseJson(response);
-  if (!isRecord(payload) || !Array.isArray(payload.events) || !payload.events.every(isCalendarEvent)) {
+  if (!isRecord(payload) || !Array.isArray(payload.events) || !payload.events.every(isCalendarEventEntry)) {
     throw new CalendarRequestError(
       "Chron returned calendar events in an unexpected format. Reload and try again.",
       response.status,

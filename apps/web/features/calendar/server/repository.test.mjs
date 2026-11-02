@@ -142,6 +142,89 @@ test("lists only the owner’s events using a half-open zoned date range", async
   assert.equal(calls.some(({ sql }) => sql.includes("statement_timeout")), false);
 });
 
+test("expands a recurring root that starts before the visible range and preserves its series", async () => {
+  const seriesId = "de305d54-75b4-431b-adb2-eb6b9e546014";
+  const row = {
+    id: seriesId,
+    kind: "all-day",
+    title: "Weekly seminar",
+    details: null,
+    revision: 4,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-10-12",
+    end_date: "2026-10-13",
+    recurrence_frequency: "weekly",
+    recurrence_interval: 1,
+    recurrence_count: 6,
+    created_at: new Date("2026-10-01T12:00:00.000Z"),
+    updated_at: new Date("2026-10-01T12:00:00.000Z"),
+  };
+  const { pool, calls } = createPool((sql) => ({
+    rows: sql.includes("FROM calendar_events") ? [row] : [],
+  }));
+  const repository = new CalendarRepository(pool);
+
+  const events = await repository.listEvents(
+    ownerId,
+    "2026-11-02",
+    "2026-11-09",
+    "America/Montreal",
+  );
+
+  assert.equal(events.length, 1);
+  assert.equal(events[0].id, `${seriesId}:2026-11-02`);
+  assert.equal(events[0].occurrenceKey, `${seriesId}:2026-11-02`);
+  assert.equal(events[0].seriesId, seriesId);
+  assert.equal(events[0].startDate, "2026-11-02");
+  assert.equal(events[0].series.id, seriesId);
+  assert.equal(events[0].series.startDate, "2026-10-12");
+  assert.equal(events[0].series.revision, 4);
+
+  const query = calls.find(({ sql }) => sql.includes("FROM calendar_events"));
+  assert.ok(query);
+  assert.match(query.sql, /recurrence_frequency IS NOT NULL/);
+  assert.match(query.sql, /start_date >= \$2::date - 374/);
+  assert.match(query.sql, /ORDER BY id[\s\S]*LIMIT \$6/);
+  assert.equal(query.values[0], ownerId);
+});
+
+test("fails closed instead of returning a partial range over 1,000 occurrences", async () => {
+  const rows = Array.from({ length: 11 }, (_, index) => ({
+    id: `de305d54-75b4-431b-adb2-eb6b9e54${String(index).padStart(4, "0")}`,
+    kind: "all-day",
+    title: `Daily series ${index}`,
+    details: null,
+    revision: 1,
+    start_local: null,
+    end_local: null,
+    time_zone: null,
+    starts_at: null,
+    ends_at: null,
+    start_date: "2026-01-01",
+    end_date: "2026-01-02",
+    recurrence_frequency: "daily",
+    recurrence_interval: 1,
+    recurrence_count: 366,
+    created_at: new Date("2026-01-01T12:00:00.000Z"),
+    updated_at: new Date("2026-01-01T12:00:00.000Z"),
+  }));
+  const { pool } = createPool((sql) => ({
+    rows: sql.includes("FROM calendar_events") ? rows : [],
+  }));
+  const repository = new CalendarRepository(pool);
+
+  await assert.rejects(
+    repository.listEvents(ownerId, "2026-02-01", "2026-05-05", "UTC"),
+    (error) => error instanceof CalendarRouteError
+      && error.status === 422
+      && error.code === "RANGE_RESULT_LIMIT",
+  );
+});
+
 test("search uses a literal case-insensitive pattern, owner scope, and exclusive zoned overlap bounds", async () => {
   const { pool, calls } = createPool(() => ({ rows: [] }));
   const repository = new CalendarRepository(pool);

@@ -9,11 +9,11 @@ import {
 } from "../domain/time.ts";
 import type {
   CalendarEvent,
+  CalendarEventEntry,
   CalendarEventMutation,
   CalendarPreferences,
   CreateAllDayCalendarEvent,
   CreateTimedCalendarEvent,
-  TimedCalendarEvent,
 } from "../domain/types";
 
 export type CalendarView = "day" | "week" | "month" | "agenda";
@@ -192,7 +192,7 @@ export function displayDateForInstant(value: string, timeZone: string): string {
 }
 
 export function eventOccursOnDate(
-  event: CalendarEvent,
+  event: CalendarEventEntry,
   selectedDate: string,
   timeZone: string,
 ): boolean {
@@ -209,7 +209,7 @@ export function eventOccursOnDate(
     && Temporal.Instant.compare(eventEnd, dayStart) > 0;
 }
 
-export function sortCalendarEvents(events: readonly CalendarEvent[]): CalendarEvent[] {
+export function sortCalendarEvents(events: readonly CalendarEventEntry[]): CalendarEventEntry[] {
   return [...events].sort((left, right) => {
     const leftDate = left.kind === "all-day" ? left.startDate : left.startsAt;
     const rightDate = right.kind === "all-day" ? right.startDate : right.startsAt;
@@ -220,10 +220,10 @@ export function sortCalendarEvents(events: readonly CalendarEvent[]): CalendarEv
 }
 
 export function eventsOnDate(
-  events: readonly CalendarEvent[],
+  events: readonly CalendarEventEntry[],
   selectedDate: string,
   timeZone: string,
-): CalendarEvent[] {
+): CalendarEventEntry[] {
   return sortCalendarEvents(events.filter((event) =>
     eventOccursOnDate(event, selectedDate, timeZone)
   ));
@@ -363,7 +363,7 @@ export function validateEventDraft(
 }
 
 export type TimedEventSegment = Readonly<{
-  event: TimedCalendarEvent;
+  event: Extract<CalendarEventEntry, { kind: "timed" }>;
   topRem: number;
   heightRem: number;
   leftPercent: number;
@@ -376,7 +376,7 @@ export type TimedEventSegment = Readonly<{
 }>;
 
 type PositionedSegment = {
-  event: TimedCalendarEvent;
+  event: Extract<CalendarEventEntry, { kind: "timed" }>;
   startMs: number;
   layoutEndMs: number;
   topRem: number;
@@ -392,7 +392,7 @@ type PositionedSegment = {
 };
 
 export function timedEventSegmentsForDate(
-  events: readonly CalendarEvent[],
+  events: readonly CalendarEventEntry[],
   selectedDate: string,
   timeZone: string,
   locale: string,
@@ -501,9 +501,9 @@ export function timedEventSegmentsForDate(
 }
 
 export function allDayEventsForDate(
-  events: readonly CalendarEvent[],
+  events: readonly CalendarEventEntry[],
   selectedDate: string,
-): readonly CalendarEvent[] {
+): readonly CalendarEventEntry[] {
   return sortCalendarEvents(events.filter((event) =>
     event.kind === "all-day"
       && event.startDate <= selectedDate
