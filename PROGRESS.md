@@ -294,3 +294,7 @@ database, browser, SMTP, and staging checks remain open.
   viewport. No mobile/tablet, 320px, zoom, keyboard, reduced-motion, WebGL
   fallback, no-IntersectionObserver runtime, or performance test is claimed.
   See `docs/audits/landing-page.md`.
+- Commit `09c6b56 adjust` changes the agent's safe-retrieval contract and S175
+  to require public HTTPS sources. The citation validator rejects plain-HTTP
+  links, and the agent-skill suite passes all 11 tests. This instruction-level
+  change does not add or claim a live web retrieval implementation.

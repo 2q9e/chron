@@ -4,10 +4,12 @@
 
 Chron is a standalone repository on public GitHub `main`; local and remote
 `main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 632 non-merge commits at this
-checkpoint. The latest source commit is `d122d05 update`, which defers
-authentication/database initialization in the protected reminder route until
-after the bearer check. The calendar resize commits `590331f update` and
+remote branch. Public `main` contains 634 non-merge commits at this
+checkpoint. The latest source commit is `09c6b56 adjust`, which requires HTTPS
+for external web retrieval instructions and rejects plain-HTTP citations.
+The previous source commit `d122d05 update` defers authentication/database
+initialization in the protected reminder route until after the bearer check.
+The calendar resize commits `590331f update` and
 `c1d7647 improve` were also pushed over HTTPS to `main`. The reminder
 event and outbox integration was pushed as
 `be722e9`; bounded reminder delivery source was pushed in six small commits
@@ -216,7 +218,10 @@ awaits narrow and zoom browser checks.
 - `npm run test:calendar-recovery --workspace @chron/web` — all 5 tests passed,
   including partial reconciliation failure and retry.
 - `npm run test:auth-config --workspace @chron/web` — all 9 tests passed.
-- `npm run test:agent-skills --workspace @chron/web` — all 10 tests passed.
+- `npm run test:agent-skills --workspace @chron/web` — all 11 tests passed.
+- The HTTPS-only retrieval change tests the prepared research instructions and
+  rejects HTTP citation URLs. Only the documentation, skill contract, and
+  tests changed; no live web retrieval tool or staging deployment was added.
 - `npm run build --workspace @chron/web -- --webpack` — passed with the search
   route, conflict route, protected calendar, and sign-in route included.
 - The final build after the return-focus fix completed successfully; webpack
