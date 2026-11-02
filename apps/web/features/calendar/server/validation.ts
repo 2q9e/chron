@@ -513,7 +513,7 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
 
 export function parseCalendarPreferences(input: unknown): CalendarPreferences {
   const value = objectRecord(input);
-  assertAllowedFields(value, ["theme", "accentColor", "density", "weekStartsOn", "timeZone"]);
+  assertAllowedFields(value, ["theme", "accentColor", "density", "reduceMotion", "weekStartsOn", "timeZone"]);
 
   const theme = value.theme;
   if (typeof theme !== "string" || !calendarThemes.includes(theme as CalendarTheme)) {
@@ -530,6 +530,11 @@ export function parseCalendarPreferences(input: unknown): CalendarPreferences {
     return invalidPayload("Choose a supported calendar density.");
   }
 
+  const reduceMotion = value.reduceMotion;
+  if (typeof reduceMotion !== "boolean") {
+    return invalidPayload("Choose whether to reduce calendar motion.");
+  }
+
   const weekStartsOn = value.weekStartsOn;
   if (typeof weekStartsOn !== "number" || !Number.isInteger(weekStartsOn) || weekStartsOn < 0 || weekStartsOn > 6) {
     return invalidPayload("Choose a week start from Sunday through Saturday.");
@@ -540,6 +545,7 @@ export function parseCalendarPreferences(input: unknown): CalendarPreferences {
     theme: theme as CalendarTheme,
     accentColor: accentColor === null ? null : accentColor.toLowerCase(),
     density: density as CalendarDensity,
+    reduceMotion,
     weekStartsOn,
     timeZone,
   };

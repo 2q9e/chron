@@ -123,6 +123,7 @@ export function defaultPreferences(
     theme: "pink-liquid-glass",
     accentColor: null,
     density: "comfortable",
+    reduceMotion: false,
     weekStartsOn,
     timeZone,
   };

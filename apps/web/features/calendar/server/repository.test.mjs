@@ -649,6 +649,7 @@ test("destroys a connection after rollback failure and preserves the operation e
     theme: "premium-dark",
     accentColor: null,
     density: "compact",
+    reduceMotion: false,
     weekStartsOn: 1,
     timeZone: "UTC",
   }), (error) => error === operationError);
@@ -734,7 +735,7 @@ test("checks timed conflicts through the final occupied calendar date", async ()
 test("upserts preferences on the actual user key", async () => {
   const { pool, calls } = createPool((sql) => ({
     rows: sql.startsWith("INSERT INTO calendar_preferences")
-      ? [{ theme: "premium-dark", accent_color: "#c36b8e", density: "compact", week_starts_on: 1, time_zone: "UTC" }]
+      ? [{ theme: "premium-dark", accent_color: "#c36b8e", density: "compact", reduce_motion: true, week_starts_on: 1, time_zone: "UTC" }]
       : [],
   }));
   const repository = new CalendarRepository(pool);
@@ -742,6 +743,7 @@ test("upserts preferences on the actual user key", async () => {
     theme: "premium-dark",
     accentColor: "#c36b8e",
     density: "compact",
+    reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "UTC",
   });
@@ -753,11 +755,12 @@ test("upserts preferences on the actual user key", async () => {
     theme: "premium-dark",
     accentColor: "#c36b8e",
     density: "compact",
+    reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "UTC",
   });
   assert.equal(query.values[0], ownerId);
-  assert.deepEqual(query.values.slice(1), ["premium-dark", "#c36b8e", "compact", 1, "UTC"]);
+  assert.deepEqual(query.values.slice(1), ["premium-dark", "#c36b8e", "compact", true, 1, "UTC"]);
 });
 
 test("expires a bounded owner-scoped proposal batch and clears retained payload references", async () => {

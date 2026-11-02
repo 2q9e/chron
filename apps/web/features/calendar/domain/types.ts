@@ -155,6 +155,7 @@ export type CalendarPreferences = Readonly<{
   theme: CalendarTheme;
   accentColor: string | null;
   density: CalendarDensity;
+  reduceMotion: boolean;
   weekStartsOn: number;
   timeZone: string;
 }>;

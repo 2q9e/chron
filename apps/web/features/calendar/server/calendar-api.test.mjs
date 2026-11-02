@@ -409,12 +409,14 @@ test("validates the complete persisted preference contract", () => {
     theme: "high-contrast",
     accentColor: "#78002E",
     density: "compact",
+    reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "America/Montreal",
   }), {
     theme: "high-contrast",
     accentColor: "#78002e",
     density: "compact",
+    reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "America/Montreal",
   });
@@ -422,6 +424,7 @@ test("validates the complete persisted preference contract", () => {
     () => parseCalendarPreferences({
       theme: "high-contrast",
       density: "compact",
+      reduceMotion: false,
       weekStartsOn: 8,
       timeZone: "America/Montreal",
     }),
@@ -432,6 +435,18 @@ test("validates the complete persisted preference contract", () => {
       theme: "high-contrast",
       accentColor: "#ffffff; background: url(https://invalid.example)",
       density: "compact",
+      reduceMotion: false,
+      weekStartsOn: 1,
+      timeZone: "America/Montreal",
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarPreferences({
+      theme: "high-contrast",
+      accentColor: null,
+      density: "comfortable",
+      reduceMotion: "false",
       weekStartsOn: 1,
       timeZone: "America/Montreal",
     }),

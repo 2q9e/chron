@@ -159,6 +159,7 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       theme: "minimal-light",
       accentColor: "#b44772",
       density: "comfortable",
+      reduceMotion: true,
       weekStartsOn: 1,
       timeZone: "UTC",
     };
