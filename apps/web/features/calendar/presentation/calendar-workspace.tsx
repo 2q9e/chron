@@ -3,7 +3,7 @@
 import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
-import { calendarEventSeries, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
+import { calendarEventSeries, type CalendarEvent, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
 import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
@@ -350,7 +350,16 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const moveEvent: CalendarMoveAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone) => {
     if (!preferences || calendarLocked) return;
     const event = calendarEventSeries(selected);
-    const moved = moveCalendarEventDraft(event, targetDate, targetMinute, calendarTimeZone);
+    const isOccurrenceMove = "occurrenceKey" in selected && !!event.recurrenceRule;
+    const moveSource: CalendarEvent = isOccurrenceMove && "occurrenceKey" in selected
+      ? selected.kind === "timed" && event.kind === "timed"
+        ? { ...event, startLocal: selected.startLocal, endLocal: selected.endLocal,
+            timeZone: selected.timeZone, startsAt: selected.startsAt, endsAt: selected.endsAt }
+        : selected.kind === "all-day" && event.kind === "all-day"
+          ? { ...event, startDate: selected.startDate, endDate: selected.endDate }
+          : event
+      : event;
+    const moved = moveCalendarEventDraft(moveSource, targetDate, targetMinute, calendarTimeZone);
     if (!moved.ok) {
       setNotice(moved.message);
       return;
@@ -361,8 +370,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditor({
       generation: editorGeneration.current,
       event,
+      occurrenceKey: isOccurrenceMove && "occurrenceKey" in selected ? selected.occurrenceKey : undefined,
       operationKey: event.recurrenceRule ? crypto.randomUUID() : null,
-      operationAction: event.recurrenceRule ? "update" : null,
+      operationAction: isOccurrenceMove ? "move-occurrence" : event.recurrenceRule ? "update" : null,
       draft: moved.draft,
       zone: moved.timeZone,
       errors: {},
@@ -371,7 +381,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       reviewTimeZone: null,
       deleting: false,
       seriesDraft: null,
-      purpose: "move",
+      purpose: isOccurrenceMove ? "move-occurrence" : "move",
       reviewCalendarTimeZone: calendarTimeZone,
     });
     setEditorError("");
@@ -443,7 +453,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setEditorError("A repeating series must keep a finite recurrence rule.");
       return;
     }
-    const proposalAction: "update" | "create" = editor.event ? "update" : "create";
+    const proposalAction = editor.purpose === "move-occurrence"
+      ? "move-occurrence"
+      : editor.event ? "update" : "create";
     const operationKey = editor.operationAction === proposalAction
       ? editor.operationKey
       : crypto.randomUUID();
@@ -464,6 +476,46 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditor(reviewedEditor);
     setBusy(true); setEditorError("");
     try {
+      if (reviewedEditor.purpose === "move-occurrence") {
+        if (!reviewedEditor.event?.recurrenceRule || !reviewedEditor.occurrenceKey || !preferences) {
+          throw new Error("Choose one recurring occurrence and a saved calendar time zone before moving it.");
+        }
+        const movement = result.mutation.kind === "timed"
+          ? {
+              kind: "timed" as const,
+              startLocal: result.mutation.startLocal,
+              endLocal: result.mutation.endLocal,
+              timeZone: result.mutation.timeZone,
+              ...(result.mutation.startDisambiguation
+                ? { startDisambiguation: result.mutation.startDisambiguation }
+                : {}),
+              ...(result.mutation.endDisambiguation
+                ? { endDisambiguation: result.mutation.endDisambiguation }
+                : {}),
+            }
+          : {
+              kind: "all-day" as const,
+              startDate: result.mutation.startDate,
+              endDate: result.mutation.endDate,
+            };
+        const draft = await createCalendarSeriesDraft({
+          action: "move-occurrence",
+          scope: "occurrence",
+          targetEventId: reviewedEditor.event.id,
+          targetRevision: reviewedEditor.event.revision,
+          occurrenceKey: reviewedEditor.occurrenceKey,
+          calendarTimeZone: preferences.timeZone,
+          movement,
+        }, operationKey);
+        if (editorGeneration.current !== generation) return;
+        if (draft.outcome !== "pending") {
+          setEditor({ ...reviewedEditor, operationKey: crypto.randomUUID(), seriesDraft: null });
+          setEditorError("That occurrence move is no longer pending. Reload the calendar and review it again.");
+          return;
+        }
+        setEditor({ ...reviewedEditor, errors: {}, seriesDraft: draft });
+        return;
+      }
       if (result.recurrenceRule) {
         const request: CalendarSeriesDraftRequest = reviewedEditor.event
           ? {
@@ -528,6 +580,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       const generation = current.generation;
       if (((proposal.action === "create" || proposal.action === "update")
         && proposal.calendarTimeZone !== preferences.timeZone)
+        || (proposal.action === "move-occurrence"
+          && proposal.calendarTimeZone !== preferences.timeZone)
         || (proposal.action === "restore-occurrence"
           && proposal.calendarTimeZone !== preferences.timeZone)) {
         setEditor({ ...current, operationKey: crypto.randomUUID(), operationAction: proposal.action, seriesDraft: null });
@@ -550,6 +604,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
             ? "Occurrence cancelled."
             : approval.action === "restore-occurrence"
               ? "Occurrence restored."
+              : approval.action === "move-occurrence"
+                ? "Occurrence moved."
             : approval.action === "create"
             ? "Repeating series created."
             : approval.action === "update"
@@ -1013,7 +1069,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
           operationKey: editor.event?.recurrenceRule ? crypto.randomUUID() : editor.operationKey,
           operationAction: editor.purpose === "restore"
             ? "restore-occurrence"
-            : editor.event?.recurrenceRule ? "update" : editor.operationAction,
+            : editor.purpose === "move-occurrence"
+              ? "move-occurrence"
+              : editor.event?.recurrenceRule ? "update" : editor.operationAction,
           deleting: false,
           seriesDraft: null,
         })}

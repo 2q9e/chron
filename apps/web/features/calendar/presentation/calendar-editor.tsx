@@ -19,7 +19,7 @@ export type Editor = {
   event: CalendarEvent | null;
   occurrenceKey?: string;
   operationKey: string | null;
-  operationAction: "create" | "update" | "delete" | "cancel-occurrence" | "restore-occurrence" | null;
+  operationAction: "create" | "update" | "delete" | "cancel-occurrence" | "restore-occurrence" | "move-occurrence" | null;
   draft: EventDraft;
   zone: string;
   errors: Partial<Record<EventDraftField, string>>;
@@ -28,7 +28,7 @@ export type Editor = {
   reviewTimeZone: string | null;
   deleting: boolean;
   seriesDraft: CalendarSeriesDraft | null;
-  purpose?: "move" | "resize" | "restore";
+  purpose?: "move" | "move-occurrence" | "resize" | "restore";
   restoreOccurrence?: CalendarEventOccurrence;
   reviewCalendarTimeZone?: string;
 };
@@ -54,6 +54,7 @@ type Props = {
 
 export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   const locked = busy || stale || retryOnly;
+  const movementOnly = editor.purpose === "move-occurrence";
   const errorPanel = useRef<HTMLDivElement | null>(null);
   const seriesReviewHeading = useRef<HTMLHeadingElement | null>(null);
   const reminderOptions = editor.draft.kind === "timed"
@@ -77,6 +78,8 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
     ? "Restore canceled occurrence"
     : editor.purpose === "move"
     ? editor.event?.recurrenceRule ? "Review series move" : "Review event move"
+    : editor.purpose === "move-occurrence"
+      ? "Move one occurrence"
     : editor.purpose === "resize"
       ? "Review event duration change"
       : editor.event?.recurrenceRule
@@ -104,9 +107,11 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
         <h2 id="editor-heading">{heading}</h2>
         <button type="button" onClick={onClose} disabled={busy || retryOnly}>Close</button>
       </div>
-      {(editor.purpose === "move" || editor.purpose === "resize") && (
+      {(editor.purpose === "move" || editor.purpose === "move-occurrence" || editor.purpose === "resize") && (
         <p className={styles.moveReviewNote}>
-          {editor.purpose === "move"
+          {editor.purpose === "move-occurrence"
+            ? "Only the occurrence you dragged will move. Its original series identity and duration stay the same; review the new time and any overlaps before approving."
+            : editor.purpose === "move"
             ? editor.event?.recurrenceRule
               ? "This proposes moving the entire repeating series, not only the occurrence you dragged. Nothing is saved until you review the affected occurrences and approve the proposal."
               : "This proposed move is not saved yet. Review its dates, reminder, and conflicts before approving it."
@@ -137,20 +142,20 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
       <form onSubmit={onReview} className={styles.form}>
         <label>
           Title
-          <input autoFocus disabled={locked} required maxLength={160} value={editor.draft.title}
+          <input autoFocus disabled={locked || movementOnly} required maxLength={160} value={editor.draft.title}
             onChange={(e) => onChange("title", e.target.value)}
             aria-invalid={!!editor.errors.title} aria-describedby={editor.errors.title ? "title-error" : undefined} />
         </label>
         {editor.errors.title && <p id="title-error" className={styles.fieldError}>{editor.errors.title}</p>}
         <label>
           Details
-          <textarea disabled={locked} maxLength={4000} value={editor.draft.details} onChange={(e) => onChange("details", e.target.value)}
+          <textarea disabled={locked || movementOnly} maxLength={4000} value={editor.draft.details} onChange={(e) => onChange("details", e.target.value)}
             aria-invalid={!!editor.errors.details} aria-describedby={editor.errors.details ? "details-error" : undefined} />
         </label>
         {editor.errors.details && <p id="details-error" className={styles.fieldError}>{editor.errors.details}</p>}
         <label>
           Event type
-          <select disabled={locked} value={editor.draft.kind} onChange={(e) => onChange("kind", e.target.value)}>
+          <select disabled={locked || movementOnly} value={editor.draft.kind} onChange={(e) => onChange("kind", e.target.value)}>
             <option value="timed">Timed</option>
             <option value="all-day">All day</option>
           </select>
@@ -160,7 +165,7 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
           <label htmlFor="reminder-choice">Timing
             <select
               id="reminder-choice"
-              disabled={locked}
+              disabled={locked || movementOnly}
               value={editor.draft.reminderChoice}
               onChange={(e) => onChange("reminderChoice", e.target.value)}
               aria-invalid={!!editor.errors.reminderChoice}
@@ -174,7 +179,7 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
             : <p id="reminder-choice-note" aria-live="polite">{reminderNote}</p>}
         </fieldset>
         {editor.event && <CalendarReminderStatus key={`${editor.event.id}:${editor.event.revision}`} event={editor.event} />}
-        {(!editor.event || editor.event.recurrenceRule) && (
+        {(!editor.event || editor.event.recurrenceRule) && !movementOnly && (
           <fieldset className={styles.recurrence}>
             <legend>{editor.event ? "Repeating series" : "Repeat"}</legend>
             {editor.event && <p>Changes apply to the entire series.</p>}
@@ -281,8 +286,8 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
         )}
         <div className={styles.actions}>
           <button type="submit" disabled={locked}>{busy ? "Checking calendar…" : "Review changes"}</button>
-          {editor.event?.recurrenceRule && editor.occurrenceKey && <button type="button" disabled={locked} onClick={onCancelOccurrenceReview}>Cancel this occurrence</button>}
-          {editor.event && <button type="button" disabled={locked} onClick={onDeleteReview}>{editor.event.recurrenceRule ? "Delete series" : "Delete event"}</button>}
+          {!movementOnly && editor.event?.recurrenceRule && editor.occurrenceKey && <button type="button" disabled={locked} onClick={onCancelOccurrenceReview}>Cancel this occurrence</button>}
+          {!movementOnly && editor.event && <button type="button" disabled={locked} onClick={onDeleteReview}>{editor.event.recurrenceRule ? "Delete series" : "Delete event"}</button>}
         </div>
       </form>
       )}
@@ -344,6 +349,7 @@ function SeriesDraftReview({
   const isDelete = draft.action === "delete";
   const isOccurrenceCancellation = draft.action === "cancel-occurrence";
   const isOccurrenceRestoration = draft.action === "restore-occurrence";
+  const isOccurrenceMovement = draft.action === "move-occurrence";
   const occurrences = isDelete ? draft.beforeOccurrences : draft.afterOccurrences;
   const headline = isDelete
     ? `Delete ${occurrences.length} occurrences?`
@@ -351,6 +357,8 @@ function SeriesDraftReview({
       ? `Cancel ${draft.beforeOccurrences.length === 1 ? "this occurrence" : "this date"}?`
       : isOccurrenceRestoration
         ? "Restore this occurrence?"
+        : isOccurrenceMovement
+          ? "Move this occurrence?"
     : draft.action === "create"
       ? `Create ${occurrences.length} occurrences?`
       : `Update ${draft.beforeOccurrences.length} current occurrences to ${draft.afterOccurrences.length} proposed occurrences?`;
@@ -363,7 +371,8 @@ function SeriesDraftReview({
     <div className={styles.review}>
       <h3 ref={headingRef} tabIndex={-1}>{isOccurrenceCancellation
         ? "Review occurrence cancellation"
-        : isOccurrenceRestoration ? "Review occurrence restoration" : "Review repeating series"}</h3>
+        : isOccurrenceRestoration ? "Review occurrence restoration"
+          : isOccurrenceMovement ? "Review occurrence move" : "Review repeating series"}</h3>
       <p><strong>{headline}</strong></p>
       {draft.action === "create" && draft.event && (
         <p><strong>Proposed:</strong> {describeSeries(draft.event, draft.recurrenceRule)} · Calendar time zone {draft.calendarTimeZone}</p>
@@ -394,6 +403,11 @@ function SeriesDraftReview({
             <li key={occurrence.occurrenceKey}>{describeOccurrence(occurrence)}</li>
           ))}
         </ol>
+      ) : isOccurrenceMovement ? (
+        <dl className={styles.seriesSummary}>
+          <div><dt>Current</dt><dd>{draft.beforeOccurrences.map(describeOccurrence).join(" · ")}</dd></div>
+          <div><dt>Proposed</dt><dd>{draft.afterOccurrences.map(describeOccurrence).join(" · ")}</dd></div>
+        </dl>
       ) : draft.action === "update" ? (
         <>
           <details className={styles.seriesOccurrences}>
@@ -422,6 +436,8 @@ function SeriesDraftReview({
           ? "Only this scheduled occurrence changes. Chron cancels queued reminders; one already being delivered may still arrive."
           : isOccurrenceRestoration
             ? `No overlaps were found for this occurrence in ${draft.calendarTimeZone}.`
+            : isOccurrenceMovement
+              ? `No overlaps were found for this occurrence in ${draft.calendarTimeZone}.`
             : "No overlaps were found in the proposed series."}</p>
       ) : (
         <div className={styles.conflictList}>
@@ -447,11 +463,13 @@ function SeriesDraftReview({
           ? "Approve and delete series"
           : isOccurrenceCancellation
             ? "Approve occurrence cancellation"
-            : isOccurrenceRestoration ? "Approve restoration" : "Approve series changes"}
+            : isOccurrenceRestoration ? "Approve restoration"
+              : isOccurrenceMovement ? "Approve occurrence move" : "Approve series changes"}
       </button>
       {isDelete && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep series</button>}
       {isOccurrenceCancellation && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep occurrence</button>}
       {isOccurrenceRestoration && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep occurrence cancelled</button>}
+      {isOccurrenceMovement && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep current time</button>}
     </div>
   );
 }
