@@ -8,6 +8,11 @@ export const calendarThemes = [
 
 export type CalendarTheme = (typeof calendarThemes)[number];
 export type CalendarDensity = "comfortable" | "compact";
+export type CalendarRecurrenceRule = Readonly<{
+  frequency: "daily" | "weekly";
+  interval: 1 | 2 | 3 | 4;
+  count: number;
+}>;
 
 export type CalendarPreferences = Readonly<{
   theme: CalendarTheme;
@@ -21,6 +26,7 @@ type CalendarEventBase = Readonly<{
   title: string;
   details: string | null;
   revision: number;
+  recurrenceRule?: CalendarRecurrenceRule;
   createdAt: string;
   updatedAt: string;
 }>;

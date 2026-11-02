@@ -16,7 +16,9 @@ import type {
   CalendarEventMutation,
   CalendarEventSearchRequest,
   CalendarPreferences,
+  CalendarRecurrenceRule,
 } from "../domain/types.ts";
+import { normalizeRecurrenceRule } from "../domain/recurrence.ts";
 import { CalendarRouteError, calendarSearchTimeoutError } from "./errors.ts";
 
 const maximumEventsPerRange = 1000;
@@ -37,6 +39,9 @@ type EventRow = QueryResultRow & {
   ends_at: Date | string | null;
   start_date: string | null;
   end_date: string | null;
+  recurrence_frequency: string | null;
+  recurrence_interval: number | null;
+  recurrence_count: number | null;
   created_at: Date | string;
   updated_at: Date | string;
 };
@@ -84,6 +89,9 @@ const eventColumns = `
   ends_at,
   start_date::text AS start_date,
   end_date::text AS end_date,
+  recurrence_frequency,
+  recurrence_interval,
+  recurrence_count,
   created_at,
   updated_at
 `;
@@ -151,12 +159,31 @@ function asIsoTimestamp(value: Date | string): string {
   return asIsoInstant(value);
 }
 
+function recurrenceRuleFromRow(row: EventRow): CalendarRecurrenceRule | undefined {
+  const fields = [
+    row.recurrence_frequency,
+    row.recurrence_interval,
+    row.recurrence_count,
+  ];
+  if (fields.every((value) => value == null)) return undefined;
+  if (fields.some((value) => value == null)) {
+    throw new Error("Calendar event has incomplete recurrence data.");
+  }
+  return normalizeRecurrenceRule({
+    frequency: row.recurrence_frequency,
+    interval: row.recurrence_interval,
+    count: row.recurrence_count,
+  });
+}
+
 function toCalendarEvent(row: EventRow): CalendarEvent {
+  const recurrenceRule = recurrenceRuleFromRow(row);
   const base = {
     id: row.id,
     title: row.title,
     details: row.details,
     revision: row.revision,
+    ...(recurrenceRule ? { recurrenceRule } : {}),
     createdAt: asIsoTimestamp(row.created_at),
     updatedAt: asIsoTimestamp(row.updated_at),
   };
@@ -430,6 +457,27 @@ async function assertCalendarTimeZoneCurrent(
       409,
       "CALENDAR_TIME_ZONE_CHANGED",
       "The calendar time zone changed. Review the event again before saving.",
+    );
+  }
+}
+
+async function assertSingleEventScope(
+  client: PoolClient,
+  ownerId: string,
+  eventId: string,
+): Promise<void> {
+  const result = await client.query<{ recurrence_frequency: string | null } & QueryResultRow>(
+    `SELECT recurrence_frequency
+     FROM calendar_events
+     WHERE user_id = $1 AND id = $2::uuid
+     FOR UPDATE`,
+    [ownerId, eventId],
+  );
+  if (result.rows[0]?.recurrence_frequency != null) {
+    throw new CalendarRouteError(
+      409,
+      "SERIES_SCOPE_REQUIRED",
+      "Recurring events must be changed through a reviewed whole-series proposal.",
     );
   }
 }
@@ -770,6 +818,7 @@ export class CalendarRepository {
   ): Promise<CalendarEvent> {
     const bounds = conflictBounds(mutation, calendarTimeZone);
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      await assertSingleEventScope(client, ownerId, eventId);
       await assertCalendarTimeZoneCurrent(client, ownerId, bounds.calendarTimeZone);
       assertConflictReview(
         await conflictsInTransaction(client, ownerId, bounds, eventId),
@@ -856,6 +905,7 @@ export class CalendarRepository {
 
   deleteEvent(ownerId: string, eventId: string, expectedRevision: number): Promise<void> {
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
+      await assertSingleEventScope(client, ownerId, eventId);
       const result = await client.query(
         `DELETE FROM calendar_events
          WHERE user_id = $1 AND id = $2::uuid AND revision = $3

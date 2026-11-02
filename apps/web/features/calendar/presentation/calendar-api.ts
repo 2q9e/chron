@@ -60,6 +60,20 @@ function isCalendarEvent(value: unknown): value is CalendarEvent {
     || !isNonEmptyString(value.createdAt)
     || !isNonEmptyString(value.updatedAt)) return false;
 
+  if (Object.hasOwn(value, "recurrenceRule")) {
+    const rule = value.recurrenceRule;
+    if (!isRecord(rule)
+      || (rule.frequency !== "daily" && rule.frequency !== "weekly")
+      || !Number.isInteger(rule.interval)
+      || typeof rule.interval !== "number"
+      || rule.interval < 1
+      || rule.interval > 4
+      || !Number.isInteger(rule.count)
+      || typeof rule.count !== "number"
+      || rule.count < 2
+      || rule.count > 366) return false;
+  }
+
   if (value.kind === "all-day") {
     return isNonEmptyString(value.startDate) && isNonEmptyString(value.endDate);
   }

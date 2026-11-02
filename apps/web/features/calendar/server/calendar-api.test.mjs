@@ -627,8 +627,31 @@ class MemoryCalendarPool {
             rows: row && row.user_id === queryOwnerId && queryOwnerId === ownerId ? [row] : [],
           };
         }
+        if (
+          statement.startsWith("SELECT id, kind,")
+          && statement.includes("FROM calendar_events")
+          && statement.includes("WHERE user_id = $1")
+          && !statement.includes("id <> $2::uuid")
+          && !statement.includes("id = $2::uuid")
+        ) {
+          const [queryOwnerId] = values;
+          return {
+            rows: [...this.events.values()].filter((row) =>
+              row.user_id === queryOwnerId && queryOwnerId === ownerId
+            ),
+          };
+        }
         if (statement.includes("FROM calendar_events") && statement.includes("id <> $2::uuid")) {
           return { rows: [] };
+        }
+        if (statement.startsWith("SELECT recurrence_frequency FROM calendar_events")) {
+          const [queryOwnerId, eventId] = values;
+          const row = this.events.get(eventId);
+          return {
+            rows: row && row.user_id === queryOwnerId && queryOwnerId === ownerId
+              ? [{ recurrence_frequency: row.recurrence_frequency ?? null }]
+              : [],
+          };
         }
         if (statement.startsWith("INSERT INTO calendar_events")) {
           const [id, rowOwnerId, title, details, startDate, endDate] = values;
@@ -647,6 +670,9 @@ class MemoryCalendarPool {
             ends_at: null,
             start_date: startDate,
             end_date: endDate,
+            recurrence_frequency: null,
+            recurrence_interval: null,
+            recurrence_count: null,
             created_at: now,
             updated_at: now,
           };
@@ -867,6 +893,52 @@ test("event deletion leaves only a tombstone against duplicate creation", async 
   );
   assert.equal(pool.events.size, 0);
   assert.equal(pool.requests.size, 1);
+});
+
+test("round-trips recurrence rules and prevents single-event edits or deletes of a series", async () => {
+  const pool = new MemoryCalendarPool();
+  const repository = new CalendarRepository(pool);
+  const created = await createCalendarEvent(repository, "owner-one", "series-guard", validAllDayCommit());
+  const stored = pool.events.get(created.event.id);
+  Object.assign(stored, {
+    recurrence_frequency: "weekly",
+    recurrence_interval: 1,
+    recurrence_count: 6,
+  });
+
+  const listed = await repository.listEvents(
+    "owner-one",
+    "2026-11-02",
+    "2026-11-09",
+    "America/Montreal",
+  );
+  assert.deepEqual(listed[0].recurrenceRule, {
+    frequency: "weekly",
+    interval: 1,
+    count: 6,
+  });
+
+  await assert.rejects(
+    repository.updateEvent(
+      "owner-one",
+      created.event.id,
+      created.event.revision,
+      validAllDayCommit("Edited once").event,
+      "America/Montreal",
+      [],
+    ),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "SERIES_SCOPE_REQUIRED"
+      && error.status === 409,
+  );
+  await assert.rejects(
+    repository.deleteEvent("owner-one", created.event.id, created.event.revision),
+    (error) => error instanceof CalendarRouteError
+      && error.code === "SERIES_SCOPE_REQUIRED"
+      && error.status === 409,
+  );
+  assert.equal(stored.revision, created.event.revision);
+  assert.equal(pool.events.size, 1);
 });
 
 test("reconciliation replays a saved result without requiring or storing event text", async () => {

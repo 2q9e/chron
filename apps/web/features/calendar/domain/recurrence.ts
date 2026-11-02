@@ -2,6 +2,7 @@ import { Temporal } from "@js-temporal/polyfill";
 import type {
   AllDayCalendarEvent,
   CalendarEvent,
+  CalendarRecurrenceRule,
   TimedCalendarEvent,
 } from "./types.ts";
 import {
@@ -18,11 +19,7 @@ export const maximumRecurrenceHorizonDays = 366;
 export const maximumRecurrenceRangeDays = maximumCalendarRangeDays;
 export const maximumRecurringEventDurationDays = 7;
 
-export type RecurrenceRule = Readonly<{
-  frequency: "daily" | "weekly";
-  interval: 1 | 2 | 3 | 4;
-  count: number;
-}>;
+export type RecurrenceRule = CalendarRecurrenceRule;
 
 export type RecurrenceErrorCode =
   | "INVALID_RULE"
