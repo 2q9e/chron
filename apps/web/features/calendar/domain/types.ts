@@ -65,6 +65,7 @@ export type CalendarConflict =
       id: string;
       revision: number;
       title: string;
+      occurrenceKey?: string;
       kind: "timed";
       startLocal: string;
       endLocal: string;
@@ -74,6 +75,7 @@ export type CalendarConflict =
       id: string;
       revision: number;
       title: string;
+      occurrenceKey?: string;
       kind: "all-day";
       startDate: string;
       endDate: string;
