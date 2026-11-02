@@ -652,6 +652,14 @@ test("destroys a connection after rollback failure and preserves the operation e
     reduceMotion: false,
     weekStartsOn: 1,
     timeZone: "UTC",
+    studyPlanner: {
+      weekdays: [1, 2, 3, 4, 5],
+      dayStart: "09:00",
+      dayEnd: "17:00",
+      sessionMinutes: 60,
+      eventBufferMinutes: 15,
+      sessionBreakMinutes: 15,
+    },
   }), (error) => error === operationError);
   assert.deepEqual(calls.slice(0, 2).map(({ sql }) => sql), [
     "BEGIN",
@@ -735,7 +743,7 @@ test("checks timed conflicts through the final occupied calendar date", async ()
 test("upserts preferences on the actual user key", async () => {
   const { pool, calls } = createPool((sql) => ({
     rows: sql.startsWith("INSERT INTO calendar_preferences")
-      ? [{ theme: "premium-dark", accent_color: "#c36b8e", density: "compact", reduce_motion: true, week_starts_on: 1, time_zone: "UTC" }]
+      ? [{ theme: "premium-dark", accent_color: "#c36b8e", density: "compact", reduce_motion: true, week_starts_on: 1, time_zone: "UTC", study_weekdays: [2, 4], study_day_start: "08:15:00", study_day_end: "19:45:00", study_session_minutes: 75, study_event_buffer_minutes: 30, study_session_break_minutes: 0 }]
       : [],
   }));
   const repository = new CalendarRepository(pool);
@@ -746,6 +754,14 @@ test("upserts preferences on the actual user key", async () => {
     reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "UTC",
+    studyPlanner: {
+      weekdays: [2, 4],
+      dayStart: "08:15",
+      dayEnd: "19:45",
+      sessionMinutes: 75,
+      eventBufferMinutes: 30,
+      sessionBreakMinutes: 0,
+    },
   });
 
   const query = calls.find(({ sql }) => sql.includes("INSERT INTO calendar_preferences"));
@@ -758,9 +774,20 @@ test("upserts preferences on the actual user key", async () => {
     reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "UTC",
+    studyPlanner: {
+      weekdays: [2, 4],
+      dayStart: "08:15",
+      dayEnd: "19:45",
+      sessionMinutes: 75,
+      eventBufferMinutes: 30,
+      sessionBreakMinutes: 0,
+    },
   });
   assert.equal(query.values[0], ownerId);
-  assert.deepEqual(query.values.slice(1), ["premium-dark", "#c36b8e", "compact", true, 1, "UTC"]);
+  assert.deepEqual(query.values.slice(1), [
+    "premium-dark", "#c36b8e", "compact", true, 1, "UTC",
+    [2, 4], "08:15", "19:45", 75, 30, 0,
+  ]);
 });
 
 test("expires a bounded owner-scoped proposal batch and clears retained payload references", async () => {

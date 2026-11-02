@@ -17,6 +17,7 @@ import type {
   CreateAllDayCalendarEvent,
   CreateTimedCalendarEvent,
 } from "../domain/types";
+import { defaultStudyPlannerDefaults } from "../domain/study-planner.ts";
 import {
   allDayCalendarReminderChoices,
   scheduleCalendarReminder,
@@ -126,6 +127,7 @@ export function defaultPreferences(
     reduceMotion: false,
     weekStartsOn,
     timeZone,
+    studyPlanner: defaultStudyPlannerDefaults,
   };
 }
 

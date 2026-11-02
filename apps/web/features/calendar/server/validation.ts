@@ -13,6 +13,7 @@ import {
   type CalendarTheme,
 } from "../domain/types.ts";
 import { isCalendarAccentColor } from "../domain/calendar-accent.ts";
+import { isStudyPlannerDefaults } from "../domain/study-planner.ts";
 import {
   allDayCalendarReminderChoices,
   timedCalendarReminderChoices,
@@ -513,7 +514,7 @@ export function parseCalendarEventMutation(input: unknown): CalendarEventMutatio
 
 export function parseCalendarPreferences(input: unknown): CalendarPreferences {
   const value = objectRecord(input);
-  assertAllowedFields(value, ["theme", "accentColor", "density", "reduceMotion", "weekStartsOn", "timeZone"]);
+  assertAllowedFields(value, ["theme", "accentColor", "density", "reduceMotion", "weekStartsOn", "timeZone", "studyPlanner"]);
 
   const theme = value.theme;
   if (typeof theme !== "string" || !calendarThemes.includes(theme as CalendarTheme)) {
@@ -541,6 +542,9 @@ export function parseCalendarPreferences(input: unknown): CalendarPreferences {
   }
 
   const timeZone = validateTimeZone(value.timeZone);
+  if (!isStudyPlannerDefaults(value.studyPlanner)) {
+    return invalidPayload("Choose valid study availability, session, buffer, and break defaults.");
+  }
   return {
     theme: theme as CalendarTheme,
     accentColor: accentColor === null ? null : accentColor.toLowerCase(),
@@ -548,6 +552,10 @@ export function parseCalendarPreferences(input: unknown): CalendarPreferences {
     reduceMotion,
     weekStartsOn,
     timeZone,
+    studyPlanner: {
+      ...value.studyPlanner,
+      weekdays: [...value.studyPlanner.weekdays].sort((left, right) => left - right),
+    },
   };
 }
 

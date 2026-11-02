@@ -1,6 +1,7 @@
 import { Temporal } from "@js-temporal/polyfill";
 import { calendarThemes } from "../domain/types.ts";
 import { isCalendarAccentColor } from "../domain/calendar-accent.ts";
+import { isStudyPlannerDefaults } from "../domain/study-planner.ts";
 import {
   allDayCalendarReminderChoices,
   timedCalendarReminderChoices,
@@ -530,6 +531,7 @@ function isCalendarPreferences(value: unknown): value is CalendarPreferences {
   if (typeof value.reduceMotion !== "boolean") return false;
   if (!Number.isInteger(value.weekStartsOn) || typeof value.weekStartsOn !== "number") return false;
   if (value.weekStartsOn < 0 || value.weekStartsOn > 6 || !isNonEmptyString(value.timeZone)) return false;
+  if (!isStudyPlannerDefaults(value.studyPlanner)) return false;
 
   try {
     new Intl.DateTimeFormat("en", { timeZone: value.timeZone });

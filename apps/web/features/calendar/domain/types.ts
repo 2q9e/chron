@@ -158,6 +158,16 @@ export type CalendarPreferences = Readonly<{
   reduceMotion: boolean;
   weekStartsOn: number;
   timeZone: string;
+  studyPlanner: StudyPlannerDefaults;
+}>;
+
+export type StudyPlannerDefaults = Readonly<{
+  weekdays: readonly number[];
+  dayStart: string;
+  dayEnd: string;
+  sessionMinutes: number;
+  eventBufferMinutes: number;
+  sessionBreakMinutes: number;
 }>;
 
 export type CalendarReminderFailureCounts = Readonly<{

@@ -63,6 +63,14 @@ test("loads and saves the complete per-account calendar preference contract", as
     reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "America/Montreal",
+    studyPlanner: {
+      weekdays: [1, 2, 3, 4, 5],
+      dayStart: "09:00",
+      dayEnd: "17:00",
+      sessionMinutes: 60,
+      eventBufferMinutes: 15,
+      sessionBreakMinutes: 15,
+    },
   };
   const calls = [];
   globalThis.fetch = async (url, init) => {
@@ -93,6 +101,14 @@ test("rejects an invalid accent returned by the calendar preference API", async 
       reduceMotion: false,
       weekStartsOn: 0,
       timeZone: "UTC",
+      studyPlanner: {
+        weekdays: [1, 2, 3, 4, 5],
+        dayStart: "09:00",
+        dayEnd: "17:00",
+        sessionMinutes: 60,
+        eventBufferMinutes: 15,
+        sessionBreakMinutes: 15,
+      },
     },
   });
 
@@ -115,6 +131,44 @@ test("rejects an invalid motion preference returned by the calendar preference A
       reduceMotion: "false",
       weekStartsOn: 0,
       timeZone: "UTC",
+      studyPlanner: {
+        weekdays: [1, 2, 3, 4, 5],
+        dayStart: "09:00",
+        dayEnd: "17:00",
+        sessionMinutes: 60,
+        eventBufferMinutes: 15,
+        sessionBreakMinutes: 15,
+      },
+    },
+  });
+
+  try {
+    await assert.rejects(
+      fetchCalendarPreferences(),
+      (error) => error instanceof CalendarRequestError && error.code === "INVALID_RESPONSE",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("rejects invalid study planner defaults returned by the calendar preference API", async () => {
+  globalThis.fetch = async () => response({
+    preferences: {
+      theme: "minimal-light",
+      accentColor: null,
+      density: "comfortable",
+      reduceMotion: false,
+      weekStartsOn: 0,
+      timeZone: "UTC",
+      studyPlanner: {
+        weekdays: [1, 1],
+        dayStart: "09:00",
+        dayEnd: "17:00",
+        sessionMinutes: 60,
+        eventBufferMinutes: 15,
+        sessionBreakMinutes: 15,
+      },
     },
   });
 

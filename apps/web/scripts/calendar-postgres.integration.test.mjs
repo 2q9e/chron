@@ -174,10 +174,23 @@ test("PostgreSQL migrations enforce calendar owner isolation and transaction-loc
       reduceMotion: true,
       weekStartsOn: 1,
       timeZone: "UTC",
+      studyPlanner: {
+        weekdays: [2, 4],
+        dayStart: "08:15",
+        dayEnd: "19:45",
+        sessionMinutes: 75,
+        eventBufferMinutes: 30,
+        sessionBreakMinutes: 0,
+      },
     };
     await repository.setPreferences(accountA, preferences);
     assert.deepEqual(await repository.getPreferences(accountA), preferences);
     assert.deepEqual(await repository.getPreferences(accountB), null);
+    await assert.rejects(repository.setPreferences(accountA, {
+      ...preferences,
+      studyPlanner: { ...preferences.studyPlanner, weekdays: [2, 2] },
+    }));
+    assert.deepEqual(await repository.getPreferences(accountA), preferences);
 
     const cancelledOccurrenceKey = `${eventA}:2098-11-09`;
     await databasePool.query(

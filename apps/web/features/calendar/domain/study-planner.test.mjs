@@ -1,7 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { Temporal } from "@js-temporal/polyfill";
-import { planStudyTime, StudyPlannerError, studyPlannerInputErrors } from "./study-planner.ts";
+import {
+  defaultStudyPlannerDefaults,
+  isStudyPlannerDefaults,
+  planStudyTime,
+  StudyPlannerError,
+  studyPlannerDefaultsErrors,
+  studyPlannerInputErrors,
+} from "./study-planner.ts";
 
 const weekdays = [1, 2, 3, 4, 5];
 const testNow = Temporal.Instant.from("2025-01-01T00:00:00Z");
@@ -195,6 +202,27 @@ test("returns field-specific errors for invalid planner controls", () => {
     studyPlannerInputErrors(input({ totalMinutes: 10_080, sessionMinutes: 15 }), testNow).sessionMinutes,
     /120 or fewer sessions/u,
   );
+});
+
+test("study planning defaults accept bounded values and reject malformed input", () => {
+  assert.deepEqual(studyPlannerDefaultsErrors(defaultStudyPlannerDefaults), {});
+  assert.equal(isStudyPlannerDefaults(defaultStudyPlannerDefaults), true);
+  assert.equal(isStudyPlannerDefaults({
+    ...defaultStudyPlannerDefaults,
+    weekdays: [1, 1, 8],
+  }), false);
+  assert.equal(isStudyPlannerDefaults({
+    ...defaultStudyPlannerDefaults,
+    dayEnd: "08:00",
+  }), false);
+  assert.equal(isStudyPlannerDefaults({
+    ...defaultStudyPlannerDefaults,
+    sessionMinutes: 61,
+  }), false);
+  assert.equal(isStudyPlannerDefaults({
+    ...defaultStudyPlannerDefaults,
+    topic: "unexpected",
+  }), false);
 });
 
 test("starts today's sessions after the current instant", () => {

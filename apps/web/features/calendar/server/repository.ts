@@ -146,6 +146,12 @@ type PreferencesRow = QueryResultRow & {
   reduce_motion: boolean;
   week_starts_on: number;
   time_zone: string;
+  study_weekdays: number[];
+  study_day_start: string;
+  study_day_end: string;
+  study_session_minutes: number;
+  study_event_buffer_minutes: number;
+  study_session_break_minutes: number;
 };
 
 type CreateRequestRow = QueryResultRow & {
@@ -806,6 +812,14 @@ function preferencesFromRow(row: PreferencesRow): CalendarPreferences {
     reduceMotion: row.reduce_motion,
     weekStartsOn: row.week_starts_on,
     timeZone: row.time_zone,
+    studyPlanner: {
+      weekdays: row.study_weekdays,
+      dayStart: row.study_day_start.slice(0, 5),
+      dayEnd: row.study_day_end.slice(0, 5),
+      sessionMinutes: row.study_session_minutes,
+      eventBufferMinutes: row.study_event_buffer_minutes,
+      sessionBreakMinutes: row.study_session_break_minutes,
+    },
   };
 }
 
@@ -4190,7 +4204,9 @@ export class CalendarRepository {
   async getPreferences(ownerId: string): Promise<CalendarPreferences | null> {
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
       const result = await client.query<PreferencesRow>(
-        `SELECT theme, accent_color, density, reduce_motion, week_starts_on, time_zone
+        `SELECT theme, accent_color, density, reduce_motion, week_starts_on, time_zone,
+                study_weekdays, study_day_start, study_day_end, study_session_minutes,
+                study_event_buffer_minutes, study_session_break_minutes
          FROM calendar_preferences
          WHERE user_id = $1`,
         [ownerId],
@@ -4207,8 +4223,10 @@ export class CalendarRepository {
     return withOwnerTransaction(this.pool, ownerId, async (client) => {
       const result = await client.query<PreferencesRow>(
         `INSERT INTO calendar_preferences (
-         user_id, theme, accent_color, density, reduce_motion, week_starts_on, time_zone
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+         user_id, theme, accent_color, density, reduce_motion, week_starts_on, time_zone,
+         study_weekdays, study_day_start, study_day_end, study_session_minutes,
+         study_event_buffer_minutes, study_session_break_minutes
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9::time, $10::time, $11, $12, $13)
          ON CONFLICT (user_id) DO UPDATE SET
            theme = EXCLUDED.theme,
            accent_color = EXCLUDED.accent_color,
@@ -4216,9 +4234,31 @@ export class CalendarRepository {
            reduce_motion = EXCLUDED.reduce_motion,
            week_starts_on = EXCLUDED.week_starts_on,
            time_zone = EXCLUDED.time_zone,
+           study_weekdays = EXCLUDED.study_weekdays,
+           study_day_start = EXCLUDED.study_day_start,
+           study_day_end = EXCLUDED.study_day_end,
+           study_session_minutes = EXCLUDED.study_session_minutes,
+           study_event_buffer_minutes = EXCLUDED.study_event_buffer_minutes,
+           study_session_break_minutes = EXCLUDED.study_session_break_minutes,
            updated_at = CURRENT_TIMESTAMP
-         RETURNING theme, accent_color, density, reduce_motion, week_starts_on, time_zone`,
-        [ownerId, preferences.theme, preferences.accentColor, preferences.density, preferences.reduceMotion, preferences.weekStartsOn, preferences.timeZone],
+         RETURNING theme, accent_color, density, reduce_motion, week_starts_on, time_zone,
+                   study_weekdays, study_day_start, study_day_end, study_session_minutes,
+                   study_event_buffer_minutes, study_session_break_minutes`,
+        [
+          ownerId,
+          preferences.theme,
+          preferences.accentColor,
+          preferences.density,
+          preferences.reduceMotion,
+          preferences.weekStartsOn,
+          preferences.timeZone,
+          preferences.studyPlanner.weekdays,
+          preferences.studyPlanner.dayStart,
+          preferences.studyPlanner.dayEnd,
+          preferences.studyPlanner.sessionMinutes,
+          preferences.studyPlanner.eventBufferMinutes,
+          preferences.studyPlanner.sessionBreakMinutes,
+        ],
       );
       const row = result.rows[0];
       if (!row) throw new Error("Calendar preferences update returned no row.");

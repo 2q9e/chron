@@ -37,6 +37,14 @@ const validTimedEvent = {
 };
 
 const validSeriesRule = { frequency: "weekly", interval: 1, count: 6 };
+const validStudyPlannerDefaults = {
+  weekdays: [5, 1, 3],
+  dayStart: "09:00",
+  dayEnd: "17:00",
+  sessionMinutes: 60,
+  eventBufferMinutes: 15,
+  sessionBreakMinutes: 15,
+};
 const validSeriesCreate = {
   action: "create",
   scope: "series",
@@ -412,6 +420,7 @@ test("validates the complete persisted preference contract", () => {
     reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "America/Montreal",
+    studyPlanner: validStudyPlannerDefaults,
   }), {
     theme: "high-contrast",
     accentColor: "#78002e",
@@ -419,6 +428,7 @@ test("validates the complete persisted preference contract", () => {
     reduceMotion: true,
     weekStartsOn: 1,
     timeZone: "America/Montreal",
+    studyPlanner: { ...validStudyPlannerDefaults, weekdays: [1, 3, 5] },
   });
   assert.throws(
     () => parseCalendarPreferences({
@@ -427,6 +437,7 @@ test("validates the complete persisted preference contract", () => {
       reduceMotion: false,
       weekStartsOn: 8,
       timeZone: "America/Montreal",
+      studyPlanner: validStudyPlannerDefaults,
     }),
     (error) => error instanceof CalendarRouteError && error.status === 400,
   );
@@ -438,6 +449,7 @@ test("validates the complete persisted preference contract", () => {
       reduceMotion: false,
       weekStartsOn: 1,
       timeZone: "America/Montreal",
+      studyPlanner: validStudyPlannerDefaults,
     }),
     (error) => error instanceof CalendarRouteError && error.status === 400,
   );
@@ -447,6 +459,54 @@ test("validates the complete persisted preference contract", () => {
       accentColor: null,
       density: "comfortable",
       reduceMotion: "false",
+      weekStartsOn: 1,
+      timeZone: "America/Montreal",
+      studyPlanner: validStudyPlannerDefaults,
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarPreferences({
+      theme: "high-contrast",
+      accentColor: null,
+      density: "comfortable",
+      reduceMotion: false,
+      weekStartsOn: 1,
+      timeZone: "America/Montreal",
+      studyPlanner: { ...validStudyPlannerDefaults, weekdays: [1, 1, 8] },
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarPreferences({
+      theme: "high-contrast",
+      accentColor: null,
+      density: "comfortable",
+      reduceMotion: false,
+      weekStartsOn: 1,
+      timeZone: "America/Montreal",
+      studyPlanner: { ...validStudyPlannerDefaults, dayStart: "09:07" },
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarPreferences({
+      theme: "high-contrast",
+      accentColor: null,
+      density: "comfortable",
+      reduceMotion: false,
+      weekStartsOn: 1,
+      timeZone: "America/Montreal",
+      studyPlanner: { ...validStudyPlannerDefaults, topic: "unexpected" },
+    }),
+    (error) => error instanceof CalendarRouteError && error.status === 400,
+  );
+  assert.throws(
+    () => parseCalendarPreferences({
+      theme: "high-contrast",
+      accentColor: null,
+      density: "comfortable",
+      reduceMotion: false,
       weekStartsOn: 1,
       timeZone: "America/Montreal",
     }),

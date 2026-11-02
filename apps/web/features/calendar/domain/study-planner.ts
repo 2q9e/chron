@@ -4,12 +4,25 @@ import {
   parseCalendarDate,
   validateTimeZone,
 } from "./time.ts";
-import type { CalendarEventEntry } from "./types";
+import type { CalendarEventEntry, StudyPlannerDefaults } from "./types";
 
 const maximumPlanningDays = 60;
 const maximumStudyMinutes = 10_080;
 const maximumStudySessions = 120;
 const quarterHourTimePattern = /^(?:[01]\d|2[0-3]):(?:00|15|30|45)$/u;
+
+function isNumberArray(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((item: unknown) => typeof item === "number");
+}
+
+export const defaultStudyPlannerDefaults: StudyPlannerDefaults = Object.freeze({
+  weekdays: Object.freeze([1, 2, 3, 4, 5]),
+  dayStart: "09:00",
+  dayEnd: "17:00",
+  sessionMinutes: 60,
+  eventBufferMinutes: 15,
+  sessionBreakMinutes: 15,
+});
 
 export type StudyPlannerInput = Readonly<{
   topic: string;
@@ -37,6 +50,72 @@ export type StudyPlannerField =
   | "sessionBreakMinutes"
   | "weekdays"
   | "timeZone";
+
+export function studyPlannerDefaultsErrors(
+  defaults: StudyPlannerDefaults,
+): Partial<Record<StudyPlannerField, string>> {
+  const errors: Partial<Record<StudyPlannerField, string>> = {};
+  if (!isValidMultiple(defaults.sessionMinutes, 15, 180)) {
+    errors.sessionMinutes = "Use 15-minute increments from 15 to 180 minutes.";
+  }
+  if (!isValidMultiple(defaults.eventBufferMinutes, 0, 60)) {
+    errors.eventBufferMinutes = "Use 15-minute increments from 0 to 60 minutes.";
+  }
+  if (!isValidMultiple(defaults.sessionBreakMinutes, 0, 60)) {
+    errors.sessionBreakMinutes = "Use 15-minute increments from 0 to 60 minutes.";
+  }
+  if (!quarterHourTimePattern.test(defaults.dayStart)) {
+    errors.dayStart = "Choose a start time on a 15-minute boundary.";
+  }
+  if (!quarterHourTimePattern.test(defaults.dayEnd)) {
+    errors.dayEnd = "Choose an end time on a 15-minute boundary.";
+  } else if (quarterHourTimePattern.test(defaults.dayStart) && defaults.dayStart >= defaults.dayEnd) {
+    errors.dayEnd = "Choose an end time after the start time.";
+  }
+
+  const weekdayValues = Array.isArray(defaults.weekdays) ? defaults.weekdays : [];
+  const selectedDays = new Set(weekdayValues);
+  if (selectedDays.size === 0
+    || selectedDays.size !== weekdayValues.length
+    || [...selectedDays].some((day) => !Number.isInteger(day) || day < 1 || day > 7)) {
+    errors.weekdays = "Select one or more available weekdays.";
+  }
+  return errors;
+}
+
+export function isStudyPlannerDefaults(value: unknown): value is StudyPlannerDefaults {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  if (prototype !== Object.prototype && prototype !== null) return false;
+  const record = value as Record<string, unknown>;
+  const expectedKeys = [
+    "weekdays",
+    "dayStart",
+    "dayEnd",
+    "sessionMinutes",
+    "eventBufferMinutes",
+    "sessionBreakMinutes",
+  ];
+  const weekdays = record.weekdays;
+  if (Object.keys(record).length !== expectedKeys.length
+    || Object.keys(record).some((key) => !expectedKeys.includes(key))
+    || !isNumberArray(weekdays)
+    || typeof record.dayStart !== "string"
+    || typeof record.dayEnd !== "string"
+    || typeof record.sessionMinutes !== "number"
+    || typeof record.eventBufferMinutes !== "number"
+    || typeof record.sessionBreakMinutes !== "number") return false;
+
+  const defaults: StudyPlannerDefaults = {
+    weekdays,
+    dayStart: record.dayStart,
+    dayEnd: record.dayEnd,
+    sessionMinutes: record.sessionMinutes,
+    eventBufferMinutes: record.eventBufferMinutes,
+    sessionBreakMinutes: record.sessionBreakMinutes,
+  };
+  return Object.keys(studyPlannerDefaultsErrors(defaults)).length === 0;
+}
 
 export type StudyPlanSession = Readonly<{
   id: string;
@@ -243,27 +322,11 @@ export function studyPlannerInputErrors(
   if (!isValidMultiple(input.totalMinutes, 15, maximumStudyMinutes)) {
     errors.totalMinutes = "Use 15-minute increments from 15 to 10,080 minutes.";
   }
-  if (!isValidMultiple(input.sessionMinutes, 15, 180)) {
-    errors.sessionMinutes = "Use 15-minute increments from 15 to 180 minutes.";
-  }
+  Object.assign(errors, studyPlannerDefaultsErrors(input));
   if (isValidMultiple(input.totalMinutes, 15, maximumStudyMinutes)
     && isValidMultiple(input.sessionMinutes, 15, 180)
     && Math.ceil(input.totalMinutes / input.sessionMinutes) > maximumStudySessions) {
     errors.sessionMinutes = `Choose a session length that keeps the plan to ${maximumStudySessions} or fewer sessions.`;
-  }
-  if (!isValidMultiple(input.eventBufferMinutes, 0, 60)) {
-    errors.eventBufferMinutes = "Use 15-minute increments from 0 to 60 minutes.";
-  }
-  if (!isValidMultiple(input.sessionBreakMinutes, 0, 60)) {
-    errors.sessionBreakMinutes = "Use 15-minute increments from 0 to 60 minutes.";
-  }
-  if (!quarterHourTimePattern.test(input.dayStart)) {
-    errors.dayStart = "Choose a start time on a 15-minute boundary.";
-  }
-  if (!quarterHourTimePattern.test(input.dayEnd)) {
-    errors.dayEnd = "Choose an end time on a 15-minute boundary.";
-  } else if (quarterHourTimePattern.test(input.dayStart) && input.dayStart >= input.dayEnd) {
-    errors.dayEnd = "Choose an end time after the start time.";
   }
 
   let start: Temporal.PlainDate | null = null;
@@ -296,13 +359,6 @@ export function studyPlannerInputErrors(
     errors.startDate = "Choose today or a future date in your calendar time zone.";
   }
 
-  const weekdayValues = Array.isArray(input.weekdays) ? input.weekdays : [];
-  const selectedDays = new Set(weekdayValues);
-  if (selectedDays.size === 0
-    || selectedDays.size !== weekdayValues.length
-    || [...selectedDays].some((day) => !Number.isInteger(day) || day < 1 || day > 7)) {
-    errors.weekdays = "Select one or more available weekdays.";
-  }
   return errors;
 }
 
