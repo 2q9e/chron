@@ -29,6 +29,10 @@ Landing-page work remains paused. Recurrence follows the calendar's existing
 owner-scoped repository and date/time model. The detailed wire and time rules
 are recorded in [calendar-recurrence.md](calendar-recurrence.md).
 
+The next calendar increment is reminders. Its delivery, security, and time-zone
+contract and task dependencies are recorded in
+[calendar-reminders.md](calendar-reminders.md).
+
 ```text
 C1-rec0 recurrence contract + pure bounded expansion
   └─ C1-rec1 owner-scoped persistence + range/search expansion
