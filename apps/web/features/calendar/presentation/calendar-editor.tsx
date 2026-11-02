@@ -17,9 +17,12 @@ import styles from "./calendar.module.css";
 export type Editor = {
   generation: number;
   event: CalendarEvent | null;
+  occurrence?: CalendarEventOccurrence;
+  occurrenceIndex?: number;
   occurrenceKey?: string;
+  seriesScope?: "series" | "following";
   operationKey: string | null;
-  operationAction: "create" | "update" | "delete" | "cancel-occurrence" | "restore-occurrence" | "move-occurrence" | null;
+  operationAction: "create" | "update" | "delete" | "cancel-occurrence" | "restore-occurrence" | "move-occurrence" | "split-series" | null;
   draft: EventDraft;
   zone: string;
   errors: Partial<Record<EventDraftField, string>>;
@@ -41,6 +44,7 @@ type Props = {
   retryOnly: boolean;
   reauthRequired: boolean;
   onChange: (field: keyof EventDraft, value: string) => void;
+  onSeriesScopeChange: (scope: "series" | "following") => void;
   onReview: (event: FormEvent<HTMLFormElement>) => void;
   onClose: () => void;
   onReloadLatest: () => void;
@@ -52,7 +56,7 @@ type Props = {
   onSave: () => void;
 };
 
-export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
+export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRequired, onChange, onSeriesScopeChange, onReview, onClose, onReloadLatest, onDeleteReview, onCancelOccurrenceReview, onRestoreOccurrenceReview, onDeleteCancel, onDeleteConfirm, onSave }: Props) {
   const locked = busy || stale || retryOnly;
   const movementOnly = editor.purpose === "move-occurrence";
   const errorPanel = useRef<HTMLDivElement | null>(null);
@@ -83,7 +87,7 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
     : editor.purpose === "resize"
       ? "Review event duration change"
       : editor.event?.recurrenceRule
-        ? "Edit recurring series"
+        ? editor.seriesScope === "following" ? "Edit this and following occurrences" : "Edit recurring series"
         : editor.event
           ? "Edit event"
           : "New event";
@@ -182,7 +186,44 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
         {(!editor.event || editor.event.recurrenceRule) && !movementOnly && (
           <fieldset className={styles.recurrence}>
             <legend>{editor.event ? "Repeating series" : "Repeat"}</legend>
-            {editor.event && <p>Changes apply to the entire series.</p>}
+            {editor.event?.recurrenceRule && editor.occurrence && editor.occurrenceIndex !== undefined && (
+              <fieldset className={styles.recurrence}>
+                <legend>Change scope</legend>
+                <label>
+                  <input
+                    type="radio"
+                    name="calendar-series-scope"
+                    value="series"
+                    checked={editor.seriesScope !== "following"}
+                    disabled={locked}
+                    onChange={() => onSeriesScopeChange("series")}
+                  />
+                  This series
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="calendar-series-scope"
+                    value="following"
+                    checked={editor.seriesScope === "following"}
+                    disabled={locked || editor.occurrenceIndex < 1}
+                    onChange={() => onSeriesScopeChange("following")}
+                  />
+                  This and following occurrences
+                </label>
+                <p>
+                  {editor.occurrenceIndex < 1
+                    ? "The first occurrence starts the series, so it has no earlier segment to preserve."
+                    : editor.seriesScope === "following"
+                      ? "Earlier occurrences stay unchanged. This occurrence and later ones become a new segment."
+                      : "Changes apply to every occurrence in this recurring segment."}
+                </p>
+              </fieldset>
+            )}
+            {editor.event && !editor.occurrence && <p>Changes apply to this recurring segment.</p>}
+            {editor.event?.recurrenceRule && editor.seriesScope === "following" && (
+              <p>The following segment keeps {editor.draft.repeatCount} remaining occurrences.</p>
+            )}
             <label>
               Frequency
               <select
@@ -220,9 +261,9 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
                 <label>
                   Number of occurrences
                   <input
-                    disabled={locked}
+                    disabled={locked || editor.seriesScope === "following"}
                     type="number"
-                    min={2}
+                    min={editor.seriesScope === "following" || editor.event?.recurrenceRule?.count === 1 ? 1 : 2}
                     max={366}
                     step={1}
                     required
@@ -232,6 +273,7 @@ export function CalendarEditor({ editor, busy, error, stale, retryOnly, reauthRe
                     aria-describedby={editor.errors.repeatCount ? "repeat-count-error" : undefined}
                   />
                 </label>
+                {editor.seriesScope === "following" && <p>The number of remaining occurrences is preserved.</p>}
                 {editor.errors.repeatCount && <p id="repeat-count-error" className={styles.fieldError}>{editor.errors.repeatCount}</p>}
                 {editor.errors.repeatFrequency && <p id="repeat-frequency-error" className={styles.fieldError}>{editor.errors.repeatFrequency}</p>}
                 <p>Repeating events are finite and end within 366 calendar dates.</p>
@@ -350,6 +392,12 @@ function SeriesDraftReview({
   const isOccurrenceCancellation = draft.action === "cancel-occurrence";
   const isOccurrenceRestoration = draft.action === "restore-occurrence";
   const isOccurrenceMovement = draft.action === "move-occurrence";
+  const isSplit = draft.action === "split-series";
+  const splitIndex = isSplit && draft.targetEventId
+    ? draft.afterOccurrences.findIndex(({ occurrenceKey }) =>
+        !occurrenceKey.startsWith(`${draft.targetEventId}:`)
+      )
+    : -1;
   const occurrences = isDelete ? draft.beforeOccurrences : draft.afterOccurrences;
   const headline = isDelete
     ? `Delete ${occurrences.length} occurrences?`
@@ -359,6 +407,8 @@ function SeriesDraftReview({
         ? "Restore this occurrence?"
         : isOccurrenceMovement
           ? "Move this occurrence?"
+        : isSplit
+          ? `Keep ${splitIndex} earlier occurrences and split ${draft.afterOccurrences.length - splitIndex} following occurrences?`
     : draft.action === "create"
       ? `Create ${occurrences.length} occurrences?`
       : `Update ${draft.beforeOccurrences.length} current occurrences to ${draft.afterOccurrences.length} proposed occurrences?`;
@@ -372,19 +422,34 @@ function SeriesDraftReview({
       <h3 ref={headingRef} tabIndex={-1}>{isOccurrenceCancellation
         ? "Review occurrence cancellation"
         : isOccurrenceRestoration ? "Review occurrence restoration"
-          : isOccurrenceMovement ? "Review occurrence move" : "Review repeating series"}</h3>
+          : isOccurrenceMovement ? "Review occurrence move"
+            : isSplit ? "Review this and following occurrences" : "Review repeating series"}</h3>
       <p><strong>{headline}</strong></p>
       {draft.action === "create" && draft.event && (
         <p><strong>Proposed:</strong> {describeSeries(draft.event, draft.recurrenceRule)} · Calendar time zone {draft.calendarTimeZone}</p>
       )}
       {draft.action !== "delete" && draft.action !== "cancel-occurrence"
         && draft.action !== "restore-occurrence" && draft.event && (
-        <p aria-live="polite">{reminderReviewText(draft.event, draft.afterOccurrences[0])}</p>
+        <p aria-live="polite">{reminderReviewText(
+          draft.event,
+          isSplit ? draft.afterOccurrences[splitIndex] : draft.afterOccurrences[0],
+        )}</p>
       )}
       {draft.action === "update" && currentEvent && draft.event && (
         <dl className={styles.seriesSummary}>
           <div><dt>Current</dt><dd>{describeSeries(currentEvent, currentEvent.recurrenceRule ?? null)}</dd></div>
           <div><dt>Proposed</dt><dd>{describeSeries(draft.event, draft.recurrenceRule)} · Calendar time zone {draft.calendarTimeZone}</dd></div>
+        </dl>
+      )}
+      {isSplit && currentEvent && draft.event && (
+        <dl className={styles.seriesSummary}>
+          <div><dt>Unchanged earlier segment</dt><dd>{describeSeries(
+            currentEvent,
+            currentEvent.recurrenceRule
+              ? { ...currentEvent.recurrenceRule, count: splitIndex }
+              : null,
+          )}</dd></div>
+          <div><dt>New following segment</dt><dd>{describeSeries(draft.event, draft.recurrenceRule)} · Calendar time zone {draft.calendarTimeZone}</dd></div>
         </dl>
       )}
       {isDelete && currentEvent && (
@@ -408,6 +473,21 @@ function SeriesDraftReview({
           <div><dt>Current</dt><dd>{draft.beforeOccurrences.map(describeOccurrence).join(" · ")}</dd></div>
           <div><dt>Proposed</dt><dd>{draft.afterOccurrences.map(describeOccurrence).join(" · ")}</dd></div>
         </dl>
+      ) : isSplit ? (
+        <>
+          <details className={styles.seriesOccurrences}>
+            <summary>View {splitIndex} unchanged earlier occurrences</summary>
+            <ol>{draft.beforeOccurrences.slice(0, splitIndex).map((occurrence) => (
+              <li key={occurrence.occurrenceKey}>{describeOccurrence(occurrence)}</li>
+            ))}</ol>
+          </details>
+          <details className={styles.seriesOccurrences}>
+            <summary>View {draft.afterOccurrences.length - splitIndex} following occurrences</summary>
+            <ol>{draft.afterOccurrences.slice(splitIndex).map((occurrence) => (
+              <li key={occurrence.occurrenceKey}>{describeOccurrence(occurrence)}</li>
+            ))}</ol>
+          </details>
+        </>
       ) : draft.action === "update" ? (
         <>
           <details className={styles.seriesOccurrences}>
@@ -438,6 +518,8 @@ function SeriesDraftReview({
             ? `No overlaps were found for this occurrence in ${draft.calendarTimeZone}.`
             : isOccurrenceMovement
               ? `No overlaps were found for this occurrence in ${draft.calendarTimeZone}.`
+              : isSplit
+                ? `No overlaps were found in the new following segment in ${draft.calendarTimeZone}.`
             : "No overlaps were found in the proposed series."}</p>
       ) : (
         <div className={styles.conflictList}>
@@ -455,6 +537,8 @@ function SeriesDraftReview({
           </ul>
           <p className={styles.conflictStatus}>{isOccurrenceCancellation || isOccurrenceRestoration
             ? "Review each overlap before approving this occurrence."
+            : isSplit
+              ? "Review each overlap in the new following segment before approving the split."
             : "Review each overlap before approving the series."}</p>
         </div>
       )}
@@ -464,7 +548,8 @@ function SeriesDraftReview({
           : isOccurrenceCancellation
             ? "Approve occurrence cancellation"
             : isOccurrenceRestoration ? "Approve restoration"
-              : isOccurrenceMovement ? "Approve occurrence move" : "Approve series changes"}
+              : isOccurrenceMovement ? "Approve occurrence move"
+                : isSplit ? "Approve following occurrences" : "Approve series changes"}
       </button>
       {isDelete && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep series</button>}
       {isOccurrenceCancellation && <button type="button" disabled={busy || cancelDisabled} onClick={onCancel}>Keep occurrence</button>}

@@ -233,6 +233,28 @@ test("new event drafts default to one-off and accept a finite weekly series", ()
   assert.equal(reviewed.mutation.reminderChoice, "none");
 });
 
+test("single-occurrence recurrence segments are accepted only when the caller permits them", () => {
+  const draft = {
+    ...newEventDraft("2026-06-15"),
+    title: "Study session",
+    repeatFrequency: "weekly",
+    repeatInterval: "1",
+    repeatCount: "1",
+  };
+
+  const ordinarySeries = validateCalendarEventDraft(draft, "UTC");
+  assert.equal(ordinarySeries.ok, false);
+  assert.match(ordinarySeries.errors.repeatCount, /between 2 and 366/u);
+
+  const followingSegment = validateCalendarEventDraft(draft, "UTC", 1);
+  assert.equal(followingSegment.ok, true);
+  assert.deepEqual(followingSegment.recurrenceRule, {
+    frequency: "weekly",
+    interval: 1,
+    count: 1,
+  });
+});
+
 test("all-day reminder choices persist the calendar zone and reject timed choices", () => {
   const draft = newEventDraft("2026-06-15");
   const event = validateCalendarEventDraft({

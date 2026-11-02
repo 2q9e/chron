@@ -1,9 +1,12 @@
 "use client";
 
+import { Temporal } from "@js-temporal/polyfill";
 import { authClient } from "../../auth/client";
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
 import { calendarEventSeries, type CalendarEvent, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest } from "../domain/types";
+import { expandCalendarRecurrenceRange } from "../domain/recurrence-range";
+import type { CalendarRecurrenceOccurrence } from "../domain/recurrence.ts";
 import { approveCalendarSeriesDraft, CalendarRequestError, checkCalendarEventConflicts, createCalendarEvent, createCalendarSeriesDraft, deleteCalendarEvent, fetchCalendarCancelledOccurrences, fetchCalendarEvents, fetchCalendarPreferences, reconcileCalendarCreate, saveCalendarPreferences, updateCalendarEvent } from "./calendar-api";
 import { countCalendarCreateRecoveryOutcomes, forgetPendingCalendarCreate, pendingCalendarCreates, reconcileCalendarCreateBatch, storePendingCalendarCreate, summarizeCalendarCreateRecovery } from "./calendar-create-recovery";
 import { forgetPendingCalendarSeriesApproval, pendingCalendarSeriesApprovals, reconcileCalendarSeriesApprovalBatch, storePendingCalendarSeriesApproval } from "./calendar-series-recovery";
@@ -39,6 +42,54 @@ function isUncertainCreateOutcome(reason: unknown): boolean {
     || reason.status === 408
     || reason.status === 429
     || reason.status >= 500;
+}
+
+function expandEditorSeries(event: CalendarEvent): readonly CalendarRecurrenceOccurrence[] {
+  const rule = event.recurrenceRule;
+  if (!rule) return [];
+  const startDate = event.kind === "all-day"
+    ? Temporal.PlainDate.from(event.startDate)
+    : Temporal.PlainDateTime.from(event.startLocal, { overflow: "reject" }).toPlainDate();
+  const stepDays = (rule.frequency === "daily" ? 1 : 7) * rule.interval;
+  const toDate = startDate.add({ days: (rule.count - 1) * stepDays + 1 });
+  return expandCalendarRecurrenceRange(event, rule, {
+    fromDate: startDate.toString(),
+    toDate: toDate.toString(),
+    ...(event.kind === "timed" ? { timeZone: event.timeZone } : {}),
+  });
+}
+
+function editorEventAtOccurrence(
+  event: CalendarEvent,
+  occurrence: CalendarRecurrenceOccurrence,
+): CalendarEvent {
+  if (event.kind !== occurrence.kind) return event;
+  return event.kind === "timed" && occurrence.kind === "timed"
+    ? {
+        ...event,
+        startLocal: occurrence.startLocal,
+        endLocal: occurrence.endLocal,
+        timeZone: occurrence.timeZone,
+        startsAt: occurrence.startsAt,
+        endsAt: occurrence.endsAt,
+      }
+    : event.kind === "all-day" && occurrence.kind === "all-day"
+      ? { ...event, startDate: occurrence.startDate, endDate: occurrence.endDate }
+      : event;
+}
+
+function withEventSchedule(draft: EventDraft, schedule: EventDraft): EventDraft {
+  return {
+    ...draft,
+    kind: schedule.kind,
+    startLocal: schedule.startLocal,
+    endLocal: schedule.endLocal,
+    startDate: schedule.startDate,
+    endDate: schedule.endDate,
+    startDisambiguation: schedule.startDisambiguation,
+    endDisambiguation: schedule.endDisambiguation,
+    reminderChoice: draft.kind === schedule.kind ? draft.reminderChoice : schedule.reminderChoice,
+  };
 }
 
 export function CalendarWorkspace({ userId, userName }: { userId: string; userName: string }) {
@@ -309,7 +360,29 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     else rememberEditorOpener();
     focusAfterEditor.current = null;
     editorGeneration.current += 1;
-    setEditor({ generation: editorGeneration.current, event, occurrenceKey: "occurrenceKey" in selected ? selected.occurrenceKey : undefined, operationKey: event.recurrenceRule ? crypto.randomUUID() : null, operationAction: event.recurrenceRule ? "update" : null, draft: buildEventDraft(event), zone: event.kind === "timed" ? event.timeZone : event.reminderTimeZone ?? preferences.timeZone, errors: {}, review: null, conflicts: [], reviewTimeZone: null, deleting: false, seriesDraft: null }); setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
+    const occurrence = "occurrenceKey" in selected ? selected : undefined;
+    const occurrenceIndex = event.recurrenceRule && occurrence
+      ? expandEditorSeries(event).findIndex(({ occurrenceKey }) => occurrenceKey === occurrence.occurrenceKey)
+      : undefined;
+    setEditor({
+      generation: editorGeneration.current,
+      event,
+      occurrence,
+      occurrenceIndex: occurrenceIndex !== undefined && occurrenceIndex >= 0 ? occurrenceIndex : undefined,
+      occurrenceKey: occurrence?.occurrenceKey,
+      operationKey: event.recurrenceRule ? crypto.randomUUID() : null,
+      operationAction: event.recurrenceRule ? "update" : null,
+      seriesScope: "series",
+      draft: buildEventDraft(event),
+      zone: event.kind === "timed" ? event.timeZone : event.reminderTimeZone ?? preferences.timeZone,
+      errors: {},
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      deleting: false,
+      seriesDraft: null,
+    });
+    setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
   const openCancelledOccurrence = useCallback((
     selected: CalendarEventOccurrence,
@@ -432,7 +505,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditor((current) => current ? {
       ...current,
       operationKey: !current.event || current.event.recurrenceRule ? nextOperationKey : current.operationKey,
-      operationAction: !current.event ? "create" : current.event.recurrenceRule ? "update" : null,
+      operationAction: !current.event ? "create" : current.event.recurrenceRule
+        ? current.seriesScope === "following" ? "split-series" : "update"
+        : null,
       draft: updateEventDraft(current.draft, field, value),
       errors: {},
       review: null,
@@ -443,17 +518,62 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     } : current);
     setEditorError("");
   }
+  function changeSeriesScope(scope: "series" | "following") {
+    if (!editor?.event?.recurrenceRule || !editor.occurrence || editor.occurrenceIndex === undefined
+      || editorStale || calendarLocked) return;
+    const scheduledOccurrence = scope === "following"
+      ? expandEditorSeries(editor.event)[editor.occurrenceIndex]
+      : undefined;
+    if (scope === "following" && !scheduledOccurrence) {
+      setEditorError("Chron could not locate this occurrence in its saved series. Reload the calendar before editing it.");
+      return;
+    }
+    const sourceEvent = scope === "following"
+      ? editorEventAtOccurrence(editor.event, scheduledOccurrence!)
+      : editor.event;
+    const draft = withEventSchedule(editor.draft, buildEventDraft(sourceEvent));
+    const count = editor.event.recurrenceRule.count;
+    const remaining = count - editor.occurrenceIndex;
+    setEditor({
+      ...editor,
+      seriesScope: scope,
+      operationKey: crypto.randomUUID(),
+      operationAction: scope === "following" ? "split-series" : "update",
+      draft: {
+        ...draft,
+        repeatFrequency: editor.event.recurrenceRule.frequency,
+        repeatInterval: String(editor.event.recurrenceRule.interval),
+        repeatCount: String(scope === "following" ? remaining : count),
+      },
+      errors: {},
+      review: null,
+      conflicts: [],
+      reviewTimeZone: null,
+      seriesDraft: null,
+    });
+    setEditorError("");
+  }
   async function reviewEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!editor || backgroundLocked || editorRetryOnly) return;
     setEditorError("");
     const generation = editor.generation;
-    const result = validateCalendarEventDraft(editor.draft, editor.zone);
+    if (editor.seriesScope === "following"
+      && (!editor.event?.recurrenceRule || !editor.occurrenceKey
+        || editor.occurrenceIndex === undefined || editor.occurrenceIndex < 1)) {
+      setEditorError("Choose an occurrence after the first one to split a following segment.");
+      return;
+    }
+    const minimumRepeatCount = editor.seriesScope === "following"
+      || editor.event?.recurrenceRule?.count === 1 ? 1 : 2;
+    const result = validateCalendarEventDraft(editor.draft, editor.zone, minimumRepeatCount);
     if (!result.ok) { setEditor({ ...editor, errors: result.errors }); return; }
     if (editor.event?.recurrenceRule && !result.recurrenceRule) {
       setEditorError("A repeating series must keep a finite recurrence rule.");
       return;
     }
-    const proposalAction = editor.purpose === "move-occurrence"
+    const proposalAction = editor.seriesScope === "following"
+      ? "split-series"
+      : editor.purpose === "move-occurrence"
       ? "move-occurrence"
       : editor.event ? "update" : "create";
     const operationKey = editor.operationAction === proposalAction
@@ -517,8 +637,23 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         return;
       }
       if (result.recurrenceRule) {
-        const request: CalendarSeriesDraftRequest = reviewedEditor.event
-          ? {
+        let request: CalendarSeriesDraftRequest;
+        if (reviewedEditor.seriesScope === "following") {
+          if (!reviewedEditor.event?.recurrenceRule || !reviewedEditor.occurrenceKey) {
+            throw new Error("Choose a recurring occurrence before splitting its following segment.");
+          }
+          request = {
+            action: "split-series",
+            scope: "following",
+            targetEventId: reviewedEditor.event.id,
+            targetRevision: reviewedEditor.event.revision,
+            occurrenceKey: reviewedEditor.occurrenceKey,
+            event: result.mutation,
+            recurrenceRule: result.recurrenceRule,
+            calendarTimeZone: preferences?.timeZone ?? reviewedEditor.zone,
+          };
+        } else if (reviewedEditor.event) {
+          request = {
               action: "update",
               scope: "series",
               targetEventId: reviewedEditor.event.id,
@@ -526,14 +661,16 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
               event: result.mutation,
               recurrenceRule: result.recurrenceRule,
               calendarTimeZone: preferences?.timeZone ?? reviewedEditor.zone,
-            }
-          : {
+          };
+        } else {
+          request = {
               action: "create",
               scope: "series",
               event: result.mutation,
               recurrenceRule: result.recurrenceRule,
               calendarTimeZone: preferences?.timeZone ?? reviewedEditor.zone,
-            };
+          };
+        }
         const draft = await createCalendarSeriesDraft(request, operationKey);
         if (editorGeneration.current !== generation) return;
         if (draft.outcome !== "pending") {
@@ -578,7 +715,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       const proposal = current.seriesDraft;
       if (!proposal) return;
       const generation = current.generation;
-      if (((proposal.action === "create" || proposal.action === "update")
+      if (((proposal.action === "create" || proposal.action === "update" || proposal.action === "split-series")
         && proposal.calendarTimeZone !== preferences.timeZone)
         || (proposal.action === "move-occurrence"
           && proposal.calendarTimeZone !== preferences.timeZone)
@@ -606,6 +743,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
               ? "Occurrence restored."
               : approval.action === "move-occurrence"
                 ? "Occurrence moved."
+                : approval.action === "split-series"
+                  ? "Following occurrences split into a new segment."
             : approval.action === "create"
             ? "Repeating series created."
             : approval.action === "update"
@@ -1058,6 +1197,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         retryOnly={editorRetryOnly}
         reauthRequired={editorReauthRequired}
         onChange={changeDraft}
+        onSeriesScopeChange={changeSeriesScope}
         onReview={reviewEvent}
         onClose={() => closeEditor()}
         onReloadLatest={discardAndReload}
@@ -1071,7 +1211,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
             ? "restore-occurrence"
             : editor.purpose === "move-occurrence"
               ? "move-occurrence"
-              : editor.event?.recurrenceRule ? "update" : editor.operationAction,
+              : editor.event?.recurrenceRule
+                ? editor.seriesScope === "following" ? "split-series" : "update"
+                : editor.operationAction,
           deleting: false,
           seriesDraft: null,
         })}

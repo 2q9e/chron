@@ -384,6 +384,7 @@ export function updateEventDraft(
 export function validateCalendarEventDraft(
   draft: EventDraft,
   timeZone: string,
+  minimumRepeatCount = 2,
 ): CalendarEventDraftReview {
   const event = validateEventDraft(draft, timeZone);
   if (!event.ok) return event;
@@ -397,12 +398,12 @@ export function validateCalendarEventDraft(
   if (!Number.isInteger(interval) || interval < 1 || interval > 4) {
     errors.repeatInterval = "Choose an interval from 1 to 4.";
   }
-  if (!Number.isInteger(count) || count < 2 || count > 366) {
-    errors.repeatCount = "Choose between 2 and 366 occurrences.";
+  if (!Number.isInteger(count) || count < minimumRepeatCount || count > 366) {
+    errors.repeatCount = `Choose between ${minimumRepeatCount} and 366 occurrences.`;
   }
   const stepDays = draft.repeatFrequency === "weekly" ? 7 : 1;
   if (Number.isInteger(interval) && Number.isInteger(count)
-    && interval >= 1 && interval <= 4 && count >= 2 && count <= 366
+    && interval >= 1 && interval <= 4 && count >= minimumRepeatCount && count <= 366
     && (count - 1) * interval * stepDays > 365) {
     errors.repeatCount = "Repeating events must end within 366 calendar dates.";
   }
