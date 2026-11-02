@@ -194,6 +194,39 @@ test("restoration checks only the selected occurrence against active instances",
   );
 });
 
+test("moved recurring occurrences use effective dates in conflicts and do not conflict with themselves", () => {
+  const rule = { frequency: "weekly", interval: 1, count: 2 };
+  const existing = allDayEvent("series-moved", "2026-11-02", "2026-11-03", rule);
+  const candidateSeries = allDayEvent("series-candidate", "2026-11-11", "2026-11-12", rule);
+  const [candidate] = expandFullCalendarSeries(candidateSeries, rule);
+  const movedKey = `${existing.id}:2026-11-09`;
+  const movements = new Map([[
+    existing.id,
+    new Map([[movedKey, { kind: "all-day", startDate: "2026-11-11", endDate: "2026-11-12" }]]),
+  ]]);
+
+  const externalConflicts = findCalendarOccurrenceConflicts(
+    candidate,
+    [existing],
+    "America/Montreal",
+    new Map(),
+    movements,
+  );
+  assert.equal(externalConflicts.length, 1);
+  assert.equal(externalConflicts[0].conflictingOccurrence.occurrenceKey, movedKey);
+  assert.equal(externalConflicts[0].conflictingOccurrence.startDate, "2026-11-11");
+
+  const sameOccurrence = {
+    ...expandFullCalendarSeries(existing, rule).find(({ occurrenceKey }) => occurrenceKey === movedKey),
+    startDate: "2026-11-11",
+    endDate: "2026-11-12",
+  };
+  assert.deepEqual(
+    findCalendarOccurrenceConflicts(sameOccurrence, [existing], "America/Montreal", new Map(), movements),
+    [],
+  );
+});
+
 test("fails instead of returning a partial snapshot when the conflict set exceeds its cap", () => {
   const rule = { frequency: "daily", interval: 1, count: 2 };
   const proposal = allDayEvent("series-f", "2026-11-02", "2026-11-03", rule);

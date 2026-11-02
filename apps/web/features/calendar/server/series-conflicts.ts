@@ -1,8 +1,10 @@
 import { Temporal } from "@js-temporal/polyfill";
 import type {
+  CalendarOccurrenceMovement,
   CalendarEvent,
   CalendarRecurrenceRule,
 } from "../domain/types.ts";
+import { applyCalendarOccurrenceMovement } from "../domain/occurrence-exceptions.ts";
 import {
   normalizeRecurrenceRule,
   type CalendarRecurrenceOccurrence,
@@ -37,6 +39,19 @@ type OccurrenceInterval = Readonly<{
   start: number;
   end: number;
 }>;
+
+export type CalendarOccurrenceMovements = ReadonlyMap<
+  string,
+  ReadonlyMap<string, CalendarOccurrenceMovement>
+>;
+
+function applyMovement(
+  occurrence: CalendarRecurrenceOccurrence,
+  movements: CalendarOccurrenceMovements,
+): CalendarRecurrenceOccurrence {
+  const movement = movements.get(occurrence.seriesId)?.get(occurrence.occurrenceKey);
+  return movement ? applyCalendarOccurrenceMovement(occurrence, movement) : occurrence;
+}
 
 function recurrenceStartDate(series: CalendarEvent): Temporal.PlainDate {
   return series.kind === "all-day"
@@ -210,6 +225,8 @@ export function findCalendarSeriesConflicts(
   calendarTimeZoneValue: string,
   excludedEventId?: string,
   cancelledOccurrenceKeys: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
+  occurrenceMovements: CalendarOccurrenceMovements = new Map(),
+  proposedOccurrenceMovements: CalendarOccurrenceMovements = occurrenceMovements,
 ): Readonly<{
   occurrences: readonly CalendarRecurrenceOccurrence[];
   conflicts: readonly CalendarSeriesOccurrenceConflict[];
@@ -221,6 +238,7 @@ export function findCalendarSeriesConflicts(
   }
 
   const proposedIntervals = occurrences
+    .map((occurrence) => applyMovement(occurrence, proposedOccurrenceMovements))
     .map((occurrence) => occurrenceInterval(occurrence, calendarTimeZone))
     .sort((left, right) => left.start - right.start
       || left.occurrence.occurrenceKey.localeCompare(right.occurrence.occurrenceKey));
@@ -239,6 +257,7 @@ export function findCalendarSeriesConflicts(
       const cancelled = cancelledOccurrenceKeys.get(event.id);
       recurringIntervals.push(...expanded
         .filter((occurrence) => !cancelled?.has(occurrence.occurrenceKey))
+        .map((occurrence) => applyMovement(occurrence, occurrenceMovements))
         .map((occurrence) =>
         occurrenceInterval(occurrence, calendarTimeZone)
         ));
@@ -292,6 +311,7 @@ export function findCalendarOccurrenceConflicts(
   existingEvents: readonly CalendarEvent[],
   calendarTimeZoneValue: string,
   cancelledOccurrenceKeys: ReadonlyMap<string, ReadonlySet<string>> = new Map(),
+  occurrenceMovements: CalendarOccurrenceMovements = new Map(),
 ): readonly CalendarSeriesOccurrenceConflict[] {
   const calendarTimeZone = validateTimeZone(calendarTimeZoneValue);
   const candidate = occurrenceInterval(proposedOccurrence, calendarTimeZone);
@@ -308,7 +328,10 @@ export function findCalendarOccurrenceConflicts(
       }
       const cancelled = cancelledOccurrenceKeys.get(event.id);
       recurring.push(...occurrences
-        .filter((occurrence) => !cancelled?.has(occurrence.occurrenceKey))
+        .filter((occurrence) => !cancelled?.has(occurrence.occurrenceKey)
+          && !(occurrence.seriesId === proposedOccurrence.seriesId
+            && occurrence.occurrenceKey === proposedOccurrence.occurrenceKey))
+        .map((occurrence) => applyMovement(occurrence, occurrenceMovements))
         .map((occurrence) => occurrenceInterval(occurrence, calendarTimeZone)));
     } else {
       oneOffs.push(occurrenceInterval(singleEventOccurrence(event), calendarTimeZone));
