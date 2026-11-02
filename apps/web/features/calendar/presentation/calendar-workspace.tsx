@@ -2,7 +2,7 @@
 
 import { Temporal } from "@js-temporal/polyfill";
 import { authClient } from "../../auth/client";
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { calendarToday } from "../domain/time";
 import { calendarEventSeries, type CalendarEvent, type CalendarEventEntry, type CalendarEventOccurrence, type CalendarPreferences, type CalendarSeriesDraftRequest, type StudyPlannerDefaults } from "../domain/types";
 import { buildCalendarIcs } from "../domain/calendar-ics";
@@ -36,6 +36,7 @@ import { calendarOccurrenceMoveSource, moveCalendarEventDraft, resizeCalendarEve
 import { CalendarSearch } from "./calendar-search";
 import { CalendarPreferencesForm } from "./calendar-preferences";
 import { CalendarStudyPlanner } from "./calendar-study-planner";
+import { CalendarExportSession, runCalendarExport, type CalendarExportAttempt } from "./calendar-export-session";
 import type { StudyPlanSession } from "../domain/study-planner";
 import { AgendaCalendar, MonthCalendar, TimeCalendar } from "./calendar-views";
 import styles from "./calendar.module.css";
@@ -118,7 +119,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [loadError, setLoadError] = useState("");
   const [notice, setNotice] = useState("");
   const [exportError, setExportError] = useState("");
-  const [exporting, setExporting] = useState(false);
+  const [exportAttempt, setExportAttempt] = useState<CalendarExportAttempt | null>(null);
+  const [exportSession] = useState(() => new CalendarExportSession());
   const [studyPlannerOpen, setStudyPlannerOpen] = useState(false);
   const [savedStudySessionIds, setSavedStudySessionIds] = useState<ReadonlySet<string>>(() => new Set());
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -142,6 +144,19 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [signOutError, setSignOutError] = useState("");
   const backgroundLocked = busy || signingOut || recoveryState !== "idle";
   const calendarLocked = backgroundLocked || editorRetryOnly;
+  const exporting = exportAttempt !== null && exportSession.isCurrent(exportAttempt);
+
+  const cancelCalendarExport = useCallback(() => {
+    exportSession.cancel();
+    setExportAttempt(null);
+    setExportError("");
+  }, [exportSession]);
+
+  useLayoutEffect(() => {
+    return () => {
+      exportSession.cancel();
+    };
+  }, [exportSession, userId, date, view, preferences?.timeZone, preferences?.weekStartsOn]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -340,12 +355,14 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   }
   function navigateTo(nextDate: string) {
     if (calendarLocked) return;
+    cancelCalendarExport();
     setNotice("");
     setExpandedMonthOverflowDate(null);
     setDate(nextDate);
   }
   function changeView(nextView: CalendarView) {
     if (calendarLocked) return;
+    cancelCalendarExport();
     setNotice("");
     setExpandedMonthOverflowDate(null);
     setView(nextView);
@@ -372,6 +389,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setNotice("Choose a valid time slot before creating an event.");
       return;
     }
+    cancelCalendarExport();
     const draft: EventDraft = studySession
       ? buildStudySessionEventDraft(baseDraft, studySession, eventCategoriesAvailable)
       : baseDraft;
@@ -400,12 +418,13 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorRetryOnly(false);
     setEditorReauthRequired(false);
     setNotice("");
-  }, [preferences, calendarLocked, eventCategoriesAvailable, rememberEditorOpener]);
+  }, [preferences, calendarLocked, eventCategoriesAvailable, rememberEditorOpener, cancelCalendarExport]);
   function reviewStudySession(session: StudyPlanSession, returnFocusTarget: HTMLButtonElement) {
     openNew(session.date, undefined, returnFocusTarget, session);
   }
   const openEvent = useCallback((selected: CalendarEventEntry, returnFocusTarget?: HTMLElement | null) => {
     if (!preferences || calendarLocked) return;
+    cancelCalendarExport();
     const event = calendarEventSeries(selected);
     editorOpenerRecoveryDate.current = null;
     if (returnFocusTarget?.isConnected) {
@@ -444,7 +463,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       seriesDraft: null,
     });
     setEditorError(""); setEditorStale(false); setEditorRetryOnly(false); setEditorReauthRequired(false); setNotice("");
-  }, [preferences, calendarLocked, rememberEditorOpener]);
+  }, [preferences, calendarLocked, rememberEditorOpener, cancelCalendarExport]);
   const moveEditorOccurrence = useCallback(() => {
     if (!editor || !preferences || calendarLocked) return;
     const occurrence = editor.occurrence;
@@ -494,6 +513,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     returnFocusTarget?: HTMLElement | null,
   ) => {
     if (!preferences || calendarLocked) return;
+    cancelCalendarExport();
     if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
     else rememberEditorOpener();
     editorOpenerRecoveryDate.current = null;
@@ -525,7 +545,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorRetryOnly(false);
     setEditorReauthRequired(false);
     setNotice("");
-  }, [preferences, calendarLocked, rememberEditorOpener]);
+  }, [preferences, calendarLocked, rememberEditorOpener, cancelCalendarExport]);
   const moveEvent: CalendarMoveAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone, sourceDate, sourceTarget) => {
     if (!preferences || calendarLocked) return;
     const event = calendarEventSeries(selected);
@@ -544,6 +564,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setNotice(moved.message);
       return;
     }
+    cancelCalendarExport();
     editorOpener.current = sourceTarget;
     editorOpenerRecoveryDate.current = view === "month" ? sourceDate : null;
     focusAfterEditor.current = null;
@@ -571,7 +592,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorRetryOnly(false);
     setEditorReauthRequired(false);
     setNotice("");
-  }, [preferences, calendarLocked, view]);
+  }, [preferences, calendarLocked, view, cancelCalendarExport]);
   const resizeEvent: CalendarResizeAction = useCallback((selected, targetDate, targetMinute, calendarTimeZone, sourceDate, sourceTarget) => {
     if (!preferences || calendarLocked) return;
     if ("series" in selected) {
@@ -583,6 +604,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       setNotice(resized.message);
       return;
     }
+    cancelCalendarExport();
     editorOpener.current = sourceTarget;
     editorOpenerRecoveryDate.current = view === "month" ? sourceDate : null;
     focusAfterEditor.current = null;
@@ -608,7 +630,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorRetryOnly(false);
     setEditorReauthRequired(false);
     setNotice("");
-  }, [preferences, calendarLocked, view]);
+  }, [preferences, calendarLocked, view, cancelCalendarExport]);
   function changeDraft(field: keyof EventDraft, value: string) {
     if (editorStale || calendarLocked) return;
     const nextOperationKey = crypto.randomUUID();
@@ -1206,6 +1228,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     event.preventDefault(); if (!settings || calendarLocked) return;
     try { new Intl.DateTimeFormat("en", { timeZone: settings.timeZone }); }
     catch { setSettingsError("Enter a valid IANA time zone, such as America/Montreal."); return; }
+    if (preferences && (settings.timeZone !== preferences.timeZone || settings.weekStartsOn !== preferences.weekStartsOn)) {
+      cancelCalendarExport();
+    }
     setBusy(true); setSettingsError("");
     try { const saved = await saveCalendarPreferences(settings); setPreferences(saved); setSettings(saved); setSettingsError(""); setNotice("Preferences saved."); }
     catch (reason) { setSettingsError(reason instanceof Error ? reason.message : "Could not save preferences. Try saving again."); }
@@ -1228,36 +1253,45 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
 
   async function exportVisibleEvents() {
     if (!preferences || !date || loading || loadError || calendarLocked || editor) return;
+    const attempt = exportSession.begin();
+    if (!attempt) return;
     const range = visibleRange(view, date, preferences.weekStartsOn);
     const through = Temporal.PlainDate.from(range.to).subtract({ days: 1 }).toString();
-    setExporting(true);
+    const timeZone = preferences.timeZone;
+    setExportAttempt(attempt);
     setExportError("");
-    try {
-      const entries = await fetchCalendarEvents(range.from, range.to, preferences.timeZone);
-      const content = buildCalendarIcs(entries);
-      const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
-      const downloadUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = `chron-calendar-${range.from}-through-${through}.ics`;
-      link.rel = "noopener";
-      document.body.append(link);
-      link.click();
-      link.remove();
-      window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 30_000);
-      setNotice(`Downloaded ${entries.length} event${entries.length === 1 ? "" : "s"} for ${range.from} through ${through}.`);
-    } catch (reason) {
-      setExportError(reason instanceof RangeError && reason.message.includes("unsupported control characters")
-        ? "An event title or description contains a control character that cannot be exported. Edit the event and try again."
-        : reason instanceof CalendarRequestError
-          ? reason.message
-          : "Could not prepare this calendar file. Reload the displayed dates and try again.");
-    } finally {
-      setExporting(false);
-    }
+    setNotice("");
+    await runCalendarExport(
+      exportSession,
+      attempt,
+      (signal) => fetchCalendarEvents(range.from, range.to, timeZone, signal),
+      (entries) => {
+        const content = buildCalendarIcs(entries);
+        const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+        const downloadUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.download = `chron-calendar-${range.from}-through-${through}.ics`;
+        link.rel = "noopener";
+        document.body.append(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 30_000);
+        setNotice(`Downloaded ${entries.length} event${entries.length === 1 ? "" : "s"} for ${range.from} through ${through}.`);
+      },
+      (reason) => {
+        setExportError(reason instanceof RangeError && reason.message.includes("unsupported control characters")
+          ? "An event title or description contains a control character that cannot be exported. Edit the event and try again."
+          : reason instanceof CalendarRequestError
+            ? reason.message
+            : "Could not prepare this calendar file. Reload the displayed dates and try again.");
+      },
+      () => setExportAttempt(null),
+    );
   }
   async function signOut() {
     if (calendarLocked || editor) return;
+    cancelCalendarExport();
     setSigningOut(true);
     setSignOutError("");
     try {
@@ -1300,7 +1334,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         <button ref={newEventButton} type="button" onClick={(event) => openNew(date, undefined, event.currentTarget)} disabled={!preferences || !date || calendarLocked}>New event</button>
         <button
           type="button"
-          aria-label="Export events in the displayed date range as an iCalendar file"
+          aria-label={exporting ? "Exporting calendar events" : "Export events in the displayed date range as an iCalendar file"}
+          aria-busy={exporting}
           onClick={exportVisibleEvents}
           disabled={!preferences || !date || loading || !!loadError || calendarLocked || !!editor || exporting}
         >{exporting ? "Exporting…" : "Export visible dates (.ics)"}</button>
@@ -1351,7 +1386,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         Drag an event handle to another date; on a time grid, drop it on a 15-minute slot. Longer timed blocks also have an end handle to propose a duration change. Open an event to edit it with the keyboard. Every change is reviewed before saving.
       </p>
     )}
-    <p role="status" className={styles.status}>{loading ? "Loading calendar…" : notice}</p>
+    <p role="status" className={styles.status}>{loading ? "Loading calendar…" : exporting ? "Preparing calendar file…" : notice}</p>
     {loadError && <div className={styles.error} role="alert"><p>{loadError}</p><button type="button" onClick={() => { setLoadError(""); if (!preferences) window.location.reload(); else setReload((value) => value + 1); }}>Retry loading calendar</button></div>}
     {cancelledLoadError && preferences && !loading && !loadError && (
       <div className={styles.error} role="alert">
