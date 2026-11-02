@@ -8,26 +8,27 @@ pushed as 2q9e over HTTPS. Occurrence cancellation, restoration, reviewed
 movement, and this-and-following split behavior for timed and all-day
 recurring events are implemented and pushed. Migration 0012 adds a stable
 series root and backfills existing recurring events; migration 0013 permits a
-one-occurrence segment and exact split proposal outcomes.
+one-occurrence segment and exact split proposal outcomes. Migration 0014 adds
+per-account calendar accent colors with strict validation; the five themes now
+preview a saved or edited accent with contrast correction.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41412546906 passed on commit
-`23606fc`, including PostgreSQL 16 migration, tenant-isolation, and split
-integration, lint, typecheck, calendar policy/auth/time/API/layout/recovery
-checks, HTTPS reminder checks, dependency audit, and production build. Local
-calendar API (111), layout/API client (58), and time/domain (43) suites pass;
-typecheck and lint pass. PostgreSQL integration skips locally because
-`CHRON_TEST_DATABASE_URL` is unset.
+https://github.com/2q9e/chron/actions/runs/41414536143 passed on commit
+`dc031a3`, including PostgreSQL 16 migration and tenant-isolation checks, lint,
+typecheck, calendar policy/auth/time/API/layout/recovery checks, HTTPS reminder
+checks, dependency audit, and production build. Local calendar API (111),
+layout/API client (60), and time/domain (48) suites pass; typecheck and lint
+pass. PostgreSQL integration skips locally because `CHRON_TEST_DATABASE_URL`
+is unset.
 
 https://testing.uwu.markets/sign-in was checked over HTTPS and returned 200
-with HSTS in the earlier check. On 2026-11-02, HTTPS requests to the root and
-`/calendar` returned redirects to `/calendar` and `/sign-in` respectively,
-with valid TLS and HSTS. No redirect was followed; this confirms the HTTPS
-edge only, not the running app version or authenticated behavior. This change
-is not deployed. The deployment key referenced by the local login notes is
-unavailable in this session, so no VPS or Cloudflare resources were changed.
-Authenticated calendar actions remain unverified because no test account is
-configured.
+with HSTS in the earlier check. On 2026-11-02, the HTTPS `/calendar` route
+redirected to `/sign-in`, where the sign-in interface rendered in a real
+browser. TLS and HSTS were present. No authenticated calendar session is
+available, so accent preference behavior has not been verified in a browser.
+The `dc031a3` change is not deployed: the private key path in the local login
+notes is unavailable in this environment. No VPS or Cloudflare resources were
+changed. Authenticated calendar actions remain unverified.
 
 External services, Git remotes, and staging or production hosts use HTTPS.
 HTTP references are limited to loopback test configuration and negative

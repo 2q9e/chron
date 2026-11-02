@@ -1237,3 +1237,44 @@ C1-r4 + existing event/date contracts ── C1-a0 shared type contract (done)
   regression tests, and updated audit/handoff evidence.
 - **Status:** Source is pushed as `d122d05 update`. Live SMTP, database, and
   staging delivery remain unverified.
+
+### C1-pref1 — persisted accent customization
+
+- **Task ID:** C1-pref1
+- **Objective:** Add a per-account accent color to calendar preferences,
+  preview it immediately across the active theme, and maintain readable
+  contrast.
+- **Assigned agent:** Main integration owner.
+- **Required model:** Runtime model identity was not attested; no model claim.
+- **Required reasoning level:** Runtime reasoning configuration was not
+  attested; no level claim.
+- **Dependencies:** Owner-scoped preference persistence and the five existing
+  calendar themes.
+- **Owned files:** `apps/web/features/calendar/domain/calendar-accent.ts`,
+  `apps/web/features/calendar/domain/calendar-accent.test.mjs`, migration
+  `0014_calendar_accent.sql`, calendar preference schema/API/repository and
+  tests, `calendar-preferences.tsx`, `calendar-workspace.tsx`, the calendar CSS
+  module, and related API client tests.
+- **Read-only files:** Shared authentication, unrelated calendar operations,
+  and deployment configuration.
+- **Required skills:** S087, S089, S110, S111, S370, S470, and the installed
+  TypeScript, design-system, CSS, form-validation, and accessibility guidance.
+  The entries were reviewed and applied.
+- **Security permissions:** Accept only exact six-digit hexadecimal values;
+  validate at client, server, and database boundaries; preserve owner-scoped
+  preference access; never put color values in URLs or logs.
+- **Acceptance criteria:** Users can choose an accent, preview it across the
+  selected theme, save it per account, and restore the theme default.
+  Insufficient contrast is corrected to at least 4.5:1 against the theme
+  surface.
+- **Tests:** Calendar API (111), layout/API client (60), and time/domain (48)
+  tests pass; typecheck and lint pass. CI run 41414536143 passed PostgreSQL 16
+  integration and the production build. Local PostgreSQL integration skips
+  because no test database is configured.
+- **Expected deliverables:** Validated preference migration and persistence,
+  interactive color control, live preview, regression tests, and updated
+  handoff evidence.
+- **Status:** Pushed to the only branch as `96d0f3a improve`, `a3e4364 update`,
+  and `dc031a3 update`. Authenticated browser verification and HTTPS staging
+  deployment remain open because no test account or usable deployment key is
+  available.

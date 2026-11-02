@@ -12,28 +12,27 @@ The public tree contains no AGENTS.md; local operating instructions remain
 untracked. No old calendar reference folder was inspected or used.
 
 GitHub Actions run
-https://github.com/2q9e/chron/actions/runs/41412546906 passed on commit
-`23606fc`, including PostgreSQL 16 migration, tenant-isolation, and split
-integration, lint, typecheck, calendar policy/auth/time/API/layout/recovery
-checks, HTTPS reminder checks, dependency audit, and production build. Local
-calendar API (111), layout/API client (58), and time/domain (43) tests pass;
-typecheck and lint pass. PostgreSQL integration skips locally because
-`CHRON_TEST_DATABASE_URL` is unset.
+https://github.com/2q9e/chron/actions/runs/41414536143 passed on commit
+`dc031a3`, including PostgreSQL 16 migration and tenant-isolation checks, lint,
+typecheck, calendar policy/auth/time/API/layout/recovery checks, HTTPS reminder
+checks, dependency audit, and production build. Local calendar API (111),
+layout/API client (60), and time/domain (48) suites pass; typecheck and lint
+pass. PostgreSQL integration skips locally because `CHRON_TEST_DATABASE_URL`
+is unset.
 
 The testing site at https://testing.uwu.markets/sign-in was checked over HTTPS;
 it returned 200 with valid TLS and HSTS in the earlier check. On 2026-11-02,
-HTTPS requests to the root and `/calendar` returned redirects to `/calendar`
-and `/sign-in`, with valid TLS and HSTS. No redirect was followed; this does
-not establish the running app version or authenticated behavior. The split
-change is not deployed. The deployment key referenced by the local login notes
-is unavailable in this session. No VPS or Cloudflare resources were changed.
-Authenticated calendar interactions remain unverified because no test account
-is available.
+the HTTPS `/calendar` route redirected to `/sign-in`, and the sign-in interface
+rendered in a real browser. The accent preference flow could not be tested
+without an authenticated account. The `dc031a3` change is not deployed because
+the private key path in the local login notes is unavailable in this
+environment. No VPS or Cloudflare resources were changed.
 
 ## Current milestone
 
 C1 — calendar — is active. Landing-page work remains paused. The calendar has
-owner-scoped persisted events and preferences, four views, create/edit/delete,
+owner-scoped persisted events and preferences, including a validated custom
+accent color with contrast correction, four views, create/edit/delete,
 search, conflict review, finite recurrence with full-series proposals and
 approval, time-zone-aware reminders, and source-level drag/create/resize
 interactions. Single-occurrence cancellation, reviewed restoration, and
