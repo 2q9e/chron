@@ -1,0 +1,224 @@
+.planner {
+  margin: 1.5rem 0;
+  padding: clamp(1rem, 2.5vw, 1.75rem);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.heading h2,
+.results h3 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.heading p:not(.eyebrow),
+.results > p,
+.note {
+  max-width: 58rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.eyebrow {
+  margin: 0 0 .35rem;
+  color: var(--accent);
+  font-size: .75rem;
+  font-weight: 750;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.form > label {
+  display: grid;
+  align-content: start;
+  gap: .4rem;
+  font-weight: 650;
+}
+
+.form input:not([type="checkbox"]) {
+  width: 100%;
+  min-height: 2.75rem;
+  box-sizing: border-box;
+  padding: .55rem .65rem;
+  border: 1px solid var(--line);
+  border-radius: .3rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+
+.form input:focus-visible,
+.planner button:focus-visible,
+.weekdays input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.topic,
+.weekdays,
+.note,
+.actions {
+  grid-column: 1 / -1;
+}
+
+.weekdays {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .45rem .9rem;
+  min-width: 0;
+  margin: 0;
+  padding: .75rem;
+  border: 1px solid var(--line);
+}
+
+.weekdays legend {
+  padding: 0 .35rem;
+  font-weight: 700;
+}
+
+.weekdays label {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 2.5rem;
+  cursor: pointer;
+}
+
+.weekdays input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+}
+
+.note {
+  margin: 0;
+  font-size: .9rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.planner button {
+  min-height: 2.75rem;
+  padding: .55rem .85rem;
+  border: 1px solid var(--line);
+  border-radius: .35rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.planner button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.planner button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.results {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+}
+
+.sessions {
+  display: grid;
+  gap: .35rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sessions li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.sessions li > div {
+  display: grid;
+  gap: .25rem;
+  min-width: 0;
+}
+
+.sessions time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.error {
+  margin: 1rem 0 0;
+  padding: .75rem;
+  border-left: 3px solid var(--accent);
+  background: var(--event);
+  color: var(--text);
+  font-weight: 650;
+}
+
+.status {
+  color: var(--muted);
+}
+
+@media (max-width: 52rem) {
+  .form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 36rem) {
+  .heading,
+  .sessions li {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .heading {
+    display: grid;
+  }
+
+  .heading > button,
+  .sessions li > button {
+    width: 100%;
+  }
+
+  .form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .topic,
+  .weekdays,
+  .note,
+  .actions {
+    grid-column: auto;
+  }
+
+  .actions,
+  .actions > button {
+    width: 100%;
+  }
+}

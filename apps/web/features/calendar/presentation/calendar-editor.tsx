@@ -34,6 +34,7 @@ export type Editor = {
   purpose?: "move" | "move-occurrence" | "resize" | "restore";
   restoreOccurrence?: CalendarEventOccurrence;
   reviewCalendarTimeZone?: string;
+  studySessionId?: string;
 };
 
 type Props = {

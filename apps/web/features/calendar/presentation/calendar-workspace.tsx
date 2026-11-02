@@ -32,6 +32,8 @@ import type { CalendarMoveAction, CalendarResizeAction } from "./calendar-event-
 import { moveCalendarEventDraft, resizeCalendarEventDraft } from "./calendar-move.ts";
 import { CalendarSearch } from "./calendar-search";
 import { CalendarPreferencesForm } from "./calendar-preferences";
+import { CalendarStudyPlanner } from "./calendar-study-planner";
+import type { StudyPlanSession } from "../domain/study-planner";
 import { AgendaCalendar, MonthCalendar, TimeCalendar } from "./calendar-views";
 import styles from "./calendar.module.css";
 
@@ -108,6 +110,8 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
   const [notice, setNotice] = useState("");
   const [exportError, setExportError] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [studyPlannerOpen, setStudyPlannerOpen] = useState(false);
+  const [savedStudySessionIds, setSavedStudySessionIds] = useState<ReadonlySet<string>>(() => new Set());
   const [editor, setEditor] = useState<Editor | null>(null);
   const [editorError, setEditorError] = useState("");
   const [editorStale, setEditorStale] = useState(false);
@@ -324,15 +328,24 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     day: string,
     minute?: number,
     returnFocusTarget?: HTMLButtonElement | null,
+    studySession?: StudyPlanSession,
   ) => {
     if (!preferences || calendarLocked) return;
-    const draft = minute === undefined
+    const baseDraft = minute === undefined
       ? newEventDraft(day)
       : newEventDraftAtTimeSlot(day, minute, preferences.timeZone);
-    if (!draft) {
+    if (!baseDraft) {
       setNotice("Choose a valid time slot before creating an event.");
       return;
     }
+    const draft: EventDraft = studySession ? {
+      ...baseDraft,
+      title: studySession.title,
+      startLocal: studySession.startLocal,
+      endLocal: studySession.endLocal,
+      startDisambiguation: studySession.startDisambiguation ?? "",
+      endDisambiguation: studySession.endDisambiguation ?? "",
+    } : baseDraft;
     if (returnFocusTarget?.isConnected) editorOpener.current = returnFocusTarget;
     else rememberEditorOpener();
     focusAfterEditor.current = null;
@@ -350,6 +363,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       reviewTimeZone: null,
       deleting: false,
       seriesDraft: null,
+      ...(studySession ? { studySessionId: studySession.id } : {}),
     });
     setEditorError("");
     setEditorStale(false);
@@ -357,6 +371,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
     setEditorReauthRequired(false);
     setNotice("");
   }, [preferences, calendarLocked, rememberEditorOpener]);
+  function reviewStudySession(session: StudyPlanSession, returnFocusTarget: HTMLButtonElement) {
+    openNew(session.date, undefined, returnFocusTarget, session);
+  }
   const openEvent = useCallback((selected: CalendarEventEntry, returnFocusTarget?: HTMLElement | null) => {
     if (!preferences || calendarLocked) return;
     const event = calendarEventSeries(selected);
@@ -814,6 +831,9 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         }
         await createCalendarEvent(editor.review, preferences.timeZone, editor.conflicts, editor.operationKey);
         forgetPendingCalendarCreate(userId, editor.operationKey);
+        if (editor.studySessionId) {
+          setSavedStudySessionIds((current) => new Set(current).add(editor.studySessionId!));
+        }
       }
       if (editorGeneration.current === generation) closeEditor(true);
       setNotice(editor.purpose === "move"
@@ -1169,6 +1189,7 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
       </div>
       <div className={styles.actions}>
         <a className={styles.researchLink} href="/research">Research</a>
+        <button type="button" aria-expanded={studyPlannerOpen} aria-controls={studyPlannerOpen ? "calendar-study-planner" : undefined} onClick={() => setStudyPlannerOpen(true)} disabled={!preferences || !date || loading || !!loadError || calendarLocked || !!editor || studyPlannerOpen}>{studyPlannerOpen ? "Planner open" : "Plan study time"}</button>
         <button ref={newEventButton} type="button" onClick={() => openNew(date)} disabled={!preferences || !date || calendarLocked}>New event</button>
         <button
           type="button"
@@ -1179,6 +1200,18 @@ export function CalendarWorkspace({ userId, userName }: { userId: string; userNa
         <button type="button" onClick={signOut} disabled={calendarLocked || !!editor}>{signingOut ? "Signing out…" : "Sign out"}</button>
       </div>
     </header>
+    {studyPlannerOpen && preferences && date && (
+      <CalendarStudyPlanner
+        key={`${userId}:${date}:${preferences.timeZone}`}
+        initialDate={date}
+        timeZone={preferences.timeZone}
+        locale={locale}
+        disabled={calendarLocked || !!editor || loading || !!loadError}
+        savedSessionIds={savedStudySessionIds}
+        onReview={reviewStudySession}
+        onClose={() => setStudyPlannerOpen(false)}
+      />
+    )}
     {signOutError && <p className={styles.error} role="alert">{signOutError}</p>}
     {exportError && <p className={styles.error} role="alert">{exportError}</p>}
     {recoveryState === "checking" || recoveryState === "verifying" ? (
