@@ -58,7 +58,9 @@ test("a stale finally cannot finish or clear a newer export", async () => {
   const session = new CalendarExportSession();
   const stale = session.begin();
   const pending = deferred();
+  const currentPending = deferred();
   let staleFinishes = 0;
+  let currentCompletions = 0;
 
   assert.ok(stale);
   const staleTask = runCalendarExport(session, stale, () => pending.promise, () => {}, () => {}, () => { staleFinishes += 1; });
@@ -67,13 +69,21 @@ test("a stale finally cannot finish or clear a newer export", async () => {
 
   assert.ok(current);
   let currentFinishes = 0;
-  await runCalendarExport(session, current, async () => "saved", () => {}, () => {}, () => { currentFinishes += 1; });
+  const currentTask = runCalendarExport(session, current, () => currentPending.promise, () => { currentCompletions += 1; }, () => {}, () => { currentFinishes += 1; });
   pending.resolve("stale");
   await staleTask;
 
   assert.equal(session.isCurrent(stale), false);
   assert.equal(session.finish(stale), false);
   assert.equal(staleFinishes, 0);
+  assert.equal(session.isCurrent(current), true);
+  assert.equal(currentCompletions, 0);
+  assert.equal(currentFinishes, 0);
+
+  currentPending.resolve("current");
+  await currentTask;
+
+  assert.equal(currentCompletions, 1);
   assert.equal(currentFinishes, 1);
 });
 
