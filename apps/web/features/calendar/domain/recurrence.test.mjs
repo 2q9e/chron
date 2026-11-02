@@ -96,6 +96,25 @@ test("normalizes only the finite daily/weekly recurrence shape", () => {
   assert.equal(getterWasRead, false);
 });
 
+test("recurring occurrences inherit categories and preserve missing legacy categories", () => {
+  const categorized = expand(
+    allDayEvent("2026-06-01", "2026-06-02", { category: "assignment" }),
+    { frequency: "weekly", interval: 1, count: 2 },
+    "2026-06-01",
+    "2026-06-15",
+  );
+  const legacy = expand(
+    allDayEvent("2026-06-01", "2026-06-02"),
+    { frequency: "weekly", interval: 1, count: 2 },
+    "2026-06-01",
+    "2026-06-15",
+  );
+
+  assert.deepEqual(categorized.map(({ category }) => category), ["assignment", "assignment"]);
+  assert.deepEqual(legacy.map(({ category }) => category), [undefined, undefined]);
+  assert.ok(legacy.every((occurrence) => !Object.hasOwn(occurrence, "category")));
+});
+
 test("accepts a single-occurrence segment after a recurring-series split", () => {
   assert.deepEqual(
     normalizeRecurrenceRule({ frequency: "weekly", interval: 1, count: 1 }),

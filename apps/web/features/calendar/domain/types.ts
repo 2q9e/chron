@@ -13,6 +13,23 @@ export const calendarThemes = [
 
 export type CalendarTheme = (typeof calendarThemes)[number];
 export type CalendarDensity = "comfortable" | "compact";
+export const calendarEventCategories = [
+  "class",
+  "assignment",
+  "exam",
+  "study",
+  "personal",
+  "other",
+] as const;
+export type CalendarEventCategory = (typeof calendarEventCategories)[number];
+export const calendarEventCategoryLabels: Readonly<Record<CalendarEventCategory, string>> = {
+  class: "Class",
+  assignment: "Assignment",
+  exam: "Exam",
+  study: "Study",
+  personal: "Personal",
+  other: "Other",
+};
 export type CalendarRecurrenceRule = Readonly<{
   frequency: "daily" | "weekly";
   interval: 1 | 2 | 3 | 4;
@@ -196,6 +213,8 @@ type CalendarEventBase = Readonly<{
   seriesRootId?: string;
   title: string;
   details: string | null;
+  /** Undefined means an older API version did not report the field. */
+  category?: CalendarEventCategory | null;
   revision: number;
   recurrenceRule?: CalendarRecurrenceRule;
   createdAt: string;
@@ -229,6 +248,8 @@ type CalendarOccurrenceMetadata = Readonly<{
   occurrenceKey: string;
   title: string;
   details: string | null;
+  /** Undefined means an older API version did not report the field. */
+  category?: CalendarEventCategory | null;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -313,6 +334,8 @@ export type CreateTimedCalendarEvent = Readonly<{
   kind: "timed";
   title: string;
   details?: string;
+  /** Omitted by older clients; updates preserve the stored category. */
+  category?: CalendarEventCategory | null;
   startLocal: string;
   endLocal: string;
   timeZone: string;
@@ -325,6 +348,8 @@ export type CreateAllDayCalendarEvent = Readonly<{
   kind: "all-day";
   title: string;
   details?: string;
+  /** Omitted by older clients; updates preserve the stored category. */
+  category?: CalendarEventCategory | null;
   startDate: string;
   endDate: string;
   reminderChoice?: AllDayCalendarReminderChoice;

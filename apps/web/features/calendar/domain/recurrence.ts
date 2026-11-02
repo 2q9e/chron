@@ -2,9 +2,11 @@ import { Temporal } from "@js-temporal/polyfill";
 import type {
   AllDayCalendarEvent,
   CalendarEvent,
+  CalendarEventCategory,
   CalendarRecurrenceRule,
   TimedCalendarEvent,
 } from "./types.ts";
+import { calendarEventCategories } from "./types.ts";
 import {
   CalendarTimeError,
   inspectLocalDateTime,
@@ -52,6 +54,7 @@ type OccurrenceMetadata = Readonly<{
   occurrenceKey: string;
   title: string;
   details: string | null;
+  category?: CalendarEventCategory | null;
   revision: number;
   createdAt: string;
   updatedAt: string;
@@ -210,6 +213,9 @@ function readMetadata(series: unknown): OccurrenceMetadata {
     typeof candidate.id !== "string" || candidate.id.length === 0 ||
     typeof candidate.title !== "string" ||
     !(typeof candidate.details === "string" || candidate.details === null) ||
+    !(candidate.category === undefined || candidate.category === null
+      || (typeof candidate.category === "string"
+        && calendarEventCategories.includes(candidate.category as CalendarEventCategory))) ||
     typeof candidate.revision !== "number" || !Number.isSafeInteger(candidate.revision) || candidate.revision < 0 ||
     typeof candidate.createdAt !== "string" ||
     typeof candidate.updatedAt !== "string"
@@ -220,6 +226,9 @@ function readMetadata(series: unknown): OccurrenceMetadata {
     seriesId: candidate.id,
     title: candidate.title,
     details: candidate.details,
+    ...(candidate.category === undefined
+      ? {}
+      : { category: candidate.category as CalendarEventCategory | null }),
     revision: candidate.revision,
     createdAt: candidate.createdAt,
     updatedAt: candidate.updatedAt,
