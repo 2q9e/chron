@@ -2,41 +2,45 @@
 
 ## Latest checkpoint — 2026-11-02
 
-Current source is pushed to HTTPS GitHub `main` through `b11a677 improve`, in
-four small commits (`d1b123f`, `1b88ebb`, `7315413`, and `b11a677`) authored by
-`2q9e`. This adds a deterministic study-time planner to the existing calendar.
-It reads owner-scoped events through the same-origin API and proposes
-time-zone-aware sessions around timed/all-day events, buffers, breaks, and
-weekly availability. It rejects past start dates, keeps today's sessions after
-the current instant, limits the result to 120 proposals, and distinguishes
-saved markers by topic. Each proposed session goes to the existing event
-editor; nothing is persisted until the owner reviews conflicts and explicitly
-saves. No AI request is made.
+Current source is pushed to HTTPS GitHub `main` through `c4f8bc4 fix`, in the
+four latest small commits (`097756e`, `6213718`, `fe970f9`, and `c4f8bc4`), all
+authored by `2q9e`. Bounded study-planning defaults persist per account and
+load/save through the signed-in calendar. The save route is same-origin and
+authenticated, updates only planner fields in an existing preference row, and
+rebases untouched local settings onto the latest server values. Empty numeric
+inputs fail validation. Generated study sessions still open in the existing
+review flow; saving defaults does not create events. The `C1-study0` solver
+proposes up to 120 time-zone-aware sessions around timed/all-day events,
+buffers, breaks, and weekly availability, rejecting past dates and preserving
+explicit approval.
 
-The focused solver tests (10), calendar domain suite (61), calendar
-presentation/API-client suite (61), full web lint, typecheck, and
-`git diff --check` pass locally. GitHub Actions run 41428623423 passed on
-b11a677. HTTPS `https://testing.uwu.markets/sign-in` returns 200 with HSTS and
-the browser displays the existing sign-in boundary. Staging still runs release
-6ddcaf1; the new planner is not deployed. Read-only SSH authentication using
-the documented VPS credentials failed, so no deployment command ran and no
-VPS changes were made. Do not retry guessed credentials. The user requires
-HTTPS; deploy only Chron's release, existing migration/grant if required (none
-added here), release symlink, and `chron-web.service` after authorized access
-is restored. Do not edit other VPS files or services, and do not touch
-Cloudflare. No authorized account is available, so do not simulate login or
-claim signed-in planner/persistence testing.
+Local domain (65), presentation (63), and server (113) suites pass, along with
+web lint, typecheck, and `git diff --check`. The PostgreSQL integration test
+skipped because `CHRON_TEST_DATABASE_URL` is unset. GitHub Actions run
+41432287345 passed on `c4f8bc4`, including lint, typecheck, calendar suites,
+dependency audit, and production build. The HTTPS probe to
+`https://testing.uwu.markets/calendar` returned a sign-in redirect with HSTS;
+the runtime/deployment URL scan found no plain-HTTP URL.
+
+Staging still runs release 6ddcaf1; neither new planner commit is deployed.
+Read-only SSH authentication using the documented VPS access failed earlier,
+so no deployment command ran and no VPS changes were made. Do not retry guessed
+credentials. Deploy only Chron's release, migration 0017, release symlink, and
+`chron-web.service` after authorized access is restored. Use only
+`https://testing.uwu.markets`; do not edit other VPS files or services. No
+authorized account is available, so signed-in planner persistence has not been
+browser-verified.
 
 Next actions:
 
-1. Ask the user to refresh the private VPS access file or establish an
-   authorized shell session; do not request credentials in chat or retry the
-   rejected login.
-2. Once access is restored, fetch `main` over HTTPS, build the release, switch
-   only Chron's release symlink/service, and verify HTTPS health.
+1. Check completion of GitHub Actions for the latest `main` head; fix any
+   migration, build, test, or dependency failures before continuing.
+2. Once authorized VPS access is restored, fetch `main` over HTTPS and deploy
+   only Chron's release, migration 0017, release symlink, and service. Verify
+   the live HTTPS health check without touching unrelated VPS services.
 3. Open `https://testing.uwu.markets` in the actual browser. Verify the
-   signed-in planner only with an authorized test account; do not claim the
-   planner is deployed or visually verified before that.
+   signed-in planner only with an authorized test account; do not claim it is
+   deployed or visually verified before then.
 4. Update this handoff with the actual release ID and checks; keep C1 active
    and landing-page work paused.
 

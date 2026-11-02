@@ -34,18 +34,49 @@ conflict review, finite recurring series with full-series proposals, and
 time-zone-aware reminders. One-off drag movement, time-grid creation, and
 resize interactions open the existing explicit-review flow.
 
-The next calendar increment, `C1-study0`, adds deterministic study-time
-proposals around owner-scoped saved events. Each proposal opens in the current
-event editor for conflict review and explicit approval. The planner does not
-call an AI provider or write directly to storage. Solver tests cover daily
-availability, event buffers, all-day blocks, DST gaps/folds, past-date entry,
-topic-specific session identity, a 120-session limit, and unscheduled time.
-Source is pushed to `main` in `d1b123f`, `1b88ebb`, `7315413`, and `b11a677`;
-GitHub run 41428623423 passed. The HTTPS sign-in endpoint is healthy, but
-staging remains on release 6ddcaf1 because the documented VPS login was
-rejected; no server changes were made. Resume deployment only after authorized
-VPS access is restored, and record signed-in browser verification as
-unavailable without an authorized test account.
+`C1-study0` adds deterministic study-time proposals around owner-scoped saved
+events. Each proposal opens in the current event editor for conflict review
+and explicit approval. The planner does not call an AI provider or write
+directly to storage. Solver tests cover daily availability, event buffers,
+all-day blocks, DST gaps/folds, past-date entry, topic-specific session
+identity, a 120-session limit, and unscheduled time. Source is on `main` in
+`d1b123f`, `1b88ebb`, `7315413`, and `b11a677`; GitHub run 41428623423 passed.
+
+`C1-study1` persists the planner's weekdays, availability window, session
+length, event buffer, and break as part of the existing account-scoped calendar
+preferences. Its dependency graph is sequential:
+
+- `C1-study1a` — add strict defaults validation, database constraints,
+  repository mapping, and preference API coverage. Dependency: `C1-study0`.
+  Owned paths: calendar domain types and planner validation, migration 0017,
+  calendar server repository/validation and their tests, preference response
+  model and client tests, PostgreSQL integration test. Read-only boundary:
+  existing account/session and owner-transaction implementation. Security
+  scope: only these calendar paths; no credentials, reference folder, VPS, or
+  unrelated services. Delivered in `097756e update`.
+- `C1-study1b` — load saved defaults into the planner and add an explicit,
+  validated save control with accessible success/error states. Dependency:
+  `C1-study1a`. Owned paths: planner component, workspace wiring, and planner
+  styles. Security scope: same-origin authenticated preferences API only;
+  generated sessions remain reviewable drafts. Delivered in `6213718 refine`.
+- `C1-study1c` — reject empty numeric defaults, update only planner preference
+  columns during a planner save, and preserve newer settings from other tabs
+  while rebasing untouched local preferences. Dependencies: `C1-study1a/b`.
+  Owned paths: calendar preferences route, repository, planner form, workspace,
+  model, and their tests. Security scope: same-origin authenticated API and
+  owner-scoped repository transaction. Delivered in `fe970f9 fix` and
+  `c4f8bc4 fix`.
+
+All commits are on the single `main` branch, authored by `2q9e`. Local calendar
+domain (65), presentation (63), and server (113) suites, typecheck, and lint
+pass. The PostgreSQL integration test skips locally without
+`CHRON_TEST_DATABASE_URL`; GitHub Actions run 41432287345 passed on
+`c4f8bc4`.
+The HTTPS staging host returns a sign-in redirect and HSTS, and runtime and
+deployment URL files contain no plain-HTTP URLs. Staging remains on release
+6ddcaf1; no new VPS deployment or unrelated VPS changes were made. Resume
+deployment only after authorized VPS access is restored, and record signed-in
+browser verification as unavailable without an authorized test account.
 
 The first R1 implementation is a direct public HTTPS source reader on the
 single main branch. Commits 2019687, 054f060, and b71d104 add URL validation,

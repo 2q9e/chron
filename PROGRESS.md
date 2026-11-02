@@ -2,6 +2,28 @@
 
 ## Latest checkpoint — 2026-11-02
 
+`C1-study1` is implemented and pushed to the single GitHub `main` branch in
+`097756e update`, `6213718 refine`, `fe970f9 fix`, and `c4f8bc4 fix`, all
+authored as `2q9e`. Planner defaults persist in each account's existing
+preferences row. The signed-in same-origin API validates the exact shape and
+allowed ranges, and PostgreSQL constraints enforce those bounds. The planner
+loads the defaults and saves them through a narrow update that cannot replace
+newer calendar preferences from another tab. Empty numeric inputs remain
+invalid; untouched local settings rebase onto the latest saved values while
+intentional edits are preserved. Proposed events still require review and
+approval.
+
+Local calendar domain (65), presentation (63), and server (113) suites pass,
+along with typecheck, lint, and `git diff --check`. The PostgreSQL integration
+test skipped because `CHRON_TEST_DATABASE_URL` is unset. GitHub Actions run
+41432287345 passed on `c4f8bc4`, including the full calendar suites, lint,
+typecheck, dependency audit, and production build. The HTTPS staging probe to
+`https://testing.uwu.markets/calendar` returned a sign-in redirect and HSTS;
+the runtime/deployment URL scan found no plain-HTTP URL. Staging still serves
+release 6ddcaf1; no new VPS deployment or unrelated VPS change was made. The
+signed-in save flow has not been browser-verified without an authorized test
+account.
+
 `C1-study0` is implemented and pushed to the single GitHub `main` branch in
 `d1b123f update`, `1b88ebb update`, `7315413 refine`, and `b11a677 improve`,
 all authored by `2q9e`. The planner reads owner-scoped events over the same-
