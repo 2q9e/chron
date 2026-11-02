@@ -2346,7 +2346,7 @@ async function markApprovedSeriesDraftsDeleted(
      WHERE draft.user_id = $1
        AND draft.result_event_id = $2::uuid
        AND draft.outcome = 'approved'
-       AND draft.action IN ('create', 'update')`,
+       AND draft.action IN ('create', 'update', 'split-series')`,
     [ownerId, eventId],
   );
 }

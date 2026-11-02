@@ -284,9 +284,12 @@ class SeriesProposalPool {
           }
           if (statement.includes("draft.result_event_id = $2::uuid")) {
             const [, eventToClear] = values;
+            const deletedActions = statement.includes("'split-series'")
+              ? ["create", "update", "split-series"]
+              : ["create", "update"];
             for (const draft of this.drafts.values()) {
               if (draft.user_id === queryOwner && draft.result_event_id === eventToClear
-                && draft.outcome === "approved" && ["create", "update"].includes(draft.action)) {
+                && draft.outcome === "approved" && deletedActions.includes(draft.action)) {
                 Object.assign(draft, {
                   outcome: "deleted", normalized_payload: null, payload_hash: null,
                   conflict_snapshot: null, target_event_id: null, target_revision: null,
@@ -314,10 +317,13 @@ class SeriesProposalPool {
         if (statement.startsWith("WITH resolution_clock AS (")
           && statement.includes("draft.result_event_id = $2::uuid")) {
           const [queryOwner, eventId] = values;
+          const deletedActions = statement.includes("'split-series'")
+            ? ["create", "update", "split-series"]
+            : ["create", "update"];
           for (const draft of this.drafts.values()) {
             if (draft.user_id === queryOwner && queryOwner === owner
               && draft.result_event_id === eventId && draft.outcome === "approved"
-              && ["create", "update"].includes(draft.action)) {
+              && deletedActions.includes(draft.action)) {
               Object.assign(draft, {
                 outcome: "deleted", normalized_payload: null, payload_hash: null,
                 conflict_snapshot: null, target_event_id: null, target_revision: null,
@@ -414,6 +420,7 @@ class SeriesProposalPool {
           return { rows: [{ occurrence_key: occurrenceKey }] };
         }
         if (statement.startsWith("INSERT INTO calendar_event_occurrence_exceptions")) {
+          if (statement.includes("SELECT exception.user_id")) return { rows: [] };
           if (statement.includes("moved_start_local") || statement.includes("moved_start_date")) {
             const [queryOwner, eventId, occurrenceKey, ...bounds] = values;
             const key = `${queryOwner}\u0000${eventId}\u0000${occurrenceKey}`;
@@ -486,6 +493,27 @@ class SeriesProposalPool {
             }
           }
           return { rows: [] };
+        }
+        if (statement.startsWith("SELECT DISTINCT occurrence_key FROM calendar_event_reminders")) {
+          const [queryOwner, eventId, occurrenceKeys] = values;
+          const attempted = new Set(this.reminderJobs
+            .filter((job) => job.user_id === queryOwner && job.event_id === eventId
+              && job.attempt_count > 0 && occurrenceKeys.includes(job.occurrence_key))
+            .map((job) => job.occurrence_key));
+          return { rows: [...attempted].map((occurrence_key) => ({ occurrence_key })) };
+        }
+        if (statement.startsWith("UPDATE calendar_events") && statement.includes("SET recurrence_count = $4")) {
+          const [queryOwner, id, revision, recurrence_count] = values;
+          const row = this.events.get(id);
+          if (!row || row.user_id !== queryOwner || queryOwner !== owner || row.revision !== revision) {
+            return { rows: [] };
+          }
+          Object.assign(row, {
+            recurrence_count,
+            revision: row.revision + 1,
+            updated_at: new Date().toISOString(),
+          });
+          return { rows: [row] };
         }
         if (statement.startsWith("UPDATE calendar_events") && statement.includes("SET kind = 'all-day'")) {
           const [queryOwner, id, revision, title, details, start_date, end_date,
@@ -761,6 +789,50 @@ test("updates and deletes an owned series atomically and scrubs prior approved p
   assert.equal(pool.drafts.get(updateDraft.id).outcome, "deleted");
   assert.equal(pool.drafts.get(updateDraft.id).payload_hash, null);
   assert.equal(pool.drafts.get(updateDraft.id).result_event_id, null);
+});
+
+test("deleting a split-created series clears the approved split proposal pointer", async () => {
+  const pool = new SeriesProposalPool();
+  pool.addEvent({ ...allDayRow({ id: seriesId }), series_root_id: seriesId });
+  const repository = new CalendarRepository(pool);
+  const splitRequest = parseCalendarSeriesDraftRequest({
+    action: "split-series",
+    scope: "following",
+    targetEventId: seriesId,
+    targetRevision: 1,
+    occurrenceKey: `${seriesId}:2026-11-09`,
+    event: {
+      kind: "all-day",
+      title: "Study group",
+      startDate: "2026-11-09",
+      endDate: "2026-11-10",
+    },
+    recurrenceRule: { frequency: "weekly", interval: 1, count: 2 },
+    calendarTimeZone: "America/Montreal",
+  });
+  const splitDraft = await repository.createSeriesDraft(ownerId, splitRequest, "series-split-delete-1");
+  const splitApproval = await repository.approveSeriesDraft(ownerId, splitDraft.id);
+  assert.equal(splitApproval.outcome, "approved");
+  assert.ok(splitApproval.event);
+  assert.notEqual(splitApproval.event.id, seriesId);
+
+  const deleteRequest = parseCalendarSeriesDraftRequest({
+    action: "delete",
+    scope: "series",
+    targetEventId: splitApproval.event.id,
+    targetRevision: splitApproval.event.revision,
+  });
+  const deleteDraft = await repository.createSeriesDraft(ownerId, deleteRequest, "series-split-delete-2");
+  const deleteApproval = await repository.approveSeriesDraft(ownerId, deleteDraft.id);
+
+  assert.equal(deleteApproval.outcome, "approved");
+  assert.equal(pool.events.has(splitApproval.event.id), false);
+  const deletedSplit = pool.drafts.get(splitDraft.id);
+  assert.equal(deletedSplit.outcome, "deleted");
+  assert.equal(deletedSplit.normalized_payload, null);
+  assert.equal(deletedSplit.payload_hash, null);
+  assert.equal(deletedSplit.result_event_id, null);
+  assert.equal((await repository.approveSeriesDraft(ownerId, splitDraft.id)).outcome, "deleted");
 });
 
 test("expires proposals at approval time and hides another owner's target", async () => {
