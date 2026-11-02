@@ -25,18 +25,20 @@ calculator is committed through `a906351`. Event reminder choices and
 transactional outbox persistence were pushed as `be722e9`. The current source
 increment adds bounded delivery, verified-email checks, generic reminder
 content, a protected internal route, and a Cloudflare Cron scheduler that calls
-the fixed HTTPS staging endpoint. These paths pass local tests but are not
-deployed or database-backed; the product still has no reminder editor or
-delivery status. The source was pushed in six small commits through `f44ed03`
-on the same `main` branch; public history now exceeds 600 non-merge commits.
+the fixed HTTPS staging endpoint. Commits `0aad4d9` and `aa5c9dc` add
+type-specific editor choices, saved all-day time-zone preservation, and a
+calculated local delivery-time preview. Database-backed delivery, visible
+delivery status, SMTP, and staging are still unverified. All work remains on
+the same `main` branch; public history now exceeds 600 non-merge commits.
 
 ## Completed
 
 - Created Chron as a separate project with its own Git history. No application
   code was copied in.
 - Published the scrubbed fresh history to public GitHub `2q9e/chron`. The
-  GitHub compare API confirms exactly 533 commits from root through `main`;
-  no other local branches were published.
+  initial public publication contained exactly 533 commits from root through
+  `main`; subsequent small pushes grew history past 600. No other local
+  branches were published.
 - Enabled GitHub secret scanning and push protection, Dependabot alerts and
   security updates, and private vulnerability reporting. Verified these settings
   through the repository API; branch protection remains to be checked after CI
@@ -123,7 +125,9 @@ on the same `main` branch; public history now exceeds 600 non-merge commits.
   provider data. The internal route requires a long bearer secret; the
   Cloudflare Cron worker targets only `https://testing.uwu.markets` with
   redirects disabled. Public email links reject HTTP origins. Runtime delivery,
-  migration execution, and user-facing reminder controls remain unverified.
+  migration execution, and visible persisted delivery status remain
+  unverified. Editor choices and calculated local-time review are in source;
+  no end-to-end reminder flow has been verified.
 
 ## Open work
 
@@ -133,10 +137,10 @@ on the same `main` branch; public history now exceeds 600 non-merge commits.
   calendar migrations, then verify real persistence, ownership isolation, and
   authenticated calendar interactions in a browser. Migration `0004` is not
   applied to a database in this environment.
-- Continue C1 at C1-rmd3: add truthful reminder editor/status behavior.
-  Reminder schedule, outbox, delivery worker, internal route, and HTTPS
-  scheduler are implemented in source and locally tested. Live PostgreSQL
-  execution and SMTP delivery remain unverified.
+- Continue C1 at C1-rmd3: add truthful persisted reminder delivery status.
+  Reminder choices, schedule preview, outbox, delivery worker, internal route,
+  and HTTPS scheduler are implemented in source and locally tested. Live
+  PostgreSQL execution and SMTP delivery remain unverified.
   Drag scheduling and external calendar synchronization remain later work.
   PostgreSQL ownership and authenticated browser verification remain open.
 - Deploy each verified iteration to `https://testing.uwu.markets` using only
@@ -239,7 +243,7 @@ on the same `main` branch; public history now exceeds 600 non-merge commits.
   @chron/web` passed. No production build, database, authenticated browser, or
   reminder delivery has been verified.
 - Current reminder source verification: calendar API/server tests (85), auth
-  config/email tests (13), scheduler tests (2), calendar time (39), layout (29),
+  config/email tests (13), scheduler tests (2), calendar time (39), layout (33),
   and recovery (5) pass. Typecheck and lint pass. The HTTPS probe to the staging
   hostname cannot resolve because its DNS record is absent. No database,
   scheduler deployment, SMTP send, or browser reminder flow was exercised.

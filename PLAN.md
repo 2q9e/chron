@@ -36,9 +36,12 @@ the reminder delivery contract plus DST-aware time calculation are implemented
 in source. Reminder choices and owner-scoped outbox writes now persist
 atomically for one-off events and approved series. A bounded delivery worker,
 protected internal endpoint, and HTTPS scheduler are also implemented in
-source. Editor/status controls and live database, SMTP, and staging
-verification remain open. Drag scheduling, external sync, and a real
-database/browser walkthrough remain open until integrated and verified. See
+source. The editor now offers type-specific reminder choices and shows the
+calculated local delivery time before saving. Delivery status and live
+database, SMTP, and staging verification remain open. Public
+staging and email URLs must use HTTPS; the testing hostname currently has no
+DNS record. Drag scheduling, external sync, and a real database/browser
+walkthrough remain open until integrated and verified. See
 `docs/architecture/calendar-reminders.md` for the reminder dependency graph
 and acceptance criteria.
 

@@ -39,8 +39,11 @@ The current reminder increment, pushed through `f44ed03`, adds a bounded
 delivery worker, verified-recipient checks, a protected internal endpoint,
 and a Cloudflare Cron scheduler with a fixed HTTPS target. Those source paths
 pass local tests, but migration execution, database behavior, SMTP delivery,
-and scheduler deployment are unverified. The UI has no reminder controls or delivery status,
-so reminders are not yet available to users.
+and scheduler deployment are unverified. Commits `0aad4d9` and `aa5c9dc` add
+type-specific editor choices, saved all-day time-zone preservation, and a
+calculated local-time preview before save. Persisted delivery status is still
+absent. Staging must remain HTTPS-only; `testing.uwu.markets` currently has no
+DNS record, so no HTTP fallback is allowed.
 Drag scheduling, external sync, database-backed runtime verification, and a
 real authenticated browser walkthrough remain open.
 C-01 through C-14 have
@@ -213,8 +216,10 @@ awaits narrow and zoom browser checks.
 
 ## Next actions
 
-1. Add accessible editor choices, exact local-time review, saved all-day zone,
-   and truthful persisted delivery status. Keep reminders disabled by default.
+1. Add truthful persisted delivery status for reminder jobs while preserving
+   the opt-in default. Editor choices, saved all-day zone, and calculated
+   local-time review are already in source; delivery is not operationally
+   verified.
 2. Configure disposable PostgreSQL and account fixtures; apply migrations and
    verify owner isolation and reminder persistence.
 3. Configure only the Chron-specific staging DNS/tunnel/app route, preserving
