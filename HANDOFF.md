@@ -2,6 +2,22 @@
 
 ## Current checkpoint — 2026-11-02
 
+Calendar event creation now passes the initiating button to the existing
+editor focus-restoration flow from month dates, day/week headers, agenda
+headers, the main toolbar, and the empty state. The time-grid click already
+used a stable button target. Calendar presentation tests (77), typecheck,
+lint, and `git diff --check` pass. Browser use is disabled in this session, so
+real-browser focus behavior remains unverified. Use HTTPS for GitHub and
+`https://testing.uwu.markets`; do not switch public/staging links to HTTP.
+
+The repository is on the single published `main` branch and has more than 500
+non-empty commits. Keep commits small and authored as `2q9e`. Staging is not
+updated by this source-only change; prior VPS access failed because the
+authorized SSH key was unavailable. Do not change unrelated VPS files or
+services.
+
+## Current checkpoint — 2026-11-02
+
 The manual study workspace is pushed on the single public GitHub `main`
 branch. It supports owner-scoped decks and cards plus FSRS-based due review;
 it creates no sample data and does not claim AI-generated or source-grounded

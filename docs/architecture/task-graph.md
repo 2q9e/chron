@@ -7,6 +7,37 @@ The runtime does not enforce per-agent filesystem isolation, so this slice was
 implemented and reviewed sequentially by the primary agent; no worker received
 credentials or private data.
 
+## C1-focus-return — calendar create-editor focus restoration
+
+- **Task ID:** C1-focus-return
+- **Objective:** Return keyboard focus to the exact button that opened the
+  event editor across all create-event entry points.
+- **Assigned agent/model:** Primary integration; runtime model and reasoning
+  effort are not independently attested. A completed independent, read-only
+  source review identified the opener-target gap.
+- **Dependencies:** Existing `openNew` editor flow and `editorOpener` restore
+  effect.
+- **Owned files:** `apps/web/features/calendar/presentation/calendar-views.tsx`,
+  `calendar-workspace.tsx`, and progress/handoff/task graph records.
+- **Read-only files:** Existing editor dialog, calendar focus lifecycle, and
+  layout test contracts.
+- **Required skills:** S013, S023, S464, S465, plus installed accessibility and
+  React guidance. Read and applied.
+- **Security permissions:** Calendar presentation source and project docs only;
+  no credentials, private data, reference files, VPS, or Cloudflare changes.
+- **Acceptance criteria:** Month, day/week, agenda, toolbar, and empty-state
+  create controls pass their own button into the existing restore path; retain
+  the time-grid's established explicit focus target.
+- **Tests:** Presentation suite (77), typecheck, lint, and diff check pass.
+  Browser use is disabled in the current session, so runtime focus verification
+  remains open.
+- **Expected deliverables:** Stable editor opener tracking with no placeholder
+  code or extra dependencies.
+- **Status:** Pushed to the only published `main` branch in commit `f9e7326`
+  (`fix`), authored as `2q9e` over HTTPS. No staging deployment was made; the
+  previously authorized VPS key is unavailable. Keep all public and staging
+  URLs on HTTPS and do not edit unrelated VPS files or services.
+
 ## E1-spaced0 — manually authored cards and scheduled review
 
 - **Task ID:** E1-spaced0

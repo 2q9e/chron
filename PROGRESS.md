@@ -2,6 +2,18 @@
 
 ## Current checkpoint — 2026-11-02
 
+Calendar event-editor focus restoration now receives the actual create button
+from month, day/week, agenda, header, and empty-state entry points. This avoids
+depending on `document.activeElement` in browsers that do not focus a clicked
+button, and complements the existing time-grid opener target. The presentation
+suite (77), typecheck, lint, and diff check pass. Review was source-only; browser
+focus behavior is not visually or interactively verified because browser use
+is disabled in this session. Public Git and staging URLs remain HTTPS; `http://`
+matches in source are limited to localhost fixtures and rejection tests. The
+repository has more than 500 non-empty commits and only `main` is published.
+
+## Current checkpoint — 2026-11-02
+
 The first manual study-card slice is implemented on top of the active calendar
 work: signed-in users can create and rename private decks, author/edit/delete
 cards, and review due cards using saved FSRS schedules. The server enforces
