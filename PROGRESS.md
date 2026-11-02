@@ -1,6 +1,34 @@
 # Progress
 
-## Current milestone
+## Current verified state — 2026-11-02
+
+C1 — calendar — remains the active milestone; landing-page work is paused.
+The public repository uses one branch, main. The PostgreSQL verification
+change was pushed as 1785c06 by the normal 2q9e account.
+
+GitHub Actions run
+https://github.com/2q9e/chron/actions/runs/41392185432 passed. The workflow
+ran the calendar migrations on an ephemeral PostgreSQL 16 service, then
+verified forced RLS, owner separation, transaction-local owner context,
+cross-owner read/write rejection, and account deletion cascades. This is real
+PostgreSQL integration coverage; it does not verify the staging database or an
+authenticated browser session.
+
+The current staging release remains 52d8efd at
+https://testing.uwu.markets. HTTPS sign-in returned 200 and the protected
+calendar route redirected to sign-in with valid TLS and HSTS. No test account
+is configured, so authenticated calendar actions remain unverified. This
+CI-only change did not modify the VPS or Cloudflare configuration.
+
+The latest remote tree has no AGENTS.md; the local root instructions remain
+ignored. No reference folder was inspected or used. Commits continue on main
+only, with author 2q9e.
+
+Next calendar work is recurrence exception and split-series behavior. SMTP
+delivery, scheduler deployment, external calendar synchronization, and
+authenticated browser verification remain open.
+
+## Prior implementation checkpoints
 
 F0 — foundation documentation, the scrubbed fresh history, and repository
 security are on public GitHub `main`; hosted checks and branch protection remain
@@ -50,8 +78,9 @@ lint, and `git diff --check` pass. Commit `d122d05 update` defers protected
 reminder-route authentication/database initialization until after the bearer
 check. The API suite now passes 91 tests, auth configuration passes 14, and
 the production build succeeds without runtime authentication or database
-settings. The authenticated browser interaction remains unverified: no
-database or account is configured, and HTTPS staging DNS is still absent.
+settings. The authenticated browser interaction remained unverified at this earlier
+checkpoint. See the current HTTPS staging and PostgreSQL verification state
+above.
 The source commits are on the single public `main` branch. Root `AGENTS.md`
 remains local-only and is ignored; it was removed from the current public tree.
 Public history had 631 non-merge commits immediately before this documentation
@@ -74,11 +103,11 @@ database, browser, SMTP, and staging checks remain open.
   security updates, and private vulnerability reporting. Verified these settings
   through the repository API; branch protection remains to be checked after CI
   reports a hosted check name.
-- Added `.github/workflows/quality.yml` with read-only permissions and
+- Added .github/workflows/quality.yml with read-only permissions and
   SHA-pinned official checkout/setup-node actions. It runs install, lint,
-  typecheck, production dependency audit, and build on pushes and pull requests.
-  The YAML parses locally. GitHub currently reports no workflow runs, so hosted
-  CI remains unverified.
+  typecheck, calendar checks including a disposable PostgreSQL 16 tenant
+  isolation integration test, production dependency audit, and build on pushes
+  and pull requests. Run 41392185432 passed on 1785c06.
 - Added `AGENTS.md`, the view-only source license, project roadmap, and initial
   continuation records.
 - Integrated the 500-entry `SKILLS.md`. Independent root validation and final
@@ -163,32 +192,18 @@ database, browser, SMTP, and staging checks remain open.
 
 ## Open work
 
-- Continue making small reviewed commits on the single public `main` branch;
+- Continue making small reviewed commits on the single public main branch;
   inspect staged paths and scan outgoing history before each push.
-- Configure a disposable PostgreSQL test database/account, apply the auth and
-  calendar migrations, then verify real persistence, ownership isolation, and
-  authenticated calendar interactions in a browser. Migration `0004` is not
-  applied to a database in this environment.
-- Continue C1 at C1-rmd4: independently review reminder behavior and close
-  remaining source-level issues. Reminder choices, schedule preview, persisted
-  status read and UI, outbox, delivery worker, internal route, and HTTPS
-  scheduler are implemented in source and locally tested. Live PostgreSQL
-  execution, SMTP delivery, and rendered browser behavior remain unverified.
-  One-off drag scheduling is implemented in source at `3b6028c`; the review
-  editor reuses the existing owner-scoped conflict and update paths. Browser
-  pointer/touch/keyboard behavior and database persistence remain unverified.
-  Empty-slot event creation is source-verified at `833848a`, and timed-event
-  resize proposals are source-verified at `590331f` and `c1d7647`. Their
-  authenticated browser and persisted-save paths remain open.
-  Recurring-series drag and external calendar synchronization remain open.
-  PostgreSQL ownership and authenticated browser verification remain open.
-- Deploy each verified iteration to `https://testing.uwu.markets` using only
-  the user-authorized Chron-specific VPS and Cloudflare resources. Rechecked
-  over HTTPS on 2026-11-01: DNS resolution still fails and Cloudflare has no
-  `testing.uwu.markets` DNS record. No remote change was made. Continue to use
-  HTTPS only for staging checks and public access; do not fall back to HTTP.
-- Keep each reviewed change small, commit it, and push it to public `main` only
-  after reviewing the staged paths and history scan.
+- Add recurrence exceptions and split-series edits, building on the persisted
+  proposal and approval path. Preserve exact owner scope, target revision,
+  conflict recheck, time-zone behavior, and explicit approval.
+- Verify authenticated calendar interactions in a real browser when a
+  disposable account is available. Signup remains intentionally closed.
+- Complete the separately gated delivery work: live SMTP acceptance,
+  scheduler deployment, and external calendar synchronization.
+- Deploy app-source iterations only to https://testing.uwu.markets using the
+  user-authorized Chron-specific VPS and Cloudflare resources. Use HTTPS for
+  every public and staging request; leave unrelated VPS services alone.
 - Do not add signup or Meta-key controls until related policy and operator
   gates are cleared and the flows are real.
 - Obtain qualified review of the integrated Meta report; inspect the
@@ -268,8 +283,7 @@ database, browser, SMTP, and staging checks remain open.
   closed without loading private events.
 - `npm audit --omit=dev --audit-level=moderate` — passed with zero runtime
   dependency vulnerabilities.
-- The GitHub Actions workflow YAML parses successfully. GitHub currently shows
-  no Actions run, so the hosted `quality / verify` result is pending.
+- The GitHub Actions workflow YAML parsed successfully at this earlier checkpoint. The later hosted run 41392185432 passed on 1785c06.
 - After `f66e449`, typecheck and lint passed; calendar layout/API/time suites
   passed (29/66/28), including terminal proposal replay and approval-recovery
   coverage. The production build and authenticated recurring-series workflow
@@ -281,11 +295,11 @@ database, browser, SMTP, and staging checks remain open.
   `npm run typecheck --workspace @chron/web` and `npm run lint --workspace
   @chron/web` passed. No production build, database, authenticated browser, or
   reminder delivery has been verified.
-- Current reminder source verification: calendar API/server tests (89), auth
+- At that earlier reminder checkpoint, calendar API/server tests (89), auth
   config/email tests (14), scheduler tests (2), calendar time (39), layout (34),
-  and recovery (5) pass. Typecheck and lint pass. The HTTPS probe to the staging
-  hostname cannot resolve because its DNS record is absent. No database,
-  scheduler deployment, SMTP send, or browser reminder flow was exercised.
+  and recovery (5) passed. The HTTPS staging DNS check and PostgreSQL runtime
+  check were later completed as described in the current verified state above.
+  SMTP delivery and authenticated browser behavior remain open.
 - Rendered the production build in Chrome at an available 1230×480 desktop
   viewport. Inspected opening, Week, Study, Research, and closing sections;
   tested chapter navigation, `#week` reload, and reverse navigation. The scene

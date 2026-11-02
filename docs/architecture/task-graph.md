@@ -29,9 +29,11 @@ Landing-page work remains paused. Recurrence follows the calendar's existing
 owner-scoped repository and date/time model. The detailed wire and time rules
 are recorded in [calendar-recurrence.md](calendar-recurrence.md).
 
-The next calendar increment is reminders. Its delivery, security, and time-zone
-contract and task dependencies are recorded in
-[calendar-reminders.md](calendar-reminders.md).
+Reminder policy, owner-scoped outbox persistence, delivery worker, protected
+route, HTTPS scheduler source, and editor status are implemented. The contract
+and dependency record remain in [calendar-reminders.md](calendar-reminders.md).
+Live SMTP delivery and scheduler deployment are still open. The next calendar
+increment is recurrence exceptions and split-series editing.
 
 ```text
 C1-rec0 recurrence contract + pure bounded expansion
@@ -42,13 +44,13 @@ C1-rec0 recurrence contract + pure bounded expansion
                       └─ C1-rec5 PostgreSQL and authenticated browser verification
 ```
 
-No recurring write control is exposed until the corresponding persistence,
-conflict review, and exact approval steps are integrated. First delivery is
-limited to editing or deleting the full series; individual occurrence and
-following-occurrence changes require the exception and split work in C1-rec3.
-The current environment has no disposable PostgreSQL service or authenticated
-test account, so source-level verification can proceed while runtime database
-and browser checks remain gated.
+Full-series recurring controls are connected to persisted proposals, conflict
+review, and explicit approval. The current editor does not offer individual
+occurrence or following-occurrence changes; those require the C1-rec6 work
+below.
+GitHub Actions run 41392185432 applied migrations and passed the PostgreSQL
+tenant-isolation checks on an ephemeral PostgreSQL 16 service. This does not
+provide a staging account; authenticated browser verification remains gated.
 
 ### C1-rec0 — freeze recurrence semantics and build the domain engine
 
@@ -181,6 +183,40 @@ and browser checks remain gated.
 - **Expected deliverables:** recorded database and browser evidence; if the
   required services remain absent, record the gate as open without claiming
   runtime completion
+
+### C1-rec6 — recurrence exceptions and split-series edits
+
+- **Task ID:** C1-rec6
+- **Objective:** Add explicit single-occurrence exception and this-and-following
+  series split operations without changing unrelated occurrences.
+- **Assigned agent:** main integration owner; runtime model identity is fixed
+  and not independently attested
+- **Dependencies:** C1-rec0 through C1-rec4; use the passing PostgreSQL CI
+  integration path from C1-rec5; authenticated browser review remains separate
+- **Owned files:** recurrence domain and tests, calendar recurrence migration,
+  calendar repository/validation/API routes, recurrence editor/API adapter,
+  focused PostgreSQL integration coverage, recurrence contract and this graph
+- **Read-only files:** existing series schema and proposal lifecycle,
+  calendar event types and time-zone helpers, calendar views and reminder
+  schedule calculation, SKILLS.md, RFC 5545
+- **Required skills:** S346–S354, S363, S365, S369, S201–S216, and the
+  relevant API, form, accessibility, and database skills
+- **Security permissions:** derive owner only from the authenticated session;
+  use transaction-local RLS; bind proposal action, occurrence key, target
+  revision, exact scope, payload, and conflict snapshot; require explicit
+  approval; no production secrets, user data, old references, or VPS access
+- **Acceptance criteria:** preserve the original scheduled occurrence key
+  when an exception moves; add a stable series lineage across split segments;
+  enforce finite bounds; recalculate conflicts and reminder rows atomically;
+  reject stale, expired, replayed, or cross-owner proposals; keep one-off and
+  full-series behavior unchanged
+- **Tests:** pure rule/identity and DST cases; API shape, scope and replay
+  checks; two-owner PostgreSQL RLS checks; deletion cascade and reminder
+  reconciliation; browser keyboard and responsive review when an account is
+  available
+- **Expected deliverables:** migration, owner-scoped proposal and approval
+  behavior, exception/split editor controls, deterministic tests, and updated
+  handoff evidence
 
 ## Task contracts
 

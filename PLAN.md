@@ -27,39 +27,26 @@ Meta clarification or permission; no other inference provider is allowed.
 | G1 | Official Google integrations, prioritized by academic value | S1, A1 | Minimal-scope OAuth, disconnect/revoke, real import and approval flows |
 | Q1 | Independent audits and full user journey | L2, S1, M1, C1, A1, E1, R1, G1 | Security, visual, accessibility, performance, browser and data deletion evidence |
 
-The user has reprioritized C1 ahead of L1. Landing-page work is paused. The
-first calendar increment now includes a persisted event and preference API,
-protected sign-in/route, day/week/month/agenda views, editable events, themes,
-and a server-side conflict check before approval. Bounded event-title search is
-implemented in source with a date and event-kind filter. Finite recurrence and
-the reminder delivery contract plus DST-aware time calculation are implemented
-in source. Reminder choices and owner-scoped outbox writes now persist
-atomically for one-off events and approved series. A bounded delivery worker,
-protected internal endpoint, and HTTPS scheduler are also implemented in
-source. The editor now offers type-specific reminder choices and shows the
-calculated local delivery time before saving. A private, authenticated status
-read and editor panel now show persisted job counts and safe failure categories.
-Database-backed behavior, SMTP delivery, and staging remain unverified. Public
-staging and email URLs must use HTTPS; the testing hostname currently has no
-DNS record. Non-loopback authentication origins are enforced as HTTPS in every
-environment; loopback HTTP is accepted only for local development. One-off
-event drag scheduling is implemented in month, day, and week views. Grid drops
-snap to 15-minute slots, then open the existing editor with conflict preview
-and explicit save; recurring events continue through the series editor. Source
-tests cover time-zone and daylight-saving transitions, but a real
-database-backed browser walkthrough remains open. Clicking an empty day/week
-time-grid slot now starts an event draft at its snapped time; its one-hour
-duration is based on elapsed time and retains the correct DST fold. Longer,
-wider one-off timed blocks on the day/week grid can now resize their end time;
-the change opens the existing conflict review and explicit-save flow, preserves
-the start and event timezone, and resolves repeated DST times from the selected
-instant. Browser and database verification remain open; external calendar sync
-also remains open. See
-`docs/architecture/calendar-reminders.md` for the reminder dependency graph
-and acceptance criteria.
-The internal reminder endpoint now creates its authentication/database runtime
-only after the bearer check, so the production build no longer requires
-runtime credentials.
+The user has reprioritized C1 ahead of L1. Landing-page work is paused.
+The calendar currently includes persisted owner-scoped events and preferences,
+day/week/month/agenda views, event editing and deletion, bounded search,
+conflict review, finite recurring series with full-series proposals, and
+time-zone-aware reminders. One-off drag movement, time-grid creation, and
+resize interactions open the existing explicit-review flow.
+
+GitHub Actions run 41392185432 passed after applying all migrations to an
+ephemeral PostgreSQL 16 database and checking tenant isolation, RLS, transaction
+context reset, cross-owner access rejection, and account-deletion cascades.
+This verifies PostgreSQL behavior in CI, not a staging user session. The
+current release at https://testing.uwu.markets was checked using HTTPS only;
+sign-in returned 200 and /calendar redirected to sign-in. No test account is
+available, so authenticated UI actions remain unverified. Do not change other
+VPS services.
+
+Next calendar work is recurrence exceptions and split-series edits.
+Authenticated browser verification, SMTP delivery, scheduler deployment, and
+external calendar synchronization remain open. Public signup and Meta BYOK
+remain gated by the legal/operator requirements in the security reports.
 
 ## Skill library category allocation
 

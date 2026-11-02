@@ -2,186 +2,80 @@
 
 ## Current state
 
-Chron is a standalone repository on public GitHub `main`; local and remote
-`main` match after this documentation checkpoint, and `main` is the only
-remote branch. Public `main` contains 634 non-merge commits at this
-checkpoint. The latest source commit is `09c6b56 adjust`, which requires HTTPS
-for external web retrieval instructions and rejects plain-HTTP citations.
-The previous source commit `d122d05 update` defers authentication/database
-initialization in the protected reminder route until after the bearer check.
-The calendar resize commits `590331f update` and
-`c1d7647 improve` were also pushed over HTTPS to `main`. The reminder
-event and outbox integration was pushed as
-`be722e9`; bounded reminder delivery source was pushed in six small commits
-through `f44ed03`. Public history exceeds 600 non-merge commits. New commits
-are authored as `2q9e`, not `codex`.
-The calendar API, protected route, sign-in, views, preferences, and conflict
-review are pushed. Idempotent event creation, safe recovery, reload-safe focus,
-and accessible short-event targets were pushed as `f304c19` and `ec93688`;
-the calendar search contract was pushed as `dfe1f07`; search API and UI were
-pushed as `afbef0e` and `4a092e8`. The latest recurrence parser changes were
-pushed as `521990b` and `8cda070`.
-Secret scanning, push protection, Dependabot alerts and
-security updates, and private vulnerability reporting are enabled. Continue
-reviewing staged paths and scans before every push. Do not commit root
-`AGENTS.md` or any old reference material. Root `AGENTS.md` is local-only and
-ignored; it is absent from the current public tree, though earlier public
-commits retain its prior version.
+Chron is a standalone public repository on GitHub. The only remote branch is
+main, and changes are pushed by 2q9e with short commit titles. The latest
+source change is 1785c06, adding a real PostgreSQL tenant-isolation workflow.
+The current public tree contains no AGENTS.md; local operating instructions
+remain ignored. No old calendar reference folder was inspected or used.
+
+GitHub Actions run
+https://github.com/2q9e/chron/actions/runs/41392185432 passed. CI applied the
+ordered migrations to an ephemeral PostgreSQL 16 service and verified forced
+RLS, owner-separated repository results, transaction-local context reset,
+cross-owner read/write rejection, and deletion cascades. This confirms the
+migration and isolation behavior in CI only; it is not a configured staging or
+production database.
+
+The app's latest staged release is 52d8efd at
+https://testing.uwu.markets. HTTPS sign-in returned 200; the protected
+calendar route redirected to sign-in. TLS verification and HSTS passed. No
+test account is available, so authenticated calendar interactions are not
+verified. The CI-only change made no VPS or Cloudflare edits.
 
 ## Current milestone
 
-C1 — calendar — is active; landing-page work is paused at the user's direction.
-The current increment includes owner-scoped event and preference persistence,
-existing-account sign-in, protected routing, four calendar views, event
-create/edit/delete, theme and display preferences, and a server-side overlap
-check shown before manual approval. The latest increment makes create
-retries idempotent, saves only user-scoped opaque recovery keys in browser
-storage, preserves uncertain requests for reconciliation, and restores focus
-after reload. Bounded title search is implemented. Finite recurring-series
-creation, review, update, delete, explicit approval, and uncertain-approval
-recovery are implemented and pushed through `f66e449` on the single public
-`main` branch. Reminder policy and task dependencies are committed in
-`f75155f`; the DST-aware reminder time calculator and its tests are pushed
-through `a906351`. Reminder choices and a durable owner-scoped outbox are now
-connected to one-off writes and explicitly approved recurring-series writes.
-The current reminder increment, pushed through `f44ed03`, adds a bounded
-delivery worker, verified-recipient checks, a protected internal endpoint,
-and a Cloudflare Cron scheduler with a fixed HTTPS target. Those source paths
-pass local tests, but migration execution, database behavior, SMTP delivery,
-and scheduler deployment are unverified. Commits `0aad4d9` and `aa5c9dc` add
-type-specific editor choices, saved all-day time-zone preservation, and a
-calculated local-time preview before save. Commits `162f358`, `e50477b`,
-`4b6eb42`, and `b0395ec` add a private owner-scoped status read and the editor
-panel with loading, empty, failure, retry, and offline states. The status
-response contains counts and safe failure categories only; SMTP acceptance is
-not represented as inbox delivery. Database-backed behavior and browser
-rendering remain unverified. A focused security diff review of these ten
-changed files found no source candidates; it ran sequentially without an
-isolated independent reviewer. Staging is HTTPS-only; `testing.uwu.markets`
-has no DNS record, so there is no HTTP fallback.
-Follow-up commit `42f789b` enforces HTTPS for every non-loopback
-`BETTER_AUTH_URL` in all environments; loopback HTTP remains available for
-local development. The auth configuration/email suite now passes 14 tests,
-with typecheck and lint passing.
-Commit `3b6028c improve` adds one-off pointer/touch movement to month, day, and
-week views. Grid drops snap to 15-minute slots and open the existing event
-editor for conflict review and explicit save. Duration and event timezone are
-preserved; DST gaps/folds are handled explicitly. It passes calendar
-layout/time/API suites (42/39/89), typecheck, and lint. The production build
-was not run with only 56 MB free, and this new interaction has not been tested
-in an authenticated browser. Recurring-series drag, external sync,
-database-backed runtime verification, and a real authenticated browser
-walkthrough remain open. All public/staging access stays HTTPS-only; no VPS
-configuration was changed.
-Commit `833848a improve` adds click-to-create on empty day/week time-grid slots.
-The draft starts at the snapped 15-minute slot and defaults to one elapsed
-hour; repeated fall-back times retain the selected occurrence. The calendar
-presentation suite passes 46 tests, with typecheck and lint passing. The new
-interaction has source-level coverage only; authenticated browser and database
-verification remain open. Commits `590331f update` and `c1d7647 improve` add a
-15-minute end handle for sufficiently long and wide one-off timed events in
-day/week views. It opens the existing event editor for conflict review and
-explicit save, preserves the start and timezone, retains the selected repeated
-hour occurrence, and honors the server's 366-day duration bound. The calendar
-presentation (51), API (89), and time (39) suites, typecheck, lint, and diff
-check pass. The later C1-build0 fix allows the production build to pass without
-runtime auth/database settings. No authenticated browser/database resize check
-was performed; there is no configured database or test account.
-C-01 through C-14 have
-source-level fixes recorded in the audit; C-15 tracks unverified PostgreSQL
-owner isolation and C-16 records the source-fixed return-focus issue. Rendered
-and database-backed verification remains pending.
+C1 — calendar — is active. Landing-page work remains paused. The calendar has
+owner-scoped persisted events and preferences, four views, create/edit/delete,
+search, conflict review, finite recurrence with full-series proposals and
+approval, time-zone-aware reminders, and source-level drag/create/resize
+interactions. The next calendar increment is recurrence exceptions and
+split-series edits.
+
+The reminder schema, migrations, repositories, and route contracts were
+executed by CI; live mail delivery, scheduler deployment, and inbox receipt
+remain unverified. Public signup remains closed, so do not simulate an account
+or claim an authenticated user journey. External calendar synchronization is
+not implemented.
 
 ## Product and security gates
 
-- Read the local-only `AGENTS.md` if present, `apps/web/AGENTS.md`, `PLAN.md`,
-  `PROGRESS.md`, and `SKILLS.md` before continuing web work. A clean clone
-  cannot fetch root agent rules from the repository. The installed Next.js
-  package is hoisted to root `node_modules/next`; this install does not include
-  `dist/docs/`. For version-specific Next APIs, consult official current docs
-  and inspect the installed package rather than relying on assumptions.
-- Use only documented official Meta Model API inference if and when the
-  provider, legal, and operator gates permit it. Do not substitute another
-  inference provider.
+- Read the local-only AGENTS.md if present, PLAN.md, PROGRESS.md, SKILLS.md,
+  and the installed Next.js guidance before web changes. The generated
+  apps/web/AGENTS.md is local-only and is excluded from public Git.
+- Use only documented official Meta Model API inference if and when provider,
+  legal, and operator gates permit it. Do not substitute another provider.
 - Keep public signup and Meta key submission disabled. Written clarification
-  or permission is needed for Chron's BYOK flow and requested attribution.
-  Current Meta terms impose age, jurisdiction, data, and agent-oversight rules;
-  see `docs/research/meta-api.md`. The linked processor/security terms remain
-  unverified behind an authenticated source.
-- The repo’s source-available license permits viewing and prohibits copying.
-  No prohibited local calendar reference was inspected or copied. The user
-  supplied Pear and Shore pages for visual review; no site assets, copy, or
-  layouts were copied.
-- `.github/workflows/quality.yml` defines read-only CI for lint, typecheck,
-  production dependency audit, and build. It uses full-SHA pins for official
-  checkout/setup-node actions. The YAML parses locally; GitHub currently reports
-  no workflow run, so hosted CI is unverified. Calendar time and API suites now
-  exist and pass locally; live PostgreSQL integration remains unverified.
-- Do not add samples, placeholders, stubs, fake demos, or nonfunctional
-  controls to the product.
-- Reminder status source was reviewed against `13-api-integration`,
-  `04-typescript`, `11-accessibility`, and `antislop-forms`. The panel uses a
-  bounded private read, validates the response shape, reports mail-server
-  acceptance accurately, and has loading, empty, error, retry, and offline
-  states. Live keyboard, responsive, and account-backed behavior still needs
-  browser verification.
-- `docs/audits/calendar-page.md` records independent visual and security
-  reviews, scores, source-level fixes, and verification limits. No authenticated
-  database session is available for rendered calendar verification.
-- This runtime does not enforce per-agent filesystem or network sandboxes.
-  Worktrees are coordination boundaries only; never provide secrets or private
-  data to agents. Requested agent model settings were assigned, but this
-  runtime does not independently attest model identity.
+  or permission is required for Chron's BYOK flow and requested attribution.
+  The processor/security terms remain unavailable behind an authenticated
+  source; see docs/research/meta-api.md.
+- No sample content, placeholders, stubs, fake demos, emoji, or nonfunctional
+  controls belong in the product.
+- The source-available license permits viewing but prohibits reuse. No
+  prohibited reference folder was inspected or copied.
+- GitHub quality run 41392185432 passed, including PostgreSQL 16 integration.
+  The workflow uses pinned actions and read-only repository permissions.
+- Runtime tooling does not enforce per-agent filesystem/network isolation.
+  Never provide secrets or private data to an agent; do not claim model
+  identity unless the runtime confirms it.
+- The staging host must always be accessed through
+  https://testing.uwu.markets. Do not edit unrelated VPS services.
 
 ## Implementation checkpoint
 
-- Calendar API: `apps/web/app/api/calendar/`, including the conflict check at
-  `apps/web/app/api/calendar/events/conflicts/route.ts`.
-- Calendar database schema: `apps/web/db/migrations/0002_calendar.sql`.
-- Create recovery ledger: `apps/web/db/migrations/0004_calendar_create_requests.sql`.
-- Calendar server validation and storage: `apps/web/features/calendar/server/`.
-- Calendar interface: `apps/web/features/calendar/presentation/`.
-- Authenticated calendar route and existing-account sign-in:
-  `apps/web/app/calendar/`, `apps/web/app/sign-in/`.
-- The runtime has no configured PostgreSQL/auth environment and no test
-  account. Do not simulate a session or claim authenticated persistence is
-  verified.
-- The recurrence request parser validates exact full-series create, update,
-  and delete scopes, finite bounded rules, dates, durations, and revisions.
-  Event reads round-trip validated finite recurrence rules. The signed-in
-  editor creates user-scoped, idempotent proposals; review presents the current
-  and proposed occurrences with conflict evidence; approval is a separate
-  explicit action. Normal one-off event edits/deletes continue to reject series
-  targets. Approval recovery stores only opaque draft IDs scoped to the signed-
-  in user and retries the same idempotent approval after an uncertain result.
-  Source tests pass, but the database-backed and authenticated browser path is
-  not verified in this environment.
-- Reminder scheduling contract and dependency graph:
-  `docs/architecture/calendar-reminders.md`. Pure time calculation lives in
-  `apps/web/features/calendar/domain/reminders.ts`; event mutations and
-  owner-scoped outbox writes now use its schedules for one-off and approved
-  recurring events. The bounded sender is in
-  `apps/web/features/calendar/server/reminder-delivery-worker.ts`, with a
-  bearer-protected route at `apps/web/app/api/internal/calendar-reminders/`
-  and the HTTPS-only scheduled caller in `apps/reminder-scheduler/`. The
-  owner-scoped status API is at
-  `apps/web/app/api/calendar/events/[eventId]/reminders/route.ts`; its editor
-  panel is `apps/web/features/calendar/presentation/calendar-reminder-status.tsx`.
-  No live PostgreSQL instance is configured, so migration execution and real
-  RLS behavior are unverified; SMTP delivery and browser behavior remain open.
-- The user requested staging at `https://testing.uwu.markets` through the
-  supplied VPS and Cloudflare setup, without changing other VPS services.
-  The HTTPS-only probe cannot resolve the hostname, and Cloudflare has no
-  `testing.uwu.markets` DNS record. No DNS, tunnel, VPS, or service changes were
-  made. Keep using HTTPS; the staging DNS and app-specific route must be
-  configured before a browser or delivery walkthrough can run.
-- Event create/update require an explicit user review. The server recalculates
-  overlaps and compares the submitted `(id, revision)` snapshot inside the same
-  owner-serialized transaction as the write. The configured time zone is also
-  checked inside that transaction. Conflict-set or time-zone changes return 409
-  for a fresh review. Every calendar writer must continue through this
-  repository path. Agent/bulk writes do not exist; persisted draft approval is
-  required before they are added.
+- Calendar APIs: apps/web/app/api/calendar/; owner-scoped storage and
+  recurrence/reminder behavior: apps/web/features/calendar/server/.
+- Calendar UI: apps/web/features/calendar/presentation/; protected route and
+  sign-in: apps/web/app/calendar/ and apps/web/app/sign-in/.
+- Database migrations are in apps/web/db/migrations/. The CI integration
+  script is apps/web/scripts/calendar-postgres.integration.test.mjs.
+- PostgreSQL migrations and RLS behavior passed on an ephemeral CI database.
+  There is no staging database or authenticated test account. Do not simulate
+  a session or claim authenticated persistence in the running app.
+- The current staging release is 52d8efd. HTTPS sign-in and the protected
+  route redirect were checked with certificate validation; no VPS resource was
+  changed during the latest CI-only iteration.
+- Recurrence exceptions/split edits, authenticated browser walkthrough,
+  SMTP delivery, scheduler deployment, and Google calendar sync remain open.
 
 ## Prior landing checkpoint
 
@@ -281,23 +175,20 @@ awaits narrow and zoom browser checks.
   passed. The build ran without `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, or
   `DATABASE_URL`. Build output was placed temporarily in `/tmp`, then the
   previous `.next` directory was restored and the temporary artifacts removed.
-- Staging was checked with HTTPS only. DNS lookup failed; the Cloudflare zone
-  is active but has no `testing.uwu.markets` DNS record. No hosting changes
-  were made. The HTTPS-only check was repeated on 2026-11-01 and DNS still
-  failed. Do not use HTTP or edit unrelated VPS configuration.
+- At the 2026-11-01 checkpoint, the HTTPS staging DNS lookup failed. The current 2026-11-02 HTTPS route and TLS verification passed as recorded in Current state. Keep using HTTPS and do not edit unrelated VPS configuration.
 
 ## Next actions
 
-1. Configure a disposable PostgreSQL test database/account, apply migrations,
-   and verify drag-move, empty-slot create, and resize persistence, owner
-   isolation, conflict review, keyboard editor access, and pointer/touch
-   behavior in a real browser.
-2. Continue C1-rmd4 with browser and keyboard review of the integrated reminder
-   flow; database and browser acceptance remain open.
-3. Configure only the Chron-specific staging DNS/tunnel/app route, preserving
-   HTTPS at `testing.uwu.markets` and leaving unrelated VPS services untouched.
-4. Repeat the authenticated walkthrough over HTTPS at desktop and mobile sizes
-   once database, SMTP, and test-account prerequisites are present.
-   Keep landing work paused.
-5. Before every push, inspect staged paths and rescan staged content and commit
-   history for secrets and excluded material.
+1. Implement recurrence exception and split-series operations through the
+   existing owner-scoped proposal, conflict-review, and explicit approval
+   pipeline. Add deterministic domain, API, and PostgreSQL coverage.
+2. Run CI on the single main branch and review the real migration behavior.
+   Keep the authenticated browser walkthrough open until a disposable account
+   can be configured without exposing private credentials.
+3. Continue email delivery and scheduler work only when the authorized
+   SMTP/Cloudflare configuration can be tested safely.
+4. Deploy each verified app-source increment to
+   https://testing.uwu.markets over HTTPS, using only Chron-specific VPS
+   resources. Do not alter unrelated services.
+5. Before every push, inspect staged paths, scan the outgoing changes, and
+   preserve the one-branch public history. Keep AGENTS.md out of Git.
