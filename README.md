@@ -1,40 +1,29 @@
 # Chron
 
-Chron is an education and productivity workspace for adult learners, organized
-around academic calendars, study materials, and source-based research. If the
-planned Meta integration is permitted, end-user inference will use only Meta's
-official Model API. Chron will not route inference to another provider.
+Chron is an academic planning workspace for adult learners. The application brings calendar events, study tools, and source-oriented research together behind a signed-in Next.js workspace.
 
-## Current status
+## What’s in the repository
 
-This repository is at the foundation milestone. No application features are
-currently implemented. Roadmap items are plans, not working features. Public
-registration and Meta API-key handling are disabled. Meta's published terms
-require integrated-product end users to be at least 18, restrict sharing API
-keys, and grant no trademark license. Chron must receive clarification or
-written permission for its planned user-key flow and attribution before either
-is exposed. See [current Meta research](docs/research/meta-api.md).
+- **Calendar** for event planning, recurring series, reminders, event search, conflict checks, and iCalendar export.
+- **Study** workspace with flashcards and planning preferences connected to the calendar.
+- **Research** workspace for organizing source-based work. See the [Meta API research notes](docs/research/meta-api.md) for the proposed integration and its open questions.
+- **Reminder scheduler** in [`apps/reminder-scheduler/`](apps/reminder-scheduler), separate from the web application.
 
-## Project records
+## Local development
 
-- [Operating rules](AGENTS.md)
-- [Roadmap](PLAN.md)
-- [Landing-page direction](docs/design/landing-brief.md)
-- [Meta API research](docs/research/meta-api.md)
-- [Foundation task graph](docs/architecture/task-graph.md)
-- [Progress](PROGRESS.md)
-- [Continuation handoff](HANDOFF.md)
-- [Skill library](SKILLS.md)
+Use Node.js 22.13 or newer in the 22.x line, or Node.js 24 or newer.
 
-## Development
+```sh
+npm ci
+npm run dev
+```
 
-Chron uses the Next.js App Router, React, strict TypeScript, and a modular
-feature structure. The package foundation exists; the first landing route is
-still being implemented, so this repository is not yet a usable application.
-Do not put credentials or personal data in this repository. Review the
-[project rules](AGENTS.md) before contributing.
+The signed-in routes require a PostgreSQL database with the [application migrations](apps/web/db/migrations) and [authentication environment settings](apps/web/features/auth/server/environment.ts). Use the current deployment and verification notes in [HANDOFF.md](HANDOFF.md) and [PROGRESS.md](PROGRESS.md). Run `npm run lint`, `npm run typecheck`, and `npm run build` from the repository root.
 
-## Source availability
+## Project notes
 
-The source may be inspected under the view-only terms in [LICENSE](LICENSE).
-Those terms do not permit reuse, copying, or derivative products.
+- [Roadmap](PLAN.md) tracks planned work and open decisions.
+- [Calendar recurrence](docs/architecture/calendar-recurrence.md) and [reminders](docs/architecture/calendar-reminders.md) describe the corresponding implementation.
+- [SKILLS.md](SKILLS.md) records the project’s skill library.
+
+See [LICENSE](LICENSE) for source-access terms.
