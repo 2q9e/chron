@@ -6,7 +6,7 @@ Chron is an academic planning workspace for adult learners. The application brin
 
 - **Calendar** for event planning, recurring series, reminders, event search, conflict checks, and iCalendar export.
 - **Study** workspace with flashcards and planning preferences connected to the calendar.
-- **Research** workspace for organizing source-based work. See the [Meta API research notes](docs/research/meta-api.md) for the proposed integration and its open questions.
+- **Research** reads user-supplied HTTPS sources. Automatic discovery and Meta inference are currently disabled. See the [Meta API research notes](docs/research/meta-api.md) for the proposed integration and its open questions.
 - **Reminder scheduler** in [`apps/reminder-scheduler/`](apps/reminder-scheduler), separate from the web application.
 
 ## Local development
@@ -26,4 +26,4 @@ The signed-in routes require a PostgreSQL database with the [application migrati
 - [Calendar recurrence](docs/architecture/calendar-recurrence.md) and [reminders](docs/architecture/calendar-reminders.md) describe the corresponding implementation.
 - [SKILLS.md](SKILLS.md) records the project’s skill library.
 
-See [LICENSE](LICENSE) for source-access terms.
+The source is available for viewing and inspection only. See [LICENSE](LICENSE) for the terms.
